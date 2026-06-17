@@ -1,0 +1,12 @@
+﻿workflows:
+  ios-release:
+    name: iOS Release
+    environment:
+      flutter: stable
+      xcode: latest
+      vars:
+        IPHONEOS_DEPLOYMENT_TARGET: 14.0
+    scripts:
+      - flutter build ipa --release
+    artifacts:
+      - build/ios/ipa/*.ipa
