@@ -1,0 +1,304 @@
+{
+  "info": {
+    "name": "Portal Investidor API",
+    "description": "API collection for Portal Investidor backend integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"guilherme@cleveroption.pt\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Autenticação de utilizador"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"guilherme@cleveroption.pt\",\n  \"password\": \"password123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["auth", "login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 999,\n  \"user\": {\n    \"id\": 999,\n    \"name\": \"Guilherme Gonçalves\",\n    \"email\": \"guilherme@cleveroption.pt\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "GET /users/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "999",
+                  "description": "User ID"
+                }
+              ]
+            },
+            "description": "Obter dados completos do investidor"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/999",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "999"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 999,\n  \"name\": \"Guilherme Gonçalves\",\n  \"email\": \"guilherme@cleveroption.pt\",\n  \"totalInvested\": 125500.0,\n  \"roiEsperado\": 8.5,\n  \"createdAt\": \"2026-06-09T10:00:00Z\",\n  \"obras\": [\n    {\n      \"id\": 101,\n      \"title\": \"Empreendimento Central\",\n      \"location\": \"São João da Madeira, Portugal\",\n      \"currentStep\": 1,\n      \"steps\": [\"Projeto\", \"Fundações\", \"Estrutura\", \"Acabamentos\", \"Concluído\"],\n      \"imageUrl\": \"https://images.unsplash.com/photo-1541881430816-17b8f95c37eb?auto=format&fit=crop&w=800&q=80\",\n      \"fotosFases\": [\n        \"https://images.unsplash.com/photo-1504307651254-35680f356f12?auto=format&fit=crop&w=800&q=80\",\n        \"https://images.unsplash.com/photo-1541881430816-17b8f95c37eb?auto=format&fit=crop&w=800&q=80\"\n      ],\n      \"dataFim\": \"A anunciar\"\n    },\n    {\n      \"id\": 102,\n      \"title\": \"Edifício Aliados\",\n      \"location\": \"Avenida dos Aliados, Porto\",\n      \"currentStep\": 3,\n      \"steps\": [\"Projeto\", \"Fundações\", \"Estrutura\", \"Concluído\"],\n      \"imageUrl\": \"https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80\",\n      \"fotosFases\": [],\n      \"dataFim\": \"A anunciar\"\n    }\n  ],\n  \"faturas\": [\n    {\n      \"title\": \"Adjudicação Terreno\",\n      \"status\": \"Pago\",\n      \"valor\": 50000.0,\n      \"data\": \"10 Maio 2026\",\n      \"imageUrl\": \"https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80\"\n    },\n    {\n      \"title\": \"Materiais Estrutura\",\n      \"status\": \"Pendente\",\n      \"valor\": 15000.0,\n      \"data\": \"01 Junho 2026\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Portfolio",
+      "item": [
+        {
+          "name": "GET /portfolio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/portfolio",
+              "host": ["{{baseUrl}}"],
+              "path": ["portfolio"]
+            },
+            "description": "Obter lista de projetos disponíveis para investimento"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/portfolio",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["portfolio"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"titulo\": \"Torre Comercial SJM\",\n    \"descricao\": \"Um novo polo de negócios desenhado para impulsionar a economia local com espaços de escritório premium.\",\n    \"status\": \"Em Angariação\",\n    \"imageUrl\": \"https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80\",\n    \"galeria\": [\n      \"https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80\",\n      \"https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80\"\n    ]\n  }\n]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "item": [
+        {
+          "name": "POST /tickets",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Problema com login\",\n  \"descricao\": \"Não consigo fazer login na minha conta\",\n  \"prioridade\": \"alta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tickets",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickets"]
+            },
+            "description": "Criar um novo ticket de suporte"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"titulo\": \"Problema com login\",\n  \"descricao\": \"Não consigo fazer login na minha conta\",\n  \"prioridade\": \"alta\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/tickets",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["tickets"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 1,\n  \"mensagem\": \"Ticket criado com sucesso\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tickets",
+              "host": ["{{baseUrl}}"],
+              "path": ["tickets"]
+            },
+            "description": "Obter lista de tickets do utilizador autenticado"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/tickets",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["tickets"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"id\": 1,\n    \"titulo\": \"Problema com login\",\n    \"descricao\": \"Não consigo fazer login na minha conta\",\n    \"prioridade\": \"alta\",\n    \"status\": \"Em análise\",\n    \"createdAt\": \"2026-06-12T10:00:00Z\"\n  }\n]"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://100.68.252.121:3000/api",
+      "type": "string"
+    }
+  ]
+}

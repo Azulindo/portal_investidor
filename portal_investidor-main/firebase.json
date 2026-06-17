@@ -1,0 +1,39 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "portal-investidor-70c40",
+          "appId": "1:15418011906:android:2071d868c2fd2de66cd21b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "portal-investidor-70c40",
+          "configurations": {
+            "android": "1:15418011906:android:2071d868c2fd2de66cd21b",
+            "ios": "1:15418011906:ios:cdaf7f91dbf999036cd21b",
+            "macos": "1:15418011906:ios:cdaf7f91dbf999036cd21b",
+            "web": "1:15418011906:web:ef78fe7cbe1e745b6cd21b",
+            "windows": "1:15418011906:web:a64d7e559c17aa586cd21b"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
