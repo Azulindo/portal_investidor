@@ -7,6 +7,9 @@
       vars:
         IPHONEOS_DEPLOYMENT_TARGET: 14.0
     scripts:
+      - ls -la
+      - cd portal_investidor-main
+      - ls -la
       - flutter build ios --release --no-codesign
     artifacts:
-      - build/ios/iphoneos/*.app
+      - portal_investidor-main/build/ios/iphoneos/*.app
