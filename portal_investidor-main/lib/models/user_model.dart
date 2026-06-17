@@ -25,7 +25,10 @@ class ConstructionItem {
   final int id;
   final String title;
   final String location;
-  final int currentStepId;
+  // Número do "stepOrder" do passo atual deste projeto (NÃO é o id de um
+  // step). Antes chamava-se "currentStepId" e era comparado a "step.id";
+  // agora compara-se a "step.stepOrder".
+  final int currentStep;
   final List<ConstructionStep> steps;
   final String imageUrl;
   final String? dataFim;
@@ -34,7 +37,7 @@ class ConstructionItem {
     required this.id,
     required this.title,
     required this.location,
-    required this.currentStepId,
+    required this.currentStep,
     required this.steps,
     required this.imageUrl,
     this.dataFim,
@@ -42,26 +45,23 @@ class ConstructionItem {
 
   ConstructionStep? get currentStepObject {
     try {
-      return steps.firstWhere((step) => step.id == currentStepId);
+      return steps.firstWhere((step) => step.stepOrder == currentStep);
     } catch (_) {
       return null;
     }
   }
 
   int get currentStepIndex {
-    final step = currentStepObject;
-    if (step == null) return 0;
-    return steps.indexWhere((s) => s.id == step.id);
+    final index = steps.indexWhere((s) => s.stepOrder == currentStep);
+    return index == -1 ? 0 : index;
   }
 
   bool isStepCompleted(int index) {
-    final currentStep = currentStepObject;
-    if (currentStep == null) return false;
-    return steps[index].stepOrder < currentStep.stepOrder;
+    return steps[index].stepOrder < currentStep;
   }
 
   bool isCurrentStep(int index) {
-    return steps[index].id == currentStepId;
+    return steps[index].stepOrder == currentStep;
   }
 
   factory ConstructionItem.fromJson(Map<String, dynamic> json) {
@@ -72,7 +72,7 @@ class ConstructionItem {
       id: json['id'] ?? 0,
       title: json['name']?.toString() ?? 'Título não informado',
       location: json['city']?.toString() ?? 'Localização não informada',
-      currentStepId: json['currentStepId'] ?? 0,
+      currentStep: json['currentStep'] ?? 0,
       steps: steps,
       imageUrl: json['mainImageUrl']?.toString() ?? '',
       dataFim: json['endDate']?.toString(),
@@ -115,7 +115,8 @@ class ProjectInfo {
   final String address;
   final String city;
   final String status;
-  final int? currentStepId;
+  // Número do "stepOrder" do passo atual deste projeto (NÃO é o id de um step).
+  final int? currentStep;
   final String description;
   final String? startDate;
   final String? endDate;
@@ -127,7 +128,7 @@ class ProjectInfo {
     required this.address,
     required this.city,
     required this.status,
-    this.currentStepId,
+    this.currentStep,
     required this.description,
     this.startDate,
     this.endDate,
@@ -141,7 +142,7 @@ class ProjectInfo {
       address: json['address']?.toString() ?? '',
       city: json['city']?.toString() ?? '',
       status: json['status']?.toString() ?? 'Desconhecido',
-      currentStepId: int.tryParse(json['currentStepId']?.toString() ?? ''),
+      currentStep: int.tryParse(json['currentStep']?.toString() ?? ''),
       description: json['description']?.toString() ?? 'Nenhuma descrição disponível.',
       startDate: json['startDate']?.toString(),
       endDate: json['endDate']?.toString(),
@@ -151,16 +152,17 @@ class ProjectInfo {
 }
 
 /// Corresponde a uma linha de "projectSteps" devolvida pelo backend.
-/// Atenção: o backend usa a chave "stepId" (não "id") neste endpoint.
+/// Standardizado em "id" (antes era "stepId"), para corresponder ao mesmo
+/// formato usado em /user/:id e /project/portfolio.
 class ProjectStepDetail {
-  final int stepId;
+  final int id;
   final int stepOrder;
   final String name;
   final String description;
   final String? imageUrl;
 
   ProjectStepDetail({
-    required this.stepId,
+    required this.id,
     required this.stepOrder,
     required this.name,
     required this.description,
@@ -169,7 +171,7 @@ class ProjectStepDetail {
 
   factory ProjectStepDetail.fromJson(Map<String, dynamic> json) {
     return ProjectStepDetail(
-      stepId: int.tryParse(json['stepId']?.toString() ?? '') ?? 0,
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
       stepOrder: int.tryParse(json['stepOrder']?.toString() ?? '') ?? 0,
       name: json['name']?.toString() ?? '',
       description: json['description']?.toString() ?? '',

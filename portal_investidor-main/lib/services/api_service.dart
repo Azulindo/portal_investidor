@@ -58,7 +58,9 @@ class ApiService {
           'id': 101,
           'name': 'Empreendimento Central',
           'city': 'São João da Madeira, Portugal',
-          'currentStepId': 2,
+          // ALTERADO: antes 'currentStepId' (id do step). Agora 'currentStep'
+          // (número de "stepOrder" do passo atual).
+          'currentStep': 2,
           'mainImageUrl': 'https://images.unsplash.com/photo-1541881430816-17b8f95c37eb?w=800',
           'steps': [
             {'id': 1, 'stepOrder': 1, 'name': 'Projeto', 'description': 'Aprovado'},
@@ -238,7 +240,9 @@ class ApiService {
           'name': 'Torre Comercial SJM',
           'city': 'São João da Madeira',
           'mainImageUrl': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800',
-          'currentStepId': 1,
+          // ALTERADO: antes 'currentStepId' (id do step). Agora 'currentStep'
+          // (número de "stepOrder" do passo atual).
+          'currentStep': 1,
           'steps': [
             {'id': 1, 'stepOrder': 1, 'name': 'Projeto', 'description': 'Em aprovação'},
             {'id': 2, 'stepOrder': 2, 'name': 'Fundações', 'description': 'Previsto'},
@@ -292,14 +296,18 @@ class ApiService {
               'address': 'Rua Exemplo, 123',
               'city': 'São João da Madeira',
               'status': 'Em Curso',
-              'currentStepId': 1,
+              // ALTERADO: antes 'currentStepId' (id do step). Agora
+              // 'currentStep' (número de "stepOrder" do passo atual).
+              'currentStep': 1,
               'description': 'Descrição de exemplo do projeto em modo mock.',
               'mainImageUrl': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800',
             }
           ],
           'projectSteps': [
-            {'stepId': 1, 'stepOrder': 1, 'name': 'Projeto', 'description': 'Em aprovação'},
-            {'stepId': 2, 'stepOrder': 2, 'name': 'Fundações', 'description': 'Previsto'},
+            // ALTERADO: antes 'stepId', agora 'id' (mesmo formato dos outros
+            // endpoints - ver ProjectStepDetail em user_model.dart).
+            {'id': 1, 'stepOrder': 1, 'name': 'Projeto', 'description': 'Em aprovação'},
+            {'id': 2, 'stepOrder': 2, 'name': 'Fundações', 'description': 'Previsto'},
           ],
           'projectImages': [
             {'imageId': 1, 'imageUrl': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800', 'imageDescription': 'Capa'},

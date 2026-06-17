@@ -153,9 +153,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     const SizedBox(width: 12),
                                     IconButton(
-                                      icon: Icon(privacyService.isMasked
-                                          ? Icons.visibility_off
-                                          : Icons.visibility,
+                                      icon: Icon(
+                                          privacyService.isMasked ? Icons.visibility_off : Icons.visibility,
                                           color: COColors.brand900),
                                       onPressed: () => privacyService.toggleMask(),
                                     ),
@@ -223,7 +222,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // =========================================================
 // CARD DE OBRA (SIMPLIFICADO)
 // Mostra imagem, nome, cidade, data prevista de conclusão e
-// uma timeline horizontal numerada com destaque até currentStepId.
+// uma timeline horizontal numerada com destaque até currentStep.
 // Ao tocar, abre o ProjectDetailsScreen (que busca os detalhes
 // completos via GET /api/project/details?projectId=id).
 // =========================================================
@@ -369,7 +368,7 @@ class ObraCardWidget extends StatelessWidget {
 // =========================================================
 // TIMELINE HORIZONTAL (interna ao card)
 // Bolas numeradas (stepOrder) + nome do step por baixo.
-// Destacadas (cor brand300) até ao step cujo id == currentStepId.
+// Destacadas (cor brand300) até ao step cujo stepOrder == currentStep.
 // =========================================================
 class _Timeline extends StatelessWidget {
   final ConstructionItem obra;
@@ -380,8 +379,9 @@ class _Timeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final steps = obra.steps;
     // Índice (na lista, já com a ordem em que vem da API) do step atual.
-    // -1 se currentStepId não corresponder a nenhum step.
-    final currentIndex = steps.indexWhere((s) => s.id == obra.currentStepId);
+    // -1 se currentStep não corresponder ao "stepOrder" de nenhum step.
+    // ALTERADO: antes comparava "s.id" com "obra.currentStepId".
+    final currentIndex = steps.indexWhere((s) => s.stepOrder == obra.currentStep);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

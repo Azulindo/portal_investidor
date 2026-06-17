@@ -5,7 +5,7 @@ class InvestidorModel {
   final String name;
   final String email;
   final double totalInvested;
-  final double? roiEsperado;   // <-- agora nullable
+  final double? roiEsperado;
   final DateTime createdAt;
   final List<ConstructionItem> obras;
   final List<dynamic> faturas;

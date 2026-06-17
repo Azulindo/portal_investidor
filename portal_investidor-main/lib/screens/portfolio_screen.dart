@@ -36,11 +36,14 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   String _obterStatus(Map<String, dynamic> project) {
     final steps = project['steps'] as List? ?? [];
     if (steps.isEmpty) return 'Em breve';
-    final currentStepId = int.tryParse(project['currentStepId']?.toString() ?? '');
-    if (currentStepId == null) return 'Desconhecido';
+    // ALTERADO: antes lia "currentStepId" e comparava com "id"/"stepId" do
+    // último step. Agora lê "currentStep" (número de "stepOrder") e compara
+    // com o "stepOrder" do último step.
+    final currentStep = int.tryParse(project['currentStep']?.toString() ?? '');
+    if (currentStep == null) return 'Desconhecido';
     final lastStep = steps.last;
-    final lastStepId = int.tryParse(lastStep['id']?.toString() ?? lastStep['stepId']?.toString() ?? '');
-    if (currentStepId == lastStepId) return 'Concluído';
+    final lastStepOrder = int.tryParse(lastStep['stepOrder']?.toString() ?? '');
+    if (currentStep == lastStepOrder) return 'Concluído';
     return 'Em Curso';
   }
 

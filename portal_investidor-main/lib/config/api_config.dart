@@ -3,8 +3,8 @@ class ApiConfig {
   static bool useMock = false;
 
   // Base URLs
-  static const String baseUrlDev = 'http://10.0.2.2:3000/api';
-  static const String baseUrlProd = 'http://10.0.2.2:3000/api';
+  static const String baseUrlDev = 'http://100.108.195.117:3000/api';
+  static const String baseUrlProd = 'http://100.108.195.117:3000/api';
 
   // Get the appropriate base URL based on useMock setting
   static String get baseUrl => useMock ? baseUrlDev : baseUrlProd;

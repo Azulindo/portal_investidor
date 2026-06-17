@@ -5,6 +5,7 @@ import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'services/privacy_service.dart';
 import 'services/auth_service.dart';
+import 'services/api_service.dart';
 
 /// Chave global do Navigator, para permitir navegação a partir de locais
 /// sem BuildContext próprio (ex: o ErrorWidget global abaixo).
@@ -62,8 +63,16 @@ void main() async {
     );
   };
 
-  // Verifica se há sessão guardada
-  int? userId = await AuthService.verificarSessao();
+  // CORRIGIDO: antes isto só decidia qual o ecrã inicial, mas nunca repunha
+  // o estado em memória (ApiService.idLogado / token), por isso a app
+  // arrancava sempre com idLogado == null e caía no fallback "?? 0".
+  // "obterSessaoValida" também limpa a sessão guardada se o token (JWT) já
+  // tiver expirado, em vez de mostrar a Dashboard e só falhar no 1º pedido.
+  final userId = await AuthService.obterSessaoValida();
+  if (userId != null) {
+    ApiService.idLogado = userId;
+    ApiService.definirToken(await AuthService.obterToken());
+  }
 
   runApp(
     ChangeNotifierProvider(

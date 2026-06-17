@@ -113,7 +113,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
           final info = project.info;
           final steps = project.steps;
-          final safeCurrentStepId = info.currentStepId ?? 0;
+          // Número do "stepOrder" do passo atual (NÃO é o id de um step).
+          // Antes chamava-se "safeCurrentStepId" e era comparado a "step.stepId".
+          final safeCurrentStep = info.currentStep ?? 0;
 
           // Galeria: imagens do endpoint, ou fallback para a imagem inicial
           List<String> galeria = project.galeria;
@@ -312,8 +314,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           itemBuilder: (context, index) {
                             final step = steps[index];
 
-                            final isCurrent = step.stepId == safeCurrentStepId;
-                            final isDone = step.stepId <= safeCurrentStepId;
+                            // ALTERADO: antes comparava "step.stepId" com "safeCurrentStepId".
+                            // Agora compara o número de ordem ("stepOrder") com "safeCurrentStep".
+                            final isCurrent = step.stepOrder == safeCurrentStep;
+                            final isDone = step.stepOrder <= safeCurrentStep;
 
                             return Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
