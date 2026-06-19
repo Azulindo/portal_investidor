@@ -16,7 +16,7 @@ class PortfolioScreen extends StatefulWidget {
 
 class _PortfolioScreenState extends State<PortfolioScreen> {
   String _filtroAtivo = 'Todos';
-  final List<String> _categorias = ['Todos', 'Em Angariação', 'Em Curso', 'Concluído'];
+  final List<String> _categorias = ['Todos', 'Em Desenvolvimento', 'Em Construção', 'Concluído'];
 
   late Future<List<dynamic>> _portfolioFuture;
 
@@ -53,7 +53,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
       backgroundColor: COColors.brand900,
       drawer: const CoDrawer(),
       appBar: AppBar(
-        title: const Text('PORTFÓLIO', style: TextStyle(letterSpacing: 1.5, fontSize: 13, fontWeight: COTokens.fwBold, color: COColors.white)),
+        title: const Text('O NOSSO PORTFÓLIO', style: TextStyle(letterSpacing: 1.5, fontSize: 13, fontWeight: COTokens.fwBold, color: COColors.white)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,

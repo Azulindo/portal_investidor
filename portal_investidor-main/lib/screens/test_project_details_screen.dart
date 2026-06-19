@@ -142,6 +142,89 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             children: [
               Column(
                 children: [
+                  // ===========================================
+                  // GALERIA — agora FIXA (fora do CustomScrollView),
+                  // por isso já não desaparece ao fazer scroll e o
+                  // PageView deixa de competir pelo gesto vertical
+                  // do scroll, o que permite o swipe horizontal.
+                  // ===========================================
+                  SizedBox(
+                    height: 320,
+                    width: double.infinity,
+                    // --- TESTE INCREMENTAL 2: PageView real, sem Stack/overlays ---
+                    child: Listener(
+                      behavior: HitTestBehavior.opaque,
+                      onPointerDown: (event) {
+                        setState(() => _debugPointerDown++);
+                      },
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          setState(() => _debugTaps++);
+                        },
+                        child: Stack(
+                          children: [
+                            PageView.builder(
+                              controller: _galeriaController,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: galeria.isNotEmpty ? galeria.length : 1,
+                              onPageChanged: (index) {
+                                setState(() => _paginaAtual = index);
+                              },
+                              itemBuilder: (context, index) {
+                                if (galeria.isEmpty) return Container(color: COColors.brand700);
+                                final isPrimeiraFoto = index == 0;
+                                final imagemWidget = Image.network(
+                                  galeria[index],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stack) => Container(
+                                    color: COColors.brand700,
+                                    child: const Center(
+                                      child: Icon(Icons.broken_image, color: COColors.brand300, size: 50),
+                                    ),
+                                  ),
+                                );
+                                if (isPrimeiraFoto) {
+                                  return Hero(
+                                    tag: widget.heroTag,
+                                    child: Material(
+                                      type: MaterialType.transparency,
+                                      child: ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(COTokens.radiusSm)),
+                                        child: imagemWidget,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return imagemWidget;
+                              },
+                            ),
+                            Positioned(
+                              top: 60,
+                              left: 0,
+                              right: 0,
+                              child: IgnorePointer(
+                                child: Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.7),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'down=$_debugPointerDown  taps=$_debugTaps',
+                                      style: const TextStyle(color: Colors.yellowAccent, fontSize: 14, fontFamily: 'monospace'),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  /* GALERIA ORIGINAL (temporariamente desativada para teste)
                   SizedBox(
                     height: 320,
                     width: double.infinity,
@@ -242,6 +325,28 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           ),
                         ),
 
+                        // --- TEMPORÁRIO: painel de diagnóstico do swipe ---
+                        Positioned(
+                          top: 60,
+                          left: 0,
+                          right: 0,
+                          child: IgnorePointer(
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'down=$_debugPointerDown  taps=$_debugTaps  drag=$_debugDragDetectado  updates=$_debugUpdates  delta=${_debugUltimoDelta.toStringAsFixed(1)}',
+                                  style: const TextStyle(color: Colors.yellowAccent, fontSize: 12, fontFamily: 'monospace'),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
                         // SETAS DE NAVEGAÇÃO DA GALERIA
                         if (galeria.length > 1) ...[
                           Positioned(
@@ -297,6 +402,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       ],
                     ),
                   ),
+                  */
 
                   // ===========================================
                   // CONTEÚDO DO PROJETO — scroll independente da galeria
@@ -369,10 +475,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
                                 // Cor da linha que liga este passo ao próximo:
                                 // - antes do atual (já concluído): verde
-                                // - a sair do passo atual (a avançar): verde
+                                // - a sair do passo atual (a avançar): cor de destaque + seta
                                 // - ainda não chegámos lá: cinzento neutro
                                 final Color corLinha = isCurrent
-                                    ? Colors.green
+                                    ? COColors.brand300
                                     : (isDone ? Colors.green : COColors.brand700);
 
                                 // IntrinsicHeight garante que a linha entre as bolinhas
@@ -382,6 +488,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
+                                      // Linha do tempo visual (Bolinha + Traço)
+                                      // NOTA: usa Stack/Positioned (e não Column+Expanded),
+                                      // porque um Column com filho flexível dentro de um
+                                      // Row envolvido em IntrinsicHeight não é suportado
+                                      // pelo Flutter e provoca falhas de layout.
                                       SizedBox(
                                         width: 16,
                                         child: Stack(

@@ -117,69 +117,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           style: TextStyle(color: COColors.brand300, fontSize: 13)),
                       const SizedBox(height: COTokens.space6),
 
-                      // CARTÃO DE SALDO
-                      Container(
-                        padding: const EdgeInsets.all(COTokens.space6),
-                        decoration: BoxDecoration(
-                            color: COColors.white,
-                            borderRadius: BorderRadius.circular(COTokens.radiusSm)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('TOTAL FINANCIADO',
-                                style: TextStyle(
-                                    color: COColors.neutral500,
-                                    fontWeight: COTokens.fwMedium,
-                                    fontSize: 11,
-                                    letterSpacing: 1.5)),
-                            const SizedBox(height: 8),
-                            Consumer<PrivacyService>(
-                              builder: (context, privacyService, child) {
-                                return Row(
-                                  children: [
-                                    AnimatedSwitcher(
-                                      duration: const Duration(milliseconds: 300),
-                                      transitionBuilder: (Widget child, Animation<double> animation) {
-                                        return FadeTransition(opacity: animation, child: child);
-                                      },
-                                      child: Text(
-                                        key: ValueKey(privacyService.isMasked),
-                                        privacyService.maskCurrency(user.totalInvested),
-                                        style: const TextStyle(
-                                            fontSize: 32,
-                                            fontWeight: COTokens.fwBold,
-                                            color: COColors.brand900),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    IconButton(
-                                      icon: Icon(
-                                          privacyService.isMasked ? Icons.visibility_off : Icons.visibility,
-                                          color: COColors.brand900),
-                                      onPressed: () => privacyService.toggleMask(),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            Container(height: 1, color: COColors.neutral100),
-                            const SizedBox(height: 12),
-                            Text(
-                              user.roiEsperado != null
-                                  ? 'ROI Contratual Estimado: ${user.roiEsperado!.toStringAsFixed(1)}%'
-                                  : 'ROI Contratual Estimado: informação não disponível',
-                              style: const TextStyle(
-                                  color: COColors.brand500,
-                                  fontSize: 12,
-                                  fontWeight: COTokens.fwMedium),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: COTokens.space8),
-
                       const Text('STATUS DAS OBRAS',
                           style: TextStyle(
                               color: COColors.brand300,
@@ -243,7 +180,7 @@ class ObraCardWidget extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => ProjectDetailsScreen(
               projectId: obra.id,
-              heroTag: heroTag,
+              heroTag: obra.imageUrl,
               initialImageUrl: obra.imageUrl,
             ),
           ),
