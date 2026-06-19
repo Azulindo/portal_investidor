@@ -34,18 +34,14 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   }
 
   String _obterStatus(Map<String, dynamic> project) {
-    final steps = project['steps'] as List? ?? [];
-    if (steps.isEmpty) return 'Em breve';
-    // ALTERADO: antes lia "currentStepId" e comparava com "id"/"stepId" do
-    // último step. Agora lê "currentStep" (número de "stepOrder") e compara
-    // com o "stepOrder" do último step.
-    final currentStep = int.tryParse(project['currentStep']?.toString() ?? '');
-    if (currentStep == null) return 'Desconhecido';
-    final lastStep = steps.last;
-    final lastStepOrder = int.tryParse(lastStep['stepOrder']?.toString() ?? '');
-    if (currentStep == lastStepOrder) return 'Concluído';
-    return 'Em Curso';
+    switch (project['status']?.toString() ?? '') {
+      case 'Desenvolvimento': return 'Em Desenvolvimento';
+      case 'Construção': return 'Em Construção';
+      case 'Concluído': return 'Concluído';
+      default: return 'Desconhecido';
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -130,11 +126,15 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                   }
 
                   final projects = snapshot.data ?? [];
-                  final statusProj = _obterStatus;
                   final projsFiltrados = projects.whereType<Map<String, dynamic>>().where((p) {
                     if (_filtroAtivo == 'Todos') return true;
-                    final status = statusProj(p);
-                    return status == _filtroAtivo;
+                    final apiStatus = p['status']?.toString() ?? '';
+                    switch (_filtroAtivo) {
+                      case 'Em Desenvolvimento': return apiStatus == 'Desenvolvimento';
+                      case 'Em Construção': return apiStatus == 'Construção';
+                      case 'Concluído': return apiStatus == 'Concluído';
+                      default: return false;
+                    }
                   }).toList();
 
                   if (projsFiltrados.isEmpty) {
@@ -152,12 +152,11 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       final id = int.tryParse(project['id']?.toString() ?? '') ?? 0;
                       final titulo = project['name']?.toString() ?? 'Projeto sem título';
                       final cidade = project['city']?.toString() ?? '';
-                      final stepsList = project['steps'] as List? ?? [];
-                      final descricao = stepsList.isNotEmpty && stepsList[0] is Map
-                          ? (stepsList[0]['description']?.toString() ?? '')
-                          : 'Sem descrição';
                       final status = _obterStatus(project);
                       final imageUrl = project['mainImageUrl']?.toString() ?? '';
+                      final startDate = project['startDate']?.toString() ?? '';
+                      final endDate = project['endDate']?.toString() ?? '';
+                      final nFractions = int.tryParse(project['nFractions']?.toString() ?? '');
                       final projectKey = 'hero-portfolio-$index';
 
                       return GestureDetector(
@@ -220,25 +219,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                                   Positioned(
                                     top: 12,
                                     right: 12,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: status == 'Concluído' ? Colors.green.withOpacity(0.2) : COColors.brand300.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: status == 'Concluído' ? Colors.green.withOpacity(0.5) : COColors.brand300.withOpacity(0.5),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        status.toUpperCase(),
-                                        style: TextStyle(
-                                          color: status == 'Concluído' ? Colors.greenAccent : COColors.brand300,
-                                          fontWeight: COTokens.fwBold,
-                                          fontSize: 10,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                    ),
+                                    child: UIHelpers.buildStatusBadge(project['status']?.toString() ?? ''),
                                   ),
                                 ],
                               ),
@@ -248,16 +229,42 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      cidade.isNotEmpty ? '$titulo - $cidade' : titulo,
+                                      titulo,
                                       style: const TextStyle(color: COColors.white, fontSize: 18, fontWeight: COTokens.fwBold),
-                                    ),
-                                    const SizedBox(height: COTokens.space2),
-                                    Text(
-                                      descricao,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(color: COColors.neutral500, fontSize: 13, height: 1.4),
                                     ),
+                                    const SizedBox(height: 6),
+                                    if (cidade.isNotEmpty)
+                                      Row(children: [
+                                        const Icon(Icons.location_on_outlined, color: COColors.brand300, size: 14),
+                                        const SizedBox(width: 4),
+                                        Expanded(child: Text(cidade, style: const TextStyle(color: COColors.brand300, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                      ]),
+                                    if (startDate.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Row(children: [
+                                        const Icon(Icons.play_circle_outline, color: COColors.brand300, size: 13),
+                                        const SizedBox(width: 4),
+                                        Text('Início: $startDate', style: const TextStyle(color: COColors.brand300, fontSize: 12)),
+                                      ]),
+                                    ],
+                                    if (endDate.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Row(children: [
+                                        const Icon(Icons.calendar_today_outlined, color: COColors.brand300, size: 12),
+                                        const SizedBox(width: 4),
+                                        Text('Conclusão prevista: $endDate', style: const TextStyle(color: COColors.brand300, fontSize: 12)),
+                                      ]),
+                                    ],
+                                    if (nFractions != null) ...[
+                                      const SizedBox(height: 4),
+                                      Row(children: [
+                                        const Icon(Icons.apartment, color: COColors.brand300, size: 12),
+                                        const SizedBox(width: 4),
+                                        Text('$nFractions frações', style: const TextStyle(color: COColors.brand300, fontSize: 12)),
+                                      ]),
+                                    ],
                                   ],
                                 ),
                               ),

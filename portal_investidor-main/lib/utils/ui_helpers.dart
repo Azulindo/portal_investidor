@@ -100,6 +100,45 @@ class UIHelpers {
       ),
     );
   }
+
+  // Badge de estado do projeto (pill) - reutilizável entre ecrãs
+  static Widget buildStatusBadge(String apiStatus) {
+    String label;
+    IconData icon;
+    switch (apiStatus) {
+      case 'Desenvolvimento': label = 'Em Desenvolvimento'; icon = Icons.architecture; break;
+      case 'Construção':      label = 'Em Construção';      icon = Icons.construction;  break;
+      case 'Concluído':       label = 'Concluído';          icon = Icons.check;      break;
+      default:                label = apiStatus;             icon = Icons.info_outline;
+    }
+
+    Color bg, border, text;
+    switch (apiStatus) {
+      case 'Concluído':
+        bg = const Color(0xFF1B5E20); border = const Color(0xFF43A047); text = const Color(0xFF69F0AE); break;
+      case 'Construção':
+        bg = const Color(0xFF0D47A1); border = const Color(0xFF42A5F5); text = const Color(0xFF90CAF9); break;
+      default:
+        bg = const Color(0xFF4A4A4A); border = const Color(0xFF9E9E9E); text = const Color(0xFFBDBDBD);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: border, width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: text, size: 20),
+          const SizedBox(width: 5),
+          Text(label.toUpperCase(), style: TextStyle(color: text, fontWeight: COTokens.fwBold, fontSize: 10, letterSpacing: 1)),
+        ],
+      ),
+    );
+  }
 }
 
 // --- WIDGET DE ANIMAÇÃO (Logótipo original a pulsar) ---

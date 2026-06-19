@@ -102,7 +102,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   flexibleSpace: FlexibleSpaceBar(
-                    title: Image.asset('assets/images/logo.png', height: 45),
+                    title: Image.asset('assets/images/logo.png', height: 65),
                     centerTitle: true,
                   ),
                 ),
@@ -197,25 +197,35 @@ class ObraCardWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // IMAGEM PRINCIPAL DO PROJETO (com Hero para a transição)
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(COTokens.radiusSm)),
-              child: Hero(
-                tag: heroTag,
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: urlImagem.isNotEmpty
-                      ? Image.network(
-                          urlImagem,
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _imagePlaceholder(broken: true);
-                          },
-                        )
-                      : _imagePlaceholder(broken: false),
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(COTokens.radiusSm)),
+                  child: Hero(
+                    tag: heroTag,
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: urlImagem.isNotEmpty
+                          ? Image.network(
+                              urlImagem,
+                              height: 180,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _imagePlaceholder(broken: true);
+                              },
+                            )
+                          : _imagePlaceholder(broken: false),
+                    ),
+                  ),
                 ),
-              ),
+                if (obra.status.isNotEmpty)
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: UIHelpers.buildStatusBadge(obra.status),
+                  ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.all(COTokens.space4),
@@ -266,10 +276,45 @@ class ObraCardWidget extends StatelessWidget {
                       ),
                     ),
 
+                  if (obra.nFractions != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.apartment, color: COColors.brand300, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${obra.nFractions} frações',
+                            style: const TextStyle(color: COColors.brand300, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   const SizedBox(height: COTokens.space6),
 
                   // TIMELINE HORIZONTAL DAS FASES
-                  if (obra.steps.isNotEmpty) _Timeline(obra: obra),
+                  if (obra.status == 'Desenvolvimento')
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Projeto em desenvolvimento.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: COColors.brand300, fontSize: 14),
+                          ),
+                          Text(
+                            'Timeline disponível em breve!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: COColors.brand300, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (obra.steps.isNotEmpty)
+                    _Timeline(obra: obra),
                 ],
               ),
             ),
@@ -315,71 +360,52 @@ class _Timeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final steps = obra.steps;
-    // Índice (na lista, já com a ordem em que vem da API) do step atual.
-    // -1 se currentStep não corresponder ao "stepOrder" de nenhum step.
-    // ALTERADO: antes comparava "s.id" com "obra.currentStepId".
     final currentIndex = steps.indexWhere((s) => s.stepOrder == obra.currentStep);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(steps.length, (index) {
         final step = steps[index];
-        final isHighlighted = currentIndex != -1 && index <= currentIndex;
-
+        final isCurrent = index == currentIndex;
+        final isDone = currentIndex != -1 && index <= currentIndex;
         final showLeftLine = index > 0;
         final showRightLine = index < steps.length - 1;
-        // Linha à direita só destacada se houver step destacado depois deste.
-        final rightLineHighlighted = currentIndex != -1 && index < currentIndex;
-        final leftLineHighlighted = isHighlighted;
+        final leftLineDone = currentIndex != -1 && index <= currentIndex;
+        final rightLineDone = currentIndex != -1 && index < currentIndex;
+
+        final Color dotColor = isCurrent
+            ? Colors.greenAccent
+            : (isDone ? Colors.green : COColors.brand700);
+        final Color dotBorder = isCurrent ? Colors.white : dotColor;
 
         return Expanded(
           child: Column(
             children: [
-              // BOLA + LINHAS
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: showLeftLine
-                        ? Container(
-                            height: 2,
-                            color: leftLineHighlighted ? COColors.brand300 : COColors.brand700,
-                          )
+                        ? Container(height: 2, color: leftLineDone ? Colors.green : COColors.brand700)
                         : const SizedBox(),
                   ),
                   Container(
-                    width: 24,
-                    height: 24,
-                    alignment: Alignment.center,
+                    width: 16,
+                    height: 16,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isHighlighted ? COColors.brand300 : Colors.transparent,
-                      border: Border.all(
-                        color: isHighlighted ? COColors.brand300 : COColors.brand500,
-                        width: 2,
-                      ),
-                    ),
-                    child: Text(
-                      '${step.stepOrder}',
-                      style: TextStyle(
-                        color: isHighlighted ? COColors.brand900 : COColors.brand300,
-                        fontSize: 11,
-                        fontWeight: COTokens.fwBold,
-                      ),
+                      color: dotColor,
+                      border: isCurrent ? Border.all(color: dotBorder, width: 2) : null,
                     ),
                   ),
                   Expanded(
                     child: showRightLine
-                        ? Container(
-                            height: 2,
-                            color: rightLineHighlighted ? COColors.brand300 : COColors.brand700,
-                          )
+                        ? Container(height: 2, color: rightLineDone ? Colors.green : COColors.brand700)
                         : const SizedBox(),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
-              // NOME DO STEP
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
                 child: Text(
@@ -388,9 +414,9 @@ class _Timeline extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isHighlighted ? COColors.white : COColors.neutral500,
+                    color: isCurrent ? Colors.white : (isDone ? COColors.brand300 : COColors.neutral500),
                     fontSize: 10,
-                    fontWeight: isHighlighted ? COTokens.fwMedium : COTokens.fwRegular,
+                    fontWeight: isCurrent ? COTokens.fwBold : COTokens.fwRegular,
                   ),
                 ),
               ),

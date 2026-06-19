@@ -307,32 +307,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(titulo, style: const TextStyle(color: COColors.white, fontSize: 24, fontWeight: COTokens.fwBold, height: 1.2)),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: status == 'Concluído' ? Colors.green.withValues(alpha: 0.2) : COColors.brand300.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: status == 'Concluído' ? Colors.green.withValues(alpha: 0.5) : COColors.brand300.withValues(alpha: 0.5)),
-                                ),
-                                child: Text(
-                                  status.toUpperCase(),
-                                  style: TextStyle(
-                                    color: status == 'Concluído' ? Colors.greenAccent : COColors.brand300,
-                                    fontWeight: COTokens.fwBold,
-                                    fontSize: 11,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                          Text(titulo, style: const TextStyle(color: COColors.white, fontSize: 24, fontWeight: COTokens.fwBold, height: 1.2)),
 
                           if (info.city.isNotEmpty || info.address.isNotEmpty) ...[
                             const SizedBox(height: 4),
@@ -341,6 +316,31 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                               style: const TextStyle(color: COColors.neutral500, fontSize: 13),
                             ),
                           ],
+
+                          if (info.nFractions != null) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(Icons.apartment, color: COColors.neutral500, size: 20),
+                                const SizedBox(width: 5),
+                                Text(
+                                  '${info.nFractions} frações',
+                                  style: const TextStyle(color: COColors.neutral500, fontSize: 15),
+                                ),
+                              ],
+                            ),
+                          ],
+
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              UIHelpers.buildStatusBadge(status),
+                              if (status != 'Desenvolvimento')
+                                _ForSaleBadge(forSale: info.forSale),
+                            ],
+                          ),
 
                           const SizedBox(height: COTokens.space6),
 
@@ -351,7 +351,25 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           const SizedBox(height: 32),
 
                           // ETAPAS DO PROJETO (projectSteps)
-                          if (steps.isNotEmpty) ...[
+                          if (status == 'Desenvolvimento') ...[
+                            const Text('ETAPAS DO DESENVOLVIMENTO', style: TextStyle(color: COColors.neutral500, fontSize: 12, fontWeight: COTokens.fwBold, letterSpacing: 1.5)),
+                            const SizedBox(height: COTokens.space4),
+                            const Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Projeto em desenvolvimento.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: COColors.brand300, fontSize: 15),
+                                ),
+                                Text(
+                                  'Timeline disponível em breve!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: COColors.brand300, fontSize: 15),
+                                ),
+                              ],
+                            ),
+                          ] else if (steps.isNotEmpty) ...[
                             const Text('ETAPAS DO DESENVOLVIMENTO', style: TextStyle(color: COColors.neutral500, fontSize: 12, fontWeight: COTokens.fwBold, letterSpacing: 1.5)),
                             const SizedBox(height: COTokens.space4),
                             ListView.builder(
@@ -684,6 +702,46 @@ class _PulsingForwardConnectorState extends State<_PulsingForwardConnector> with
           ),
         );
       },
+    );
+  }
+}
+
+class _ForSaleBadge extends StatelessWidget {
+  final bool forSale;
+  const _ForSaleBadge({required this.forSale});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: forSale ? const Color(0xFF1A237E) : const Color(0xFF4A4A4A),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: forSale ? const Color(0xFF7986CB) : const Color(0xFF9E9E9E),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            forSale ? Icons.apartment : Icons.lock_outline,
+            color: forSale ? const Color(0xFFB3BCEF) : const Color(0xFFBDBDBD),
+            size: 20,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            forSale ? 'FRAÇÕES DISPONÍVEIS PARA VENDA' : 'TODAS AS FRAÇÕES VENDIDAS',
+            style: TextStyle(
+              color: forSale ? const Color(0xFFB3BCEF) : const Color(0xFFBDBDBD),
+              fontWeight: COTokens.fwBold,
+              fontSize: 10,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

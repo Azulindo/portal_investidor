@@ -32,6 +32,8 @@ class ConstructionItem {
   final List<ConstructionStep> steps;
   final String imageUrl;
   final String? dataFim;
+  final String status;
+  final int? nFractions;
 
   ConstructionItem({
     required this.id,
@@ -41,6 +43,8 @@ class ConstructionItem {
     required this.steps,
     required this.imageUrl,
     this.dataFim,
+    this.status = '',
+    this.nFractions,
   });
 
   ConstructionStep? get currentStepObject {
@@ -76,6 +80,8 @@ class ConstructionItem {
       steps: steps,
       imageUrl: json['mainImageUrl']?.toString() ?? '',
       dataFim: json['endDate']?.toString(),
+      status: json['status']?.toString() ?? '',
+      nFractions: int.tryParse(json['nFractions']?.toString() ?? ''),
     );
   }
 }
@@ -121,6 +127,7 @@ class ProjectInfo {
   final String? startDate;
   final String? endDate;
   final String? mainImageUrl;
+  final bool forSale;
 
   ProjectInfo({
     required this.name,
@@ -133,6 +140,7 @@ class ProjectInfo {
     this.startDate,
     this.endDate,
     this.mainImageUrl,
+    this.forSale = false,
   });
 
   factory ProjectInfo.fromJson(Map<String, dynamic> json) {
@@ -147,6 +155,7 @@ class ProjectInfo {
       startDate: json['startDate']?.toString(),
       endDate: json['endDate']?.toString(),
       mainImageUrl: json['mainImageUrl']?.toString(),
+      forSale: json['forSale'] == true,
     );
   }
 }

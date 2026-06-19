@@ -103,6 +103,14 @@ class CleverOptionApp extends StatelessWidget {
           centerTitle: true,
         ),
       ),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(1.1),
+          ),
+          child: child!,
+        );
+      },
       home: userIdInicial != null ? const DashboardScreen() : const LoginScreen(),
     );
   }

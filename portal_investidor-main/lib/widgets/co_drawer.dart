@@ -5,6 +5,7 @@ import '../screens/dashboard_screen.dart';
 import '../screens/portfolio_screen.dart';
 import '../screens/documents_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/map_screen.dart';
 
 class CoDrawer extends StatelessWidget {
   const CoDrawer({super.key});
@@ -56,6 +57,11 @@ class CoDrawer extends StatelessWidget {
             leading: const Icon(Icons.photo_library_outlined, color: COColors.white),
             title: const Text('PORTFÓLIO', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
             onTap: () => _navegarSuave(context, const PortfolioScreen()),
+          ),
+          ListTile(
+            leading: const Icon(Icons.map_outlined, color: COColors.white),
+            title: const Text('MAPA', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            onTap: () => _navegarSuave(context, const MapScreen()),
           ),
           ListTile(
             leading: const Icon(Icons.folder_shared_outlined, color: COColors.white),
