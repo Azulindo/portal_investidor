@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
@@ -25,13 +26,6 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   int _paginaAtual = 0;
   late Future<ProjectDetailModel> _projectFuture;
   final PageController _galeriaController = PageController();
-  double _dragAcumulado = 0;
-  // --- TEMPORÁRIO: só para diagnóstico do swipe ---
-  int _debugUpdates = 0;
-  double _debugUltimoDelta = 0;
-  bool _debugDragDetectado = false;
-  int _debugTaps = 0;
-  int _debugPointerDown = 0;
 
   @override
   void initState() {
@@ -149,47 +143,21 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       fit: StackFit.expand,
                       children: [
                         if (galeria.isNotEmpty)
-                          Listener(
-                            behavior: HitTestBehavior.opaque,
-                            onPointerDown: (event) {
-                              setState(() => _debugPointerDown++);
-                            },
-                            child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              setState(() => _debugTaps++);
-                            },
-                            onHorizontalDragStart: (details) {
-                              setState(() => _debugDragDetectado = true);
-                            },
-                            onHorizontalDragUpdate: (details) {
-                              _dragAcumulado += details.delta.dx;
-                              setState(() {
-                                _debugUpdates++;
-                                _debugUltimoDelta = details.delta.dx;
-                              });
-                            },
-                            onHorizontalDragEnd: (details) {
-                              final velocidade = details.primaryVelocity ?? 0;
-                              const limiarDistancia = 60.0;
-                              const limiarVelocidade = 300.0;
-                              if (_dragAcumulado < -limiarDistancia || velocidade < -limiarVelocidade) {
-                                _irParaImagem(_paginaAtual + 1, galeria.length);
-                              } else if (_dragAcumulado > limiarDistancia || velocidade > limiarVelocidade) {
-                                _irParaImagem(_paginaAtual - 1, galeria.length);
-                              }
-                              _dragAcumulado = 0;
-                              setState(() => _debugDragDetectado = false);
-                            },
-                            // NOTA: o PageView deixou de usar o seu próprio gesto de
-                            // arrastar (physics: NeverScrollableScrollPhysics) porque
-                            // algo fora deste ficheiro estava a "engolir" o gesto antes
-                            // de chegar ao PageView. Este GestureDetector trata o swipe
-                            // diretamente e chama o mesmo método (_irParaImagem) que já
-                            // funciona nas setas, garantindo que o swipe funciona sempre.
+                          // O PageView trata o swipe nativamente. Em desktop/web o
+                          // comportamento de scroll por omissão ignora o rato, por isso
+                          // usamos um ScrollConfiguration que inclui o rato (e touchpad)
+                          // como dispositivos de arrasto válidos.
+                          ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(context).copyWith(
+                              dragDevices: {
+                                PointerDeviceKind.touch,
+                                PointerDeviceKind.mouse,
+                                PointerDeviceKind.trackpad,
+                                PointerDeviceKind.stylus,
+                              },
+                            ),
                             child: PageView.builder(
                               controller: _galeriaController,
-                              physics: const NeverScrollableScrollPhysics(),
                               itemCount: galeria.length,
                               onPageChanged: (index) {
                                 setState(() => _paginaAtual = index);
@@ -222,22 +190,25 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 return imagemWidget;
                               },
                             ),
-                          ),
                           )
                         else
                           Container(color: COColors.brand700),
 
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.black.withValues(alpha: 0.6),
-                                Colors.transparent,
-                                COColors.brand900,
-                              ],
-                              stops: const [0.0, 0.5, 1.0],
+                        // Gradiente puramente decorativo: IgnorePointer garante que
+                        // não intercepta o gesto de swipe destinado ao PageView abaixo.
+                        const IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Color(0x99000000),
+                                  Colors.transparent,
+                                  COColors.brand900,
+                                ],
+                                stops: [0.0, 0.5, 1.0],
+                              ),
                             ),
                           ),
                         ),

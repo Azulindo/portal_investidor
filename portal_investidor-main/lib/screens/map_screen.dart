@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -16,6 +18,8 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final ApiService _api = ApiService();
+  final MapController _mapController = MapController();
+  bool _mapReady = false;
   List<dynamic> _projects = [];
   bool _loading = true;
   String? _error;
@@ -64,6 +68,8 @@ class _MapScreenState extends State<MapScreen> {
           point: LatLng(lat, lng),
           width: 48,
           height: 48,
+          // Mantém o pin sempre alinhado com o ecrã (não roda com o mapa).
+          rotate: true,
           child: GestureDetector(
             onTap: () {
               showDialog(
@@ -109,6 +115,61 @@ class _MapScreenState extends State<MapScreen> {
     return markers;
   }
 
+  /// Para cada projeto fora da área visível do mapa, desenha uma seta encostada
+  /// à borda mais próxima, a apontar na direção do projeto. Tocar na seta
+  /// centra o mapa nesse projeto.
+  Widget _buildOffScreenIndicators() {
+    if (!_mapReady) return const SizedBox.shrink();
+
+    final camera = _mapController.camera;
+    final size = camera.nonRotatedSize;
+    if (size.width <= 0 || size.height <= 0) return const SizedBox.shrink();
+
+    const margin = 26.0; // recuo da seta em relação à borda
+    const indicatorSize = 36.0;
+    final center = Offset(size.width / 2, size.height / 2);
+    final indicadores = <Widget>[];
+
+    for (final project in _projects) {
+      final lat = (project['latitude'] as num?)?.toDouble();
+      final lng = (project['longitude'] as num?)?.toDouble();
+      if (lat == null || lng == null) continue;
+
+      final ponto = LatLng(lat, lng);
+      final pos = camera.latLngToScreenOffset(ponto);
+
+      final visivel = pos.dx >= 0 && pos.dx <= size.width && pos.dy >= 0 && pos.dy <= size.height;
+      if (visivel) continue;
+
+      final dir = pos - center;
+      if (dir.distance == 0) continue;
+
+      // Interseção da semirreta (centro -> marcador) com o retângulo recuado.
+      final halfW = size.width / 2 - margin;
+      final halfH = size.height / 2 - margin;
+      final scale = math.min(
+        dir.dx == 0 ? double.infinity : halfW / dir.dx.abs(),
+        dir.dy == 0 ? double.infinity : halfH / dir.dy.abs(),
+      );
+      final edge = center + dir * scale;
+      final angle = math.atan2(dir.dy, dir.dx);
+      final color = _corPorStatus(project['status'] as String?);
+
+      indicadores.add(
+        Positioned(
+          left: edge.dx - indicatorSize / 2,
+          top: edge.dy - indicatorSize / 2,
+          child: GestureDetector(
+            onTap: () => _mapController.move(ponto, camera.zoom),
+            child: _EdgeIndicator(color: color, angle: angle, size: indicatorSize),
+          ),
+        ),
+      );
+    }
+
+    return Stack(children: indicadores);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -150,18 +211,29 @@ class _MapScreenState extends State<MapScreen> {
                   children: [
                     _buildLegenda(),
                     Expanded(
-                      child: FlutterMap(
-                        options: const MapOptions(
-                          initialCenter: LatLng(41.13, -8.61),
-                          initialZoom: 12.5,
-                        ),
+                      child: Stack(
                         children: [
-                          TileLayer(
-                            urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                            subdomains: const ['a', 'b', 'c', 'd'],
-                            userAgentPackageName: 'com.cleveroption.portalinvestidor',
+                          FlutterMap(
+                            mapController: _mapController,
+                            options: MapOptions(
+                              initialCenter: const LatLng(41.13, -8.61),
+                              initialZoom: 12.5,
+                              onMapReady: () => setState(() => _mapReady = true),
+                              // Recalcula os indicadores de borda sempre que o mapa
+                              // se move, faz zoom ou roda.
+                              onPositionChanged: (_, _) => setState(() {}),
+                            ),
+                            children: [
+                              TileLayer(
+                                urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                                subdomains: const ['a', 'b', 'c', 'd'],
+                                userAgentPackageName: 'com.cleveroption.portalinvestidor',
+                              ),
+                              MarkerLayer(markers: _buildMarkers()),
+                            ],
                           ),
-                          MarkerLayer(markers: _buildMarkers()),
+                          // Setas que apontam para projetos fora da área visível.
+                          Positioned.fill(child: _buildOffScreenIndicators()),
                         ],
                       ),
                     ),
@@ -215,27 +287,51 @@ class _LogoPin extends StatelessWidget {
         Container(
           width: 48,
           height: 48,
-          decoration: const BoxDecoration(
-            color: Colors.black,
+          decoration: BoxDecoration(
+            color: color,
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 2))],
+            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 2))],
           ),
           child: Center(
-            child: Container(
-              width: 43,
-              height: 43,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              child: Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Image.asset('assets/images/logo_simples_mapa.avif', fit: BoxFit.contain),
-                ),
-              ),
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: Image.asset('assets/images/logo_simples_mapa.avif', fit: BoxFit.contain),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Seta circular encostada à borda do mapa, a apontar para um projeto que está
+/// fora da área visível. [angle] está em radianos (0 = a apontar para a direita).
+class _EdgeIndicator extends StatelessWidget {
+  final Color color;
+  final double angle;
+  final double size;
+  const _EdgeIndicator({required this.color, required this.angle, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 2))],
+      ),
+      child: Center(
+        // Icons.play_arrow aponta para a direita (0 rad), por isso basta rodar
+        // pelo ângulo da direção centro -> marcador.
+        child: Transform.rotate(
+          angle: angle,
+          child: const Icon(Icons.play_arrow, color: Colors.white, size: 20),
+        ),
+      ),
     );
   }
 }
