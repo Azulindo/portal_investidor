@@ -4,7 +4,6 @@ import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../widgets/co_drawer.dart';
 import '../services/api_service.dart';
-import '../config/api_config.dart';
 
 class DocumentsScreen extends StatefulWidget {
   const DocumentsScreen({super.key});
@@ -78,8 +77,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   }
 
   Future<void> _downloadAttachment(int attachmentId, String name) async {
-    final url = Uri.parse(ApiConfig.attachmentDownloadUrl(attachmentId));
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+    try {
+      final downloadUrl = await ApiService().getAttachmentUrl(attachmentId);
+      final uri = Uri.parse(downloadUrl);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw Exception('launchUrl failed');
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

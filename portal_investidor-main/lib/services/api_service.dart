@@ -334,6 +334,28 @@ class ApiService {
   }
 
   // ============================================================
+  // DOWNLOAD DE ANEXO
+  // ============================================================
+
+  /// GET /api/document/attachment/:id/token
+  /// Pede ao servidor um URL de download de curta duração (token na query string).
+  Future<String> getAttachmentUrl(int attachmentId) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/document/attachment/$attachmentId/token');
+    final response = await http
+        .get(url, headers: await _authHeaders())
+        .timeout(ApiConfig.connectionTimeout);
+
+    if (response.statusCode != 200) {
+      throw ApiException('Erro ao obter URL do anexo (${response.statusCode})', statusCode: response.statusCode);
+    }
+
+    final parsed = jsonDecode(response.body);
+    final token = parsed['data']?['token'] as String?;
+    if (token == null) throw ApiException('Token de download não encontrado na resposta');
+    return '${ApiConfig.baseUrl}/document/attachment/$attachmentId?token=$token';
+  }
+
+  // ============================================================
   // DETALHES DO PROJETO
   // ============================================================
 
