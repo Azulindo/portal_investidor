@@ -280,6 +280,60 @@ class ApiService {
   }
 
   // ============================================================
+  // DOCUMENTOS
+  // ============================================================
+
+  /// GET /api/document/list
+  /// Devolve a lista de documentos (faturas) com anexos do utilizador autenticado.
+  Future<List<Map<String, dynamic>>> buscarDocumentos() async {
+    if (ApiConfig.useMock) {
+      await Future.delayed(const Duration(milliseconds: 800));
+      return [
+        {
+          'id': 1,
+          'name': 'INV/2026/0001',
+          'paymentState': 'paid',
+          'amountTotal': 50000.0,
+          'attachments': [
+            {'id': 5, 'name': 'factura_001.pdf', 'mimetype': 'application/pdf'},
+          ],
+        },
+        {
+          'id': 2,
+          'name': 'INV/2026/0002',
+          'paymentState': 'not_paid',
+          'amountTotal': 15000.0,
+          'attachments': [],
+        },
+      ];
+    }
+
+    final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.documentListEndpoint}');
+    try {
+      final response = await http
+          .get(url, headers: await _authHeaders())
+          .timeout(ApiConfig.connectionTimeout);
+
+      if (response.statusCode == 200) {
+        final parsed = jsonDecode(response.body);
+        final data = parsed['data'];
+        if (data is List) {
+          return data.cast<Map<String, dynamic>>();
+        }
+        return [];
+      } else {
+        throw ApiException(_extrairErro(response.body), statusCode: response.statusCode);
+      }
+    } on TimeoutException catch (_) {
+      throw ApiException('O servidor demorou muito tempo a responder.');
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Erro de ligação à rede.');
+    }
+  }
+
+  // ============================================================
   // DETALHES DO PROJETO
   // ============================================================
 

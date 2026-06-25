@@ -18,4 +18,6 @@ class ApiConfig {
   static String userEndpoint(int id) => '/user/$id';
   static const String portfolioEndpoint = '/project/portfolio';
   static String projectDetailsEndpoint(int projectId) => '/project/details?projectId=$projectId';
+  static const String documentListEndpoint = '/document/list';
+  static String attachmentDownloadUrl(int attachmentId) => '$baseUrl/document/attachment/$attachmentId';
 }

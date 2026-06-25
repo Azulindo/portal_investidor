@@ -72,38 +72,130 @@ class _MapScreenState extends State<MapScreen> {
           rotate: true,
           child: GestureDetector(
             onTap: () {
-              showDialog(
+              final city      = project['city']    as String?;
+              final forSale   = project['forSale'] as bool? ?? false;
+              final mainImage = project['mainImageUrl'] as String?;
+
+              showModalBottomSheet(
                 context: context,
-                builder: (_) => AlertDialog(
-                  backgroundColor: COColors.brand700,
-                  title: Text(nome, style: const TextStyle(color: COColors.white, fontSize: 14, fontWeight: COTokens.fwBold)),
-                  content: Text(
-                    'Estado: ${status ?? 'Desconhecido'}',
-                    style: const TextStyle(color: COColors.brand300, fontSize: 13),
+                backgroundColor: Colors.transparent,
+                isScrollControlled: true,
+                builder: (sheetContext) => Container(
+                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                  decoration: BoxDecoration(
+                    color: COColors.brand700,
+                    borderRadius: BorderRadius.circular(12.0),
+                    border: Border.all(color: COColors.brand500, width: 1),
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Fechar', style: TextStyle(color: COColors.brand300)),
-                    ),
-                    if (projectId != null)
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProjectDetailsScreen(
-                                projectId: projectId,
-                                heroTag: 'map_project_$projectId',
-                                initialImageUrl: '',
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Image or colour header
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12.0)),
+                        child: mainImage != null && mainImage.isNotEmpty
+                            ? Image.network(
+                                mainImage,
+                                height: 160,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _noImageHeader(color),
+                              )
+                            : _noImageHeader(color),
+                      ),
+
+                      Padding(
+                        padding: const EdgeInsets.all(COTokens.space6),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Name
+                            Text(
+                              nome,
+                              style: const TextStyle(
+                                color: COColors.white,
+                                fontSize: 17,
+                                fontWeight: COTokens.fwBold,
                               ),
                             ),
-                          );
-                        },
-                        child: const Text('Ver Detalhes', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwBold)),
+                            if (city != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                city,
+                                style: const TextStyle(color: COColors.neutral500, fontSize: 13),
+                              ),
+                            ],
+                            const SizedBox(height: 14),
+
+                            // Info row
+                            Row(
+                              children: [
+                                _infoChip(color, status ?? 'Desconhecido'),
+                                const SizedBox(width: 8),
+                                if (forSale) ...[
+                                  const SizedBox(width: 8),
+                                  _infoChip(const Color(0xFF5BBFBF), 'Frações à venda'),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Actions
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: COColors.neutral500,
+                                      side: const BorderSide(color: COColors.neutral500),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                    onPressed: () => Navigator.pop(sheetContext),
+                                    child: const Text('Voltar'),
+                                  ),
+                                ),
+                                if (projectId != null) ...[
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: COColors.brand900,
+                                        foregroundColor: COColors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          side: const BorderSide(color: COColors.brand500),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.pop(sheetContext);
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => ProjectDetailsScreen(
+                                              projectId: projectId,
+                                              heroTag: 'map_project_$projectId',
+                                              initialImageUrl: mainImage ?? '',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text('Ver Detalhes',
+                                          style: TextStyle(fontWeight: COTokens.fwBold)),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -242,18 +334,45 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  Widget _noImageHeader(Color color) {
+    return Container(
+      height: 160,
+      width: double.infinity,
+      color: color.withValues(alpha: 0.15),
+      child: Icon(Icons.location_city_rounded, color: color, size: 48),
+    );
+  }
+
+  Widget _infoChip(Color color, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: COTokens.fwBold,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+
   Widget _buildLegenda() {
     return Container(
       color: COColors.brand900,
       padding: const EdgeInsets.symmetric(horizontal: COTokens.space4, vertical: COTokens.space2),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _legendaItem(const Color(0xFF9E9E9E), 'Em Desenvolvimento'),
-          const SizedBox(width: COTokens.space4),
-          _legendaItem(const Color(0xFF42A5F5), 'Em Construção'),
-          const SizedBox(width: COTokens.space4),
-          _legendaItem(const Color(0xFF43A047), 'Concluído'),
+          Flexible(child: _legendaItem(const Color(0xFF9E9E9E), 'Em Desenvolvimento')),
+          Flexible(child: _legendaItem(const Color(0xFF42A5F5), 'Em Construção')),
+          Flexible(child: _legendaItem(const Color(0xFF43A047), 'Concluído')),
         ],
       ),
     );
@@ -264,12 +383,18 @@ class _MapScreenState extends State<MapScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(color: cor, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(color: COColors.white, fontSize: 12)),
+        const SizedBox(width: 5),
+        Flexible(
+          child: Text(
+            label,
+            style: const TextStyle(color: COColors.white, fontSize: 11),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }

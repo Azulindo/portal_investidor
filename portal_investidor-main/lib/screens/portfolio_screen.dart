@@ -83,9 +83,9 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       margin: const EdgeInsets.only(right: 12),
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? COColors.brand300 : COColors.brand700.withOpacity(0.4),
+                        color: isSelected ? COColors.brand300 : COColors.brand700.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: isSelected ? Colors.white : COColors.brand700.withOpacity(0.6), width: 1),
+                        border: Border.all(color: isSelected ? Colors.white : COColors.brand700.withValues(alpha: 0.6), width: 1),
                       ),
                       child: Center(
                         child: Text(
@@ -156,7 +156,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       final imageUrl = project['mainImageUrl']?.toString() ?? '';
                       final startDate = project['startDate']?.toString() ?? '';
                       final endDate = project['endDate']?.toString() ?? '';
-                      final nFractions = int.tryParse(project['nFractions']?.toString() ?? '');
                       final projectKey = 'hero-portfolio-$index';
 
                       return GestureDetector(
@@ -175,9 +174,9 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                         child: Container(
                           margin: const EdgeInsets.only(bottom: COTokens.space6),
                           decoration: BoxDecoration(
-                            color: COColors.brand700.withOpacity(0.3),
+                            color: COColors.brand700.withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(COTokens.radiusSm),
-                            border: Border.all(color: COColors.brand700.withOpacity(0.4)),
+                            border: Border.all(color: COColors.brand700.withValues(alpha: 0.4)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,14 +256,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                                         Text('Conclusão prevista: $endDate', style: const TextStyle(color: COColors.brand300, fontSize: 12)),
                                       ]),
                                     ],
-                                    if (nFractions != null) ...[
-                                      const SizedBox(height: 4),
-                                      Row(children: [
-                                        const Icon(Icons.apartment, color: COColors.brand300, size: 12),
-                                        const SizedBox(width: 4),
-                                        Text('$nFractions frações', style: const TextStyle(color: COColors.brand300, fontSize: 12)),
-                                      ]),
-                                    ],
                                   ],
                                 ),
                               ),
@@ -289,8 +280,8 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
       itemCount: 2,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
-          baseColor: COColors.brand700.withOpacity(0.4),
-          highlightColor: COColors.brand300.withOpacity(0.1),
+          baseColor: COColors.brand700.withValues(alpha: 0.4),
+          highlightColor: COColors.brand300.withValues(alpha: 0.1),
           child: Container(
             margin: const EdgeInsets.only(bottom: COTokens.space6),
             height: 280,

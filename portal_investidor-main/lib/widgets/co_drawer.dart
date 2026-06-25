@@ -55,7 +55,7 @@ class CoDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.photo_library_outlined, color: COColors.white),
-            title: const Text('PORTFÓLIO', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            title: const Text('O NOSSO PORTFÓLIO', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
             onTap: () => _navegarSuave(context, const PortfolioScreen()),
           ),
           ListTile(
@@ -65,7 +65,7 @@ class CoDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.folder_shared_outlined, color: COColors.white),
-            title: const Text('ARQUIVO DIGITAL', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            title: const Text('FATURAS', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
             onTap: () => _navegarSuave(context, const DocumentsScreen()),
           ),
           const Padding(

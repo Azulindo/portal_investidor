@@ -189,9 +189,9 @@ class ObraCardWidget extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: COTokens.space6),
         decoration: BoxDecoration(
-          color: COColors.brand700.withOpacity(0.3),
+          color: COColors.brand700.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(COTokens.radiusSm),
-          border: Border.all(color: COColors.brand700.withOpacity(0.5)),
+          border: Border.all(color: COColors.brand700.withValues(alpha: 0.5)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,21 +270,6 @@ class ObraCardWidget extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             'Data Prevista de Conclusão: ${obra.dataFim}',
-                            style: const TextStyle(color: COColors.brand300, fontSize: 11),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  if (obra.nFractions != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.apartment, color: COColors.brand300, size: 12),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${obra.nFractions} frações',
                             style: const TextStyle(color: COColors.brand300, fontSize: 11),
                           ),
                         ],
