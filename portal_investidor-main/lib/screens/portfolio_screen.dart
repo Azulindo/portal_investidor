@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import '../widgets/co_card.dart';
 import '../widgets/co_drawer.dart';
 import '../services/api_service.dart';
 import '../utils/ui_helpers.dart';
@@ -157,7 +158,8 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       final fracoes = int.tryParse(project['nFractions']?.toString() ?? '');
                       final projectKey = 'hero-portfolio-$index';
 
-                      return GestureDetector(
+                      return CoCard(
+                        semPadding: true,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -170,20 +172,15 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                             ),
                           );
                         },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: COTokens.space6),
-                          decoration: BoxDecoration(
-                            color: COColors.brand700.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(COTokens.radiusSm),
-                            border: Border.all(color: COColors.brand700.withValues(alpha: 0.4)),
-                          ),
+                        child: SizedBox(
+                          width: double.infinity,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Stack(
                                 children: [
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(COTokens.radiusSm)),
+                                  SizedBox(
+                                    width: double.infinity,
                                     child: Hero(
                                       tag: projectKey,
                                       child: Material(
@@ -222,42 +219,29 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                                 ],
                               ),
                               Padding(
-                                padding: const EdgeInsets.all(COTokens.space4),
+                                padding: const EdgeInsets.all(COTokens.cardPadding),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       titulo,
-                                      style: const TextStyle(color: COColors.white, fontSize: 18, fontWeight: COTokens.fwBold),
+                                      style: COText.h2.copyWith(fontWeight: COTokens.fwBold),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    const SizedBox(height: 6),
+                                    const SizedBox(height: 2),
                                     if (cidade.isNotEmpty)
-                                      Row(children: [
-                                        const Icon(Icons.location_on_outlined, color: COColors.brand300, size: 14),
-                                        const SizedBox(width: 4),
-                                        Expanded(child: Text(cidade, style: const TextStyle(color: COColors.brand300, fontSize: 12), overflow: TextOverflow.ellipsis)),
-                                      ]),
-                                    if (anoFim != null) ...[
-                                      const SizedBox(height: 4),
-                                      Row(children: [
-                                        const Icon(Icons.calendar_today_outlined, color: COColors.brand300, size: 12),
-                                        const SizedBox(width: 4),
-                                        Text('Conclusão prevista: $anoFim', style: const TextStyle(color: COColors.brand300, fontSize: 12)),
-                                      ]),
-                                    ],
-                                    if (fracoes != null) ...[
-                                      const SizedBox(height: 4),
-                                      Row(children: [
-                                        const Icon(Icons.home_work_outlined, color: COColors.brand300, size: 13),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '$fracoes ${fracoes == 1 ? 'fração' : 'frações'}',
-                                          style: const TextStyle(color: COColors.brand300, fontSize: 12),
-                                        ),
-                                      ]),
-                                    ],
+                                      CoLinhaInfo(icone: Icons.location_on_outlined, texto: cidade),
+                                    if (anoFim != null)
+                                      CoLinhaInfo(
+                                        icone: Icons.calendar_today_outlined,
+                                        texto: 'Conclusão prevista: $anoFim',
+                                      ),
+                                    if (fracoes != null)
+                                      CoLinhaInfo(
+                                        icone: Icons.home_work_outlined,
+                                        texto: '$fracoes ${fracoes == 1 ? 'fração' : 'frações'}',
+                                      ),
                                   ],
                                 ),
                               ),

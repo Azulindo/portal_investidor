@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../services/api_service.dart';
-import '../services/privacy_service.dart';
+import '../widgets/co_card.dart';
 import '../widgets/co_drawer.dart';
 import '../models/investidor_model.dart';
 import '../models/user_model.dart';
@@ -110,20 +109,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.all(COTokens.space6),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      Text('Olá, ${user.name}',
-                          style: const TextStyle(fontSize: 22, fontWeight: COTokens.fwBold, color: COColors.white)),
+                      Text('Olá, ${user.name}', style: COText.h1),
                       const SizedBox(height: 4),
                       const Text('Bem-vindo ao seu painel de investimentos.',
-                          style: TextStyle(color: COColors.brand300, fontSize: 13)),
-                      const SizedBox(height: COTokens.space6),
+                          style: COText.small),
+                      const SizedBox(height: COTokens.space9),
 
-                      const Text('STATUS DAS OBRAS',
-                          style: TextStyle(
-                              color: COColors.brand300,
-                              fontSize: 11,
-                              fontWeight: COTokens.fwBold,
-                              letterSpacing: 1.5)),
-                      const SizedBox(height: COTokens.space4),
+                      const CoOverline('Status das obras'),
 
                       if (obras.isEmpty)
                         Padding(
@@ -133,7 +125,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Opacity(opacity: 0.2, child: Image.asset('assets/images/logo.png', height: 80)),
                               const SizedBox(height: COTokens.space6),
                               const Text('Ainda não existem registos associados ao seu perfil.',
-                                  style: TextStyle(color: COColors.neutral500, fontSize: 14)),
+                                  style: COText.caption, textAlign: TextAlign.center),
                             ],
                           ),
                         )
@@ -173,7 +165,8 @@ class ObraCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final urlImagem = obra.imageUrl;
 
-    return GestureDetector(
+    return CoCard(
+      semPadding: true,
       onTap: () {
         Navigator.push(
           context,
@@ -186,21 +179,16 @@ class ObraCardWidget extends StatelessWidget {
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: COTokens.space6),
-        decoration: BoxDecoration(
-          color: COColors.brand700.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(COTokens.radiusSm),
-          border: Border.all(color: COColors.brand700.withValues(alpha: 0.5)),
-        ),
+      child: SizedBox(
+        width: double.infinity,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // IMAGEM PRINCIPAL DO PROJETO (com Hero para a transição)
             Stack(
               children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(COTokens.radiusSm)),
+                SizedBox(
+                  width: double.infinity,
                   child: Hero(
                     tag: heroTag,
                     child: Material(
@@ -228,52 +216,27 @@ class ObraCardWidget extends StatelessWidget {
               ],
             ),
             Padding(
-              padding: const EdgeInsets.all(COTokens.space4),
+              padding: const EdgeInsets.all(COTokens.cardPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // NOME DO PROJETO
                   Text(
                     obra.title,
-                    style: const TextStyle(
-                      color: COColors.white,
-                      fontSize: 16,
-                      fontWeight: COTokens.fwBold,
-                    ),
+                    style: COText.h2.copyWith(fontWeight: COTokens.fwBold),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
 
-                  // CIDADE
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined, color: COColors.brand300, size: 14),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          obra.location,
-                          style: const TextStyle(color: COColors.brand300, fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
+                  CoLinhaInfo(icone: Icons.location_on_outlined, texto: obra.location),
 
-                  // DATA PREVISTA DE CONCLUSÃO
-                  if (obra.dataFim != null && obra.dataFim!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.calendar_today_outlined, color: COColors.brand300, size: 12),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Data Prevista de Conclusão: ${obra.dataFim}',
-                            style: const TextStyle(color: COColors.brand300, fontSize: 11),
-                          ),
-                        ],
-                      ),
+                  // Só o ano: a data inteira ("2028-12-31") não acrescenta nada
+                  // num cartão, e é por ano que se lê em todo o lado.
+                  if (obra.anoFim != null)
+                    CoLinhaInfo(
+                      icone: Icons.calendar_today_outlined,
+                      texto: 'Conclusão prevista: ${obra.anoFim}',
                     ),
 
                   const SizedBox(height: COTokens.space6),

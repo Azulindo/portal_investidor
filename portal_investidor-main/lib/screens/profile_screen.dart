@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import '../widgets/co_card.dart';
 import '../widgets/co_drawer.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
@@ -230,56 +231,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: COTokens.space8),
 
             // KPIs
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(COTokens.space6),
-                    decoration: BoxDecoration(
-                      color: COColors.brand700,
-                      borderRadius: BorderRadius.circular(COTokens.radiusSm),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('TOTAL INVESTIDO',
-                            style: TextStyle(
-                                color: COColors.neutral500, fontSize: 11, fontWeight: COTokens.fwMedium, letterSpacing: 1)),
-                        const SizedBox(height: COTokens.space2),
-                        Text('${totalInvestido.toStringAsFixed(2)} €',
-                            style: const TextStyle(color: COColors.brand300, fontSize: 20, fontWeight: COTokens.fwBold)),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: COTokens.space4),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(COTokens.space6),
-                    decoration: BoxDecoration(
-                      color: COColors.brand700,
-                      borderRadius: BorderRadius.circular(COTokens.radiusSm),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('EMPREENDIMENTOS',
-                            style: TextStyle(
-                                color: COColors.neutral500, fontSize: 11, fontWeight: COTokens.fwMedium, letterSpacing: 1)),
-                        const SizedBox(height: COTokens.space2),
-                        Text('$nEmpreendimentos',
-                            style: const TextStyle(color: COColors.brand300, fontSize: 20, fontWeight: COTokens.fwBold)),
-                      ],
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: CoCard(
+                      margin: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const CoOverline('Total investido', espacoAbaixo: COTokens.space2),
+                          Text(
+                            '${totalInvestido.toStringAsFixed(2)} €',
+                            style: COText.valor,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: COTokens.space4),
+                  Expanded(
+                    child: CoCard(
+                      margin: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const CoOverline('Empreendimentos', espacoAbaixo: COTokens.space2),
+                          Text('$nEmpreendimentos', style: COText.valor),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: COTokens.space8),
+            const SizedBox(height: COTokens.space9),
 
-            const Text('OPÇÕES',
-                style: TextStyle(color: COColors.neutral500, fontSize: 11, fontWeight: COTokens.fwBold, letterSpacing: 1.5)),
-            const SizedBox(height: COTokens.space4),
+            const CoOverline('Opções'),
 
             _buildMenuItem(Icons.person, 'Os Meus Dados', () {
               ScaffoldMessenger.of(context).showSnackBar(
