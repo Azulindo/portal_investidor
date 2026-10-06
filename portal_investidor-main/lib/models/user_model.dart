@@ -448,11 +448,27 @@ class ProjectDetailModel {
 
   /// A galeria do empreendimento: interiores e exteriores, sem as fotos de obra.
   List<String> get galeria =>
-      _visiveis.where((i) => !i.eDeObra).map((i) => i.imageUrl).toList();
+      imagensDaGaleria.map((i) => i.imageUrl).toList();
 
   /// O acompanhamento da construção.
   List<String> get galeriaDeObra =>
-      _visiveis.where((i) => i.eDeObra).map((i) => i.imageUrl).toList();
+      imagensDeObra.map((i) => i.imageUrl).toList();
+
+  /// As mesmas imagens da [galeria], mas com a categoria e a descrição —
+  /// para quem precisa de mostrar a que grupo pertence cada uma.
+  List<ProjectImage> get imagensDaGaleria =>
+      _visiveis.where((i) => !i.eDeObra).toList();
+
+  List<ProjectImage> get imagensDeObra =>
+      _visiveis.where((i) => i.eDeObra).toList();
+
+  /// Só vale a pena identificar a categoria quando existem imagens dos dois
+  /// tipos. Com só exteriores, dizer "exterior" em todas não informa nada.
+  /// É a mesma decisão que o site toma (separarGaleria).
+  bool get galeriaTemInteriorEExterior {
+    final cats = imagensDaGaleria.map((i) => i.category).toSet();
+    return cats.contains('interior') && cats.contains('exterior');
+  }
 
   List<String> galeriaDe(String categoria) =>
       _visiveis.where((i) => i.category == categoria).map((i) => i.imageUrl).toList();

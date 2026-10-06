@@ -7,6 +7,8 @@ import '../models/user_model.dart';
 import '../utils/ui_helpers.dart';
 import '../widgets/secao_acabamentos.dart';
 import '../widgets/secao_fracoes.dart';
+import '../widgets/secao_galeria_obra.dart';
+import '../widgets/visualizador_imagens.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
   final int projectId;
@@ -130,6 +132,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             }
           }
 
+          // Categoria de cada imagem do carrossel, pela mesma ordem. Fica a
+          // partir da galeria verdadeira, e não da lista acima, que pode ter
+          // sido preenchida com a imagem de recurso.
+          final categorias =
+              project.imagensDaGaleria.map((i) => i.category).toList();
+          final mostrarCategoria = project.galeriaTemInteriorEExterior;
+
           final titulo = info.name;
           final descricao = info.description;
           final status = info.status;
@@ -214,6 +223,34 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             ),
                           ),
                         ),
+
+                        // ETIQUETA DA CATEGORIA DA IMAGEM
+                        //
+                        // O site parte a galeria em duas secções, "Galeria ·
+                        // Exterior" e "Galeria · Interior". Num telemóvel dois
+                        // carrosséis seguidos só obrigam a rolar mais, por isso
+                        // aqui o carrossel é um só e diz a que grupo pertence a
+                        // imagem que está à vista. Só aparece quando há imagens
+                        // dos dois tipos — com só exteriores não informa nada,
+                        // que é a mesma decisão do site (separarGaleria).
+                        if (mostrarCategoria && _paginaAtual < categorias.length)
+                          Positioned(
+                            top: COTokens.space4,
+                            left: COTokens.space4,
+                            child: IgnorePointer(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                                child: Text(
+                                  categorias[_paginaAtual].toUpperCase(),
+                                  style: COText.overline.copyWith(color: COColors.white),
+                                ),
+                              ),
+                            ),
+                          ),
 
                         // SETAS DE NAVEGAÇÃO DA GALERIA
                         if (galeria.length > 1) ...[
@@ -320,6 +357,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           const Text('SOBRE O PROJETO', style: TextStyle(color: COColors.neutral500, fontSize: 12, fontWeight: COTokens.fwBold, letterSpacing: 1.5)),
                           const SizedBox(height: COTokens.space4),
                           Text(descricao, style: const TextStyle(color: COColors.brand300, fontSize: 16, height: 1.6)),
+
+                          // GALERIA DA OBRA (imagens de categoria "obra").
+                          // No site vem antes da timeline, pela mesma razão:
+                          // vê-se a obra e depois lê-se em que fase está.
+                          if (project.imagensDeObra.isNotEmpty) ...[
+                            const SizedBox(height: COTokens.space9),
+                            SecaoGaleriaObra(imagens: project.imagensDeObra),
+                          ],
 
                           const SizedBox(height: 32),
 
@@ -442,34 +487,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                             if (indexNaGaleria != -1) {
                                               _irParaImagem(indexNaGaleria, galeria.length);
                                             } else {
-                                              showDialog(
-                                                context: context,
-                                                builder: (context) => Dialog(
-                                                  backgroundColor: Colors.transparent,
-                                                  insetPadding: const EdgeInsets.all(16),
-                                                  child: Stack(
-                                                    alignment: Alignment.center,
-                                                    children: [
-                                                      InteractiveViewer(
-                                                        panEnabled: true,
-                                                        minScale: 0.5,
-                                                        maxScale: 4,
-                                                        child: ClipRRect(
-                                                          borderRadius: BorderRadius.circular(COTokens.radiusSm),
-                                                          child: Image.network(step.imageUrl!, fit: BoxFit.contain),
-                                                        ),
-                                                      ),
-                                                      Positioned(
-                                                        top: 0,
-                                                        right: 0,
-                                                        child: IconButton(
-                                                          icon: const Icon(Icons.cancel, color: Colors.white, size: 30),
-                                                          onPressed: () => Navigator.of(context).pop(),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
+                                              // A foto deste passo não está na
+                                              // galeria do empreendimento (é só
+                                              // da timeline): abre sozinha, no
+                                              // mesmo visualizador das outras.
+                                              VisualizadorImagens.abrir(
+                                                context,
+                                                imagens: [step.imageUrl!],
+                                                legendas: [step.name],
                                               );
                                             }
                                           },
