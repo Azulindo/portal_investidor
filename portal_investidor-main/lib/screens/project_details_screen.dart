@@ -9,7 +9,9 @@ import '../utils/video.dart';
 import '../widgets/secao_acabamentos.dart';
 import '../widgets/secao_fracoes.dart';
 import '../widgets/secao_galeria_obra.dart';
+import '../widgets/secao_localizacao.dart';
 import '../widgets/secao_lugar.dart';
+import '../widgets/secao_outros_empreendimentos.dart';
 import '../widgets/secao_video.dart';
 import '../widgets/visualizador_imagens.dart';
 
@@ -560,6 +562,20 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             const SizedBox(height: COTokens.space9),
                             SecaoAcabamentos(acabamentos: project.finishes),
                           ],
+
+                          // ONDE FICA — mapa só deste empreendimento. No site
+                          // vem depois da timeline e antes das frações; aqui
+                          // ficou mais abaixo, porque as frações são o que a
+                          // pessoa vem ver e um mapa pelo meio afastava-as.
+                          const SizedBox(height: COTokens.space9),
+                          SecaoLocalizacao(info: info),
+
+                          // OUTROS EMPREENDIMENTOS — como no site, fecha a
+                          // página.
+                          const SizedBox(height: COTokens.space9),
+                          SecaoOutrosEmpreendimentos(
+                            projectIdAtual: widget.projectId,
+                          ),
 
                           // Aqui estava o botão "MANIFESTAR INTERESSE". Dizia
                           // "Interesse registado! Um gestor irá contactá-lo."
