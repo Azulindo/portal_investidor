@@ -16,7 +16,13 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 /// Android.
 class ApiConfig {
   /// Dados de exemplo em vez da API. Útil sem rede ou com a API em baixo.
-  static bool useMock = false;
+  ///
+  /// Liga-se no arranque, sem editar nada:
+  ///   flutter run --dart-define=USE_MOCK=true
+  ///
+  /// Assim o repositório fica sempre a apontar à API a sério, e não há o
+  /// risco de alguém fazer commit com os dados de exemplo ligados.
+  static bool useMock = const bool.fromEnvironment('USE_MOCK');
 
   static const String _baseUrlDefinido = String.fromEnvironment('API_BASE_URL');
 
