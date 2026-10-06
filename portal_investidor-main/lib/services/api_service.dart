@@ -203,7 +203,10 @@ class ApiService {
           id: idAtual,
           name: '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim(),
           email: userData['email']?.toString() ?? '',
-          totalInvested: 0.0,
+          // Soma dos totais de todas as encomendas do cliente. Estava fixo a
+          // 0.0 e por isso o painel mostrava sempre zero, apesar de a API
+          // mandar o valor.
+          totalInvested: double.tryParse(data['totalInvested']?.toString() ?? '') ?? 0.0,
           roiEsperado: null,
           createdAt: DateTime.now(),
           obras: obrasConvertidas,
@@ -339,8 +342,21 @@ class ApiService {
 
   /// GET /api/document/attachment/:id/token
   /// Pede ao servidor um URL de download de curta duração (token na query string).
+  ///
+  /// ATENÇÃO: estas rotas estão comentadas na API neste momento ("desativado
+  /// temporariamente — TODO: desenvolver esta parte mais tarde"), por isso
+  /// chamá-las dá 404. O código fica feito; quando voltarem, é só pôr
+  /// ApiConfig.downloadDeAnexosDisponivel a true.
   Future<String> getAttachmentUrl(int attachmentId) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/document/attachment/$attachmentId/token');
+    if (!ApiConfig.downloadDeAnexosDisponivel) {
+      throw ApiException(
+        'O download de documentos ainda não está disponível no servidor.',
+        statusCode: 501,
+      );
+    }
+
+    final url = Uri.parse(
+        '${ApiConfig.baseUrl}${ApiConfig.attachmentTokenEndpoint(attachmentId)}');
     final response = await http
         .get(url, headers: await _authHeaders())
         .timeout(ApiConfig.connectionTimeout);
@@ -352,7 +368,7 @@ class ApiService {
     final parsed = jsonDecode(response.body);
     final token = parsed['data']?['token'] as String?;
     if (token == null) throw ApiException('Token de download não encontrado na resposta');
-    return '${ApiConfig.baseUrl}/document/attachment/$attachmentId?token=$token';
+    return ApiConfig.attachmentDownloadUrl(attachmentId, token);
   }
 
   // ============================================================

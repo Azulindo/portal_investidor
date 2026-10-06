@@ -5,9 +5,18 @@ Este documento define o contrato real da API do backend do Portal Investidor
 
 ## Base URL
 
-- **Desenvolvimento (emulador Android)**: `http://10.0.2.2:3000/api`
-- **Desenvolvimento (dispositivo físico / rede local)**: `http://<IP_DA_MÁQUINA>:3000/api`
-- **Produção**: a definir (`ApiConfig.baseUrlProd`)
+Definido em `lib/config/api_config.dart`. Pode ser fixado na compilação:
+
+```
+flutter run --dart-define=API_BASE_URL=http://<IP_DA_MAQUINA>:3000/api
+```
+
+Sem esse valor, cada plataforma usa o seu caminho para o localhost da máquina
+de desenvolvimento:
+
+- **Emulador Android**: `http://10.0.2.2:3000/api`
+- **iOS, Windows, macOS, Linux e web**: `http://localhost:3000/api`
+- **Dispositivo físico**: tem de ser o IP da máquina, via `--dart-define`.
 
 ## Headers
 
@@ -286,14 +295,17 @@ Authorization: Bearer <token>
 
 ### 5. GET /project/details
 
-Obtém os detalhes completos de um projeto específico (info, etapas e
-galeria de imagens), para o ecrã de detalhe do projeto. Requer
-`Authorization: Bearer <token>`.
+Detalhes completos de um projeto: informação, etapas, galeria, frações e
+acabamentos.
+
+**Rota pública, com autenticação opcional** (`optionalAuth`). Sem token
+responde na mesma, mas o **preço das frações vem `null`** — é assim que o site
+mostra "Registe-se para ver". Com token válido, os preços vêm preenchidos.
 
 **Request:**
 ```
 GET /project/details?projectId=101
-Authorization: Bearer <token>
+Authorization: Bearer <token>        (opcional)
 ```
 
 **Response (200 OK):**
@@ -310,39 +322,67 @@ Authorization: Bearer <token>
         "address": "Rua Barão do Corvo",
         "city": "Vila Nova de Gaia",
         "status": "Em Construção",
-        "currentStepId": 2,
+        "currentStep": 2,
         "description": "Edifício com apartamentos T2 e T1 Smart...",
         "startDate": "2023-03-01",
         "endDate": "2027-12-31",
-        "mainImageUrl": "https://framerusercontent.com/images/KN2dkpL3HkRWu6d8vX5TSAnKxs.jpg?width=800"
+        "mainImageUrl": "https://.../capa.jpg",
+        "descriptionImageUrl": "https://.../conceito.jpg",
+        "forSale": true,
+        "latitude": 41.1234,
+        "longitude": -8.6123,
+        "videoUrl": "https://www.youtube.com/watch?v=...",
+        "zoneTitle": "Uma vila da Feira, entre o verde e a cidade",
+        "zoneDescription": "Canedo é uma vila de Santa Maria da Feira...",
+        "zoneNearbyInfrastructures": ["Escolas", "Centro de saúde"],
+        "zoneNearbyLocations": [
+          { "name": "Porto (centro)", "time": "25–30 min" }
+        ]
       }
     ],
     "projectSteps": [
       {
-        "stepId": 1,
+        "id": 1,
         "stepOrder": 1,
         "name": "Início de Obra",
-        "description": "Início de Obra",
-        "imageUrl": "https://cleveroption.pt/images/theluxor/obra-inicio.jpg"
-      },
-      {
-        "stepId": 2,
-        "stepOrder": 2,
-        "name": "Estrutura em Betão",
-        "description": "Estrutura em Betão",
-        "imageUrl": "https://cleveroption.pt/images/theluxor/obra-estrutura.jpg"
+        "description": "Escavação e fundações.",
+        "imageUrl": "https://.../obra-inicio.jpg"
       }
     ],
     "projectImages": [
       {
         "imageId": 1,
-        "imageUrl": "https://framerusercontent.com/images/KN2dkpL3HkRWu6d8vX5TSAnKxs.jpg?width=800",
-        "imageDescription": "Destaque - Fachada principal do The Luxor"
-      },
+        "imageUrl": "https://.../fachada.jpg",
+        "imageDescription": "Fachada principal",
+        "category": "exterior",
+        "active": true,
+        "sortOrder": 0
+      }
+    ],
+    "projectFractions": [
       {
-        "imageId": 2,
-        "imageUrl": "https://framerusercontent.com/images/dXdoQc1BRGX8UzfrUaoBivYjjZA.jpg?width=800",
-        "imageDescription": "Fachada"
+        "fractionId": 1,
+        "projectId": 101,
+        "fractionNumber": "G",
+        "type": "T1",
+        "totalArea": 45.11,
+        "garageArea": 12,
+        "balconyArea": 1.73,
+        "price": null,
+        "status": "Disponível",
+        "block": 1,
+        "floor": "1",
+        "orientation": "norte",
+        "floorPlanUrl": "https://.../planta-g.pdf"
+      }
+    ],
+    "projectFinishes": [
+      {
+        "finishId": 1,
+        "categoryId": 3,
+        "categoryName": "Instalações sanitárias",
+        "imageUrl": "https://.../wc.jpg",
+        "details": ["Pavimento: ...", "Paredes: ..."]
       }
     ]
   }
@@ -350,10 +390,16 @@ Authorization: Bearer <token>
 ```
 
 **Notas:**
-- `projectInfo` é um **array** (sem `LIMIT 1`); o cliente deve usar `projectInfo[0]`. Se o projeto não existir, este array vem vazio.
-- `projectSteps` usa a chave **`stepId`** (diferente de `/project/portfolio`, que usa `id`). A imagem associada a cada etapa vem em `imageUrl` e pode ser `null`.
-- `projectImages` é a galeria completa de imagens do projeto (capa + restantes), cada entrada com `imageId`, `imageUrl` e `imageDescription` (pode ser `null`).
-- `mainImageUrl` em `projectInfo[0]` pode ser `null`; nesse caso o cliente deve fazer fallback para a primeira entrada de `projectImages`, ou para a imagem que já tinha em cache (ex: vinda do portfólio).
+- `projectInfo` é um **array** (sem `LIMIT 1`); usar `projectInfo[0]`. Se o projeto não existir, vem vazio.
+- `currentStep` é um **`stepOrder`**, não o `id` de um passo. Compara-se com `steps[].stepOrder`.
+- `projectSteps` usa `id` (igual a `/project/portfolio` e `/user/{id}`).
+- **`projectImages[].category`** separa as três galerias: `"exterior"`, `"interior"` e `"obra"`. A de obra é o acompanhamento da construção — antes vinha das fotos dos passos da timeline, agora tem categoria própria. Respeitar `active` (não mostrar as inativas) e `sortOrder` (ordem definida no backoffice).
+- **`projectFractions[].price` vem `null` num pedido sem token.** Não é um erro nem zero: é o preço escondido. Mostrar "Registe-se para ver".
+- `projectFractions[].floor` é **texto**, não número — há pisos como `"Vale"` ou `"R/C"`.
+- `projectFractions[].block` é `null` quando o empreendimento só tem um edifício.
+- `projectFinishes` já vem agrupado por categoria, com os itens em `details`.
+- `latitude`/`longitude` podem vir a `0` quando o projeto não tem morada marcada — tratar como "sem coordenadas" e não desenhar no mapa.
+- `mainImageUrl` pode ser `null`; nesse caso usar a primeira entrada de `projectImages`, ou a imagem que já se tinha do portfólio.
 
 **Response (400 Bad Request) — `projectId` ausente ou inválido:**
 ```json
@@ -397,13 +443,57 @@ mensagem do erro original.
 
 ---
 
-## Endpoints Planeados (ainda não implementados)
+## 6. Documentos
 
-Os seguintes endpoints fazem parte do produto mas **não existem no backend
-atual** — não devem ser chamados pelo cliente até serem implementados:
+Ambos exigem `Authorization: Bearer <token>`.
+
+### GET /document/list
+
+Faturas do cliente autenticado, com os anexos de cada uma. É o que alimenta o
+ecrã "Documentos".
+
+Cada entrada: `id`, `name`, `date`, `paymentState`, `amountTotal` e
+`attachments[]` (`id`, `resId`, `name`, `mimetype`, `storeFName`).
+
+`paymentState` vem do Odoo: `paid`, `not_paid`, `partial`, `in_payment`,
+`reversed`.
+
+### GET /document/sale-orders
+
+As encomendas do cliente, cada uma com as suas faturas. Traz a ligação ao
+empreendimento (`projectName`) e as frações compradas, que a `/document/list`
+não tem. É o que o site usa no painel do investidor.
+
+Cada entrada: `id`, `name`, `projectName`, `fractions[]`, `amountTotal`,
+`date`, `invoices[]` — e cada fatura com `amountTotal`, `amountResidual`,
+`paymentState` e `attachments[]`.
+
+> `amountResidual` só é de confiança em faturas `paid` e `partial`. Nas
+> `not_paid` umas trazem o total e outras zero, por isso contam como 0 pago.
+
+---
+
+## Endpoints Desativados
+
+Existem no código da API mas com as rotas **comentadas**
+(`src/routes/document.ts`: "desativado temporariamente — TODO: desenvolver
+esta parte mais tarde"). Chamá-los dá 404:
+
+- `GET /document/attachment/:id/token` — gerar URL de download temporário
+- `GET /document/attachment/:id` — descarregar o anexo
+
+Do lado da app, o código está escrito e trancado atrás de
+`ApiConfig.downloadDeAnexosDisponivel`. Quando as rotas voltarem, basta pôr
+essa constante a `true`.
+
+---
+
+## Endpoints Planeados (ainda não implementados)
 
 - `POST /tickets` — criar ticket de suporte
 - `GET /tickets` — listar tickets do utilizador autenticado
+- `GET /notification` — notificações da empresa para o utilizador (ver
+  `docs/notificacoes-api.md` no repositório do site)
 
 Quando forem implementados, devem seguir o mesmo envelope `status` /
 `message` / `code` / `data` descrito acima, com `data` sempre um array
@@ -415,9 +505,9 @@ Quando forem implementados, devem seguir o mesmo envelope `status` /
 
 1. **Envelope consistente**: toda a resposta (sucesso ou erro) inclui `status`, `message` e `code`; o corpo útil vem em `data`.
 2. **Arrays nunca null**: campos de array (`projects`, `projectSteps`, `projectImages`, `userData`, etc.) devem ser `[]` em vez de `null` quando vazios.
-3. **Autenticação**: todos os endpoints `/user/*` e `/project/*` exigem `Authorization: Bearer <token>`, obtido em `/auth/login`. Tokens expiram (atualmente `1d`).
+3. **Autenticação**: `/user/*` e `/document/*` exigem `Authorization: Bearer <token>`, obtido em `/auth/login`. Tokens expiram (atualmente `1d`). **`/project/*` é público**: `/portfolio` não pede nada e `/details` tem autenticação opcional — o token só serve para revelar o preço das frações.
 4. **IDs consistentes entre endpoints**: o `id` devolvido em `/project/portfolio` é o mesmo a usar em `/project/details?projectId=<id>` e corresponde ao `id` de cada projeto em `/user/{id}` (`data.projects[].id`).
-5. **Chaves de "step" inconsistentes** (a corrigir no futuro): `/project/portfolio` e `/user/{id}` usam `steps[].id`, enquanto `/project/details` usa `projectSteps[].stepId` para o mesmo conceito (id do passo).
+5. **Chaves de "step" já uniformes**: `/project/portfolio`, `/user/{id}` e `/project/details` usam todos `id`. (O `stepId` de `/project/details` foi corrigido.)
 6. **Números com default**: campos numéricos como `totalInvested`, `roiEsperado`, `valor` (quando existirem) devem ter valor `0.0` se `null`.
 7. **Strings com default**: campos de texto devem ter valores padrão descritivos (ex: `"Título não informado"`) quando ausentes.
 8. **Datas**: usar formato ISO 8601 ou `YYYY-MM-DD` (campos `date` do Postgres, ex: `startDate`, `endDate`).
