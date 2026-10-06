@@ -5,8 +5,10 @@ import '../screens/contactos_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/portfolio_screen.dart';
 import '../screens/documents_screen.dart';
+import '../screens/privacidade_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/map_screen.dart';
+import '../screens/sobre_screen.dart';
 
 class CoDrawer extends StatelessWidget {
   const CoDrawer({super.key});
@@ -60,6 +62,17 @@ class CoDrawer extends StatelessWidget {
             onTap: () => _navegarSuave(context, const PortfolioScreen()),
           ),
           ListTile(
+            leading: const Icon(Icons.sell_outlined, color: COColors.white),
+            title: const Text('EM COMERCIALIZAÇÃO', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            // No site é uma página à parte, mas a lista é a mesma do
+            // portfólio com o filtro ligado — abre-se já filtrado em vez de
+            // se duplicar o ecrã.
+            onTap: () => _navegarSuave(
+              context,
+              const PortfolioScreen(apenasAVendaInicial: true),
+            ),
+          ),
+          ListTile(
             leading: const Icon(Icons.map_outlined, color: COColors.white),
             title: const Text('MAPA', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
             onTap: () => _navegarSuave(context, const MapScreen()),
@@ -82,9 +95,19 @@ class CoDrawer extends StatelessWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.info_outline, color: COColors.white),
+            title: const Text('SOBRE NÓS', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            onTap: () => _navegarSuave(context, const SobreScreen()),
+          ),
+          ListTile(
             leading: const Icon(Icons.alternate_email_outlined, color: COColors.white),
             title: const Text('CONTACTOS', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
             onTap: () => _navegarSuave(context, const ContactosScreen()),
+          ),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined, color: COColors.white),
+            title: const Text('PRIVACIDADE', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            onTap: () => _navegarSuave(context, const PrivacidadeScreen()),
           ),
         ],
       ),

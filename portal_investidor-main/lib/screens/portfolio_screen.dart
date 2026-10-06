@@ -18,7 +18,15 @@ import 'project_details_screen.dart';
 /// Os cálculos (grupos de estado, ordem, progresso, contagens) estão em
 /// utils/portfolio.dart e são os mesmos do site.
 class PortfolioScreen extends StatefulWidget {
-  const PortfolioScreen({super.key});
+  const PortfolioScreen({super.key, this.apenasAVendaInicial = false});
+
+  /// Abre já com o filtro de comercialização ligado.
+  ///
+  /// É o que o menu usa para "Em comercialização". No site isso é uma página
+  /// à parte, mas a lista é exatamente a mesma do portfólio filtrado — fazer
+  /// aqui um segundo ecrã era duplicar tudo para o mesmo resultado, e cada
+  /// regra nova teria de ser mudada em dois sítios.
+  final bool apenasAVendaInicial;
 
   @override
   State<PortfolioScreen> createState() => _PortfolioScreenState();
@@ -45,6 +53,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   @override
   void initState() {
     super.initState();
+    _apenasAVenda = widget.apenasAVendaInicial;
     _portfolioFuture = ApiService().buscarPortfolio();
   }
 
