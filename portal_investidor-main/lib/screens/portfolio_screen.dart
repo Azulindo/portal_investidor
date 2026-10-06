@@ -33,15 +33,9 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     await _portfolioFuture.catchError((_) => <dynamic>[]);
   }
 
-  String _obterStatus(Map<String, dynamic> project) {
-    switch (project['status']?.toString() ?? '') {
-      case 'Desenvolvimento': return 'Em Desenvolvimento';
-      case 'Construção': return 'Em Construção';
-      case 'Concluído': return 'Concluído';
-      default: return 'Desconhecido';
-    }
-  }
-
+  // _obterStatus saiu: traduzia o estado da API para a etiqueta do cartão, mas
+  // o cartão usa UIHelpers.buildStatusBadge com o valor cru e já ninguém o
+  // chamava — o resultado era calculado e deitado fora.
 
   @override
   Widget build(BuildContext context) {
@@ -152,10 +146,15 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       final id = int.tryParse(project['id']?.toString() ?? '') ?? 0;
                       final titulo = project['name']?.toString() ?? 'Projeto sem título';
                       final cidade = project['city']?.toString() ?? '';
-                      final status = _obterStatus(project);
                       final imageUrl = project['mainImageUrl']?.toString() ?? '';
-                      final startDate = project['startDate']?.toString() ?? '';
-                      final endDate = project['endDate']?.toString() ?? '';
+                      // Só o ano: a API devolve a data inteira ("2028-12-31"),
+                      // mas é por ano que a conclusão se lê em todo o lado.
+                      // E não se mostra o início, porque /project/portfolio
+                      // não traz startDate — só /project/details é que traz.
+                      final anoFim = RegExp(r'\d{4}')
+                          .firstMatch(project['endDate']?.toString() ?? '')
+                          ?.group(0);
+                      final fracoes = int.tryParse(project['nFractions']?.toString() ?? '');
                       final projectKey = 'hero-portfolio-$index';
 
                       return GestureDetector(
@@ -240,20 +239,23 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                                         const SizedBox(width: 4),
                                         Expanded(child: Text(cidade, style: const TextStyle(color: COColors.brand300, fontSize: 12), overflow: TextOverflow.ellipsis)),
                                       ]),
-                                    if (startDate.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Row(children: [
-                                        const Icon(Icons.play_circle_outline, color: COColors.brand300, size: 13),
-                                        const SizedBox(width: 4),
-                                        Text('Início: $startDate', style: const TextStyle(color: COColors.brand300, fontSize: 12)),
-                                      ]),
-                                    ],
-                                    if (endDate.isNotEmpty) ...[
+                                    if (anoFim != null) ...[
                                       const SizedBox(height: 4),
                                       Row(children: [
                                         const Icon(Icons.calendar_today_outlined, color: COColors.brand300, size: 12),
                                         const SizedBox(width: 4),
-                                        Text('Conclusão prevista: $endDate', style: const TextStyle(color: COColors.brand300, fontSize: 12)),
+                                        Text('Conclusão prevista: $anoFim', style: const TextStyle(color: COColors.brand300, fontSize: 12)),
+                                      ]),
+                                    ],
+                                    if (fracoes != null) ...[
+                                      const SizedBox(height: 4),
+                                      Row(children: [
+                                        const Icon(Icons.home_work_outlined, color: COColors.brand300, size: 13),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '$fracoes ${fracoes == 1 ? 'fração' : 'frações'}',
+                                          style: const TextStyle(color: COColors.brand300, fontSize: 12),
+                                        ),
                                       ]),
                                     ],
                                   ],

@@ -58,7 +58,9 @@ class _MapScreenState extends State<MapScreen> {
     for (final project in _projects) {
       final lat = (project['latitude'] as num?)?.toDouble();
       final lng = (project['longitude'] as num?)?.toDouble();
-      if (lat == null || lng == null) continue;
+      // A API manda 0/0 quando o projeto não tem morada marcada. Sem este
+      // salto, esses projetos apareciam ao largo de África.
+      if (lat == null || lng == null || (lat == 0 && lng == 0)) continue;
       final status = project['status'] as String?;
       final color = _corPorStatus(status);
       final nome = project['name'] as String? ?? 'Projeto';
@@ -225,7 +227,8 @@ class _MapScreenState extends State<MapScreen> {
     for (final project in _projects) {
       final lat = (project['latitude'] as num?)?.toDouble();
       final lng = (project['longitude'] as num?)?.toDouble();
-      if (lat == null || lng == null) continue;
+      // Mesmo critério dos marcadores: 0/0 é "sem morada", não é o Atlântico.
+      if (lat == null || lng == null || (lat == 0 && lng == 0)) continue;
 
       final ponto = LatLng(lat, lng);
       final pos = camera.latLngToScreenOffset(ponto);

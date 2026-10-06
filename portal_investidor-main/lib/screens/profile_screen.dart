@@ -183,7 +183,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final name = ApiService.dadosLogado?.name ?? 'Investidor';
     final email = ApiService.dadosLogado?.email ?? 'Sem email associado';
     final totalInvestido = ApiService.dadosLogado?.totalInvested ?? 0.0;
-    final roiEsperado = ApiService.dadosLogado?.roiEsperado ?? 0.0;
+    // O ROI saiu: a API não tem campo nenhum para isso, por isso aparecia
+    // sempre "0,0%" a toda a gente. No lugar fica o número de empreendimentos,
+    // que vem mesmo de /user/:id.
+    final nEmpreendimentos = ApiService.dadosLogado?.obras.length ?? 0;
 
     return Scaffold(
       backgroundColor: COColors.brand900,
@@ -260,11 +263,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('ROI ESPERADO',
+                        const Text('EMPREENDIMENTOS',
                             style: TextStyle(
                                 color: COColors.neutral500, fontSize: 11, fontWeight: COTokens.fwMedium, letterSpacing: 1)),
                         const SizedBox(height: COTokens.space2),
-                        Text('${roiEsperado.toStringAsFixed(1)}%',
+                        Text('$nEmpreendimentos',
                             style: const TextStyle(color: COColors.brand300, fontSize: 20, fontWeight: COTokens.fwBold)),
                       ],
                     ),
