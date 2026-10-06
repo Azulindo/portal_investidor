@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import '../screens/contactos_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/portfolio_screen.dart';
 import '../screens/documents_screen.dart';
@@ -79,6 +80,11 @@ class CoDrawer extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
             },
+          ),
+          ListTile(
+            leading: const Icon(Icons.alternate_email_outlined, color: COColors.white),
+            title: const Text('CONTACTOS', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            onTap: () => _navegarSuave(context, const ContactosScreen()),
           ),
         ],
       ),
