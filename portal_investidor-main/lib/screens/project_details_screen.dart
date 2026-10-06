@@ -5,9 +5,12 @@ import '../theme/co_tokens.dart';
 import '../services/api_service.dart';
 import '../models/user_model.dart';
 import '../utils/ui_helpers.dart';
+import '../utils/video.dart';
 import '../widgets/secao_acabamentos.dart';
 import '../widgets/secao_fracoes.dart';
 import '../widgets/secao_galeria_obra.dart';
+import '../widgets/secao_lugar.dart';
+import '../widgets/secao_video.dart';
 import '../widgets/visualizador_imagens.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
@@ -138,6 +141,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           final categorias =
               project.imagensDaGaleria.map((i) => i.category).toList();
           final mostrarCategoria = project.galeriaTemInteriorEExterior;
+
+          // As duas secções novas decidem-se sozinhas, mas o espaçamento que
+          // as precede fica aqui, por isso precisa de saber de antemão.
+          final temLugar = (info.zoneTitle?.trim().isNotEmpty ?? false) ||
+              (info.zoneDescription?.trim().isNotEmpty ?? false) ||
+              info.zoneNearbyInfrastructures.isNotEmpty ||
+              info.zoneNearbyLocations.isNotEmpty;
+          final temVideo = Video.idDoYoutube(info.videoUrl) != null;
 
           final titulo = info.name;
           final descricao = info.description;
@@ -358,6 +369,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           const SizedBox(height: COTokens.space4),
                           Text(descricao, style: const TextStyle(color: COColors.brand300, fontSize: 16, height: 1.6)),
 
+                          // O LUGAR — a envolvente (campos zone* de
+                          // projectInfo). No site vem logo depois da
+                          // descrição, antes das galerias.
+                          if (temLugar) ...[
+                            const SizedBox(height: COTokens.space9),
+                            SecaoLugar(info: info),
+                          ],
+
                           // GALERIA DA OBRA (imagens de categoria "obra").
                           // No site vem antes da timeline, pela mesma razão:
                           // vê-se a obra e depois lê-se em que fase está.
@@ -520,6 +539,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 );
                               },
                             ),
+                          ],
+
+                          // VÍDEO — no site aparece logo abaixo dos passos
+                          // da timeline.
+                          if (temVideo) ...[
+                            const SizedBox(height: COTokens.space9),
+                            SecaoVideo(videoUrl: info.videoUrl),
                           ],
 
                           // FRAÇÕES (projectFractions) e ACABAMENTOS
