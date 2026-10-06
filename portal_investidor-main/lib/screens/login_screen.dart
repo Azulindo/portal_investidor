@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
-import '../theme/co_colors.dart';
-import '../theme/co_tokens.dart';
-import '../services/api_service.dart';
-import '../utils/ui_helpers.dart';
-import 'dashboard_screen.dart';
-import 'package:local_auth/local_auth.dart';
-import '../services/auth_service.dart';
 
+import '../services/api_service.dart';
+import '../services/auth_service.dart';
+import '../utils/validacao_auth.dart';
+import '../widgets/co_auth.dart';
+import 'dashboard_screen.dart';
+import 'recuperar_acesso_screen.dart';
+import 'registo_screen.dart';
+
+/// Início de sessão.
+///
+/// Tem os mesmos caminhos que o /login do site: entrar, criar conta e
+/// recuperar acesso. O botão da biometria saiu daqui — só mostrava
+/// "em manutenção", e um botão que não faz nada é pior do que não existir.
+/// O código do AuthService para isso continua lá, para quando se acabar.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -15,102 +22,113 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _apiService = ApiService();
-  final LocalAuthentication auth = LocalAuthentication();
+  final _form = GlobalKey<FormState>();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
 
-  bool _obscurePassword = true;
+  bool _aEntrar = false;
+  String? _erro;
 
-  void _fazerLogin() async {
-    UIHelpers.showLoadingDialog(context);
-
-    try {
-      final resultado = await _apiService.fazerLoginJson(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      );
-
-      // 👇 SÓ usa o context se o widget ainda estiver montado
-      if (!mounted) return;
-
-      Navigator.pop(context); // fecha o loading
-
-      final bool sucesso = resultado.$1;
-      final String mensagem = resultado.$2;
-      final int? userId = resultado.$3;
-      final String? token = resultado.$4;
-
-      if (sucesso && userId != null) {
-        await AuthService.guardarSessao(userId, token);
-        ApiService.idLogado = userId;
-        ApiService.definirToken(token);
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (c, a1, a2) => const DashboardScreen(),
-            transitionsBuilder: (c, anim, a2, child) => FadeTransition(opacity: anim, child: child),
-            transitionDuration: const Duration(milliseconds: 800),
-          ),
-        );
-      } else {
-        UIHelpers.showErrorSnackBar(context, mensagem);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.pop(context);
-      UIHelpers.showErrorSnackBar(context, 'Ocorreu um erro inesperado.');
-    }
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
   }
 
-  Future<void> _entrarComBiometria() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Biometria em manutenção (Aguarda integração de Cache).'), backgroundColor: Colors.orange),
+  Future<void> _entrar() async {
+    setState(() => _erro = null);
+    if (!(_form.currentState?.validate() ?? false)) return;
+
+    setState(() => _aEntrar = true);
+
+    final (sucesso, mensagem, userId, token) = await ApiService()
+        .fazerLoginJson(_email.text.trim(), _password.text.trim());
+
+    if (!mounted) return;
+
+    if (!sucesso || userId == null) {
+      setState(() {
+        _aEntrar = false;
+        _erro = mensagem;
+      });
+      return;
+    }
+
+    await AuthService.guardarSessao(userId, token);
+    ApiService.idLogado = userId;
+    ApiService.definirToken(token);
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (c, a1, a2) => const DashboardScreen(),
+        transitionsBuilder: (c, anim, a2, child) =>
+            FadeTransition(opacity: anim, child: child),
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
     );
+  }
+
+  void _abrir(Widget ecra) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => ecra));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: COColors.brand900,
-      resizeToAvoidBottomInset: true,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: COTokens.space6, vertical: COTokens.space8),
+    return CoAuthScaffold(
+      titulo: 'Portal do Investidor',
+      subtitulo: 'Acompanhe os seus investimentos imobiliários.',
+      filhos: [
+        if (_erro != null) CoAviso(texto: _erro!),
+        Form(
+          key: _form,
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: COTokens.space8, vertical: COTokens.space4),
-                child: Image.asset('assets/images/logo.png', height: 130, fit: BoxFit.contain),
+              CoCampo(
+                controller: _email,
+                etiqueta: 'Endereço de e-mail',
+                tipo: TextInputType.emailAddress,
+                autofill: const [AutofillHints.email],
+                validador: ValidacaoAuth.email,
               ),
-              const SizedBox(height: COTokens.space8),
-              const Text('PORTAL DO INVESTIDOR', style: TextStyle(color: COColors.brand300, fontSize: 11, fontWeight: COTokens.fwMedium, letterSpacing: 2)),
-              const SizedBox(height: COTokens.space6),
-
-              TextField(
-                controller: _emailController, keyboardType: TextInputType.emailAddress, style: const TextStyle(color: COColors.white, fontSize: 14, fontWeight: COTokens.fwRegular),
-                decoration: InputDecoration(labelText: 'Email', labelStyle: const TextStyle(color: COColors.brand300, fontSize: 13), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(COTokens.radiusSm), borderSide: const BorderSide(color: COColors.brand700)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(COTokens.radiusSm), borderSide: const BorderSide(color: COColors.brand300, width: 1.5)), filled: true, fillColor: COColors.brand700),
+              CoCampo(
+                controller: _password,
+                etiqueta: 'Palavra-passe',
+                password: true,
+                autofill: const [AutofillHints.password],
+                proximo: TextInputAction.done,
+                aoSubmeter: (_) => _entrar(),
+                // No login não se valida a força: a palavra-passe já existe,
+                // as regras aplicam-se a quem a cria.
+                validador: (v) => ValidacaoAuth.obrigatorio(
+                  v,
+                  'Introduza a sua palavra-passe.',
+                ),
               ),
-              const SizedBox(height: COTokens.space4),
-
-              TextField(
-                controller: _passwordController, obscureText: _obscurePassword, style: const TextStyle(color: COColors.white, fontSize: 14, fontWeight: COTokens.fwRegular),
-                decoration: InputDecoration(labelText: 'Password', labelStyle: const TextStyle(color: COColors.brand300, fontSize: 13), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(COTokens.radiusSm), borderSide: const BorderSide(color: COColors.brand700)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(COTokens.radiusSm), borderSide: const BorderSide(color: COColors.brand300, width: 1.5)), filled: true, fillColor: COColors.brand700, suffixIcon: IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: COColors.brand300, size: 20), onPressed: () => setState(() => _obscurePassword = !_obscurePassword))),
+              CoBotao(
+                texto: 'Entrar',
+                aCarregar: _aEntrar,
+                aoCarregar: _entrar,
               ),
-              const SizedBox(height: COTokens.space8),
-
-              SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _fazerLogin, style: ElevatedButton.styleFrom(backgroundColor: COColors.white, padding: const EdgeInsets.symmetric(vertical: 20), shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), elevation: 0), child: const Text('ENTRAR', style: TextStyle(color: COColors.brand900, letterSpacing: 2, fontWeight: COTokens.fwBold, fontSize: 13)))),
-              const SizedBox(height: COTokens.space4),
-
-              GestureDetector(onTap: _entrarComBiometria, child: Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: COColors.brand700.withValues(alpha: 0.3), shape: BoxShape.circle, border: Border.all(color: COColors.brand500)), child: const Icon(Icons.fingerprint_rounded, size: 32, color: COColors.brand300))),
-              const SizedBox(height: 8),
-              const Text('Acesso Rápido', style: TextStyle(color: COColors.brand500, fontSize: 11, letterSpacing: 1)),
             ],
           ),
         ),
-      ),
+      ],
+      rodape: [
+        CoLinkAuth(
+          pergunta: 'Esqueceu-se da palavra-passe?',
+          acao: 'Recuperar acesso',
+          aoCarregar: () => _abrir(const RecuperarAcessoScreen()),
+        ),
+        CoLinkAuth(
+          pergunta: 'Ainda não tem conta?',
+          acao: 'Criar conta',
+          aoCarregar: () => _abrir(const RegistoScreen()),
+        ),
+      ],
     );
   }
 }

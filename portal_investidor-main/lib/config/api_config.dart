@@ -46,9 +46,16 @@ class ApiConfig {
   static String projectDetailsEndpoint(int projectId) =>
       '/project/details?projectId=$projectId';
 
-  // Autenticação.
+  // Autenticação. São os mesmos endpoints que os formulários do site chamam
+  // (no site passam por route handlers em /api/..., mas esses são só proxies
+  // finos para estes).
   static const String loginEndpoint = '/auth/login';
   static const String registerEndpoint = '/auth/register';
+  static const String forgotPasswordEndpoint = '/auth/forgot-password';
+  static const String resetPasswordEndpoint = '/auth/reset-password';
+  static const String resendConfirmationEndpoint = '/auth/resend-confirmation';
+  static String confirmEmailEndpoint(String token) =>
+      '/auth/confirm-email?token=${Uri.encodeQueryComponent(token)}';
 
   // Com sessão.
   static String userEndpoint(int id) => '/user/$id';

@@ -146,23 +146,106 @@ class ApiService {
     }
   }
 
-  Future<(bool, String)> registarJson(String primeiroNome, String ultimoNome, String email, String password) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.registerEndpoint}');
+  /// Cria a conta. A API cria-a INATIVA e envia um email com o link de
+  /// ativação, por isso o sucesso aqui não quer dizer que já se pode entrar.
+  ///
+  /// Os nomes dos campos são os que a API espera (firstName/lastName/...), e
+  /// não os nomes portugueses que estavam aqui antes — com os antigos o
+  /// registo falhava sempre na validação do servidor.
+  Future<(bool, String)> registarJson({
+    required String primeiroNome,
+    required String ultimoNome,
+    required String telemovel,
+    required String email,
+    required String password,
+    required bool aceitouTermos,
+  }) {
+    return _pedidoAuth(
+      ApiConfig.registerEndpoint,
+      {
+        'firstName': primeiroNome,
+        'lastName': ultimoNome,
+        'phone': telemovel,
+        'email': email,
+        'password': password,
+        'acceptedTerms': aceitouTermos,
+      },
+      sucesso: 'Conta criada.',
+      erro: 'Não foi possível criar a conta.',
+    );
+  }
+
+  /// Pede o email de recuperação de palavra-passe.
+  ///
+  /// A resposta é sempre igual, exista ou não a conta — é de propósito, para
+  /// não se poder descobrir quem está registado.
+  Future<(bool, String)> recuperarAcesso(String email) {
+    return _pedidoAuth(
+      ApiConfig.forgotPasswordEndpoint,
+      {'email': email},
+      sucesso: 'Email enviado.',
+      erro: 'Não foi possível enviar o email de recuperação.',
+    );
+  }
+
+  /// Define a nova palavra-passe a partir do token que veio no email.
+  Future<(bool, String)> redefinirPassword(String token, String password) {
+    return _pedidoAuth(
+      ApiConfig.resetPasswordEndpoint,
+      {'token': token, 'password': password},
+      sucesso: 'Palavra-passe alterada.',
+      erro: 'Não foi possível alterar a palavra-passe.',
+    );
+  }
+
+  /// Reenvia o email de confirmação de conta.
+  Future<(bool, String)> reenviarConfirmacao(String email) {
+    return _pedidoAuth(
+      ApiConfig.resendConfirmationEndpoint,
+      {'email': email},
+      sucesso: 'Email reenviado.',
+      erro: 'Não foi possível reenviar o email de confirmação.',
+    );
+  }
+
+  /// POST comum a todos os pedidos de autenticação sem sessão.
+  ///
+  /// Devolve (sucesso, mensagem). Quando a API explica o que está mal
+  /// (email já registado, token expirado), é essa mensagem que passa — só se
+  /// usa o texto genérico quando a resposta não traz nenhuma.
+  Future<(bool, String)> _pedidoAuth(
+    String endpoint,
+    Map<String, dynamic> corpo, {
+    required String sucesso,
+    required String erro,
+  }) async {
+    if (ApiConfig.useMock) {
+      await Future.delayed(const Duration(milliseconds: 600));
+      return (true, sucesso);
+    }
+
+    final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
     try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: jsonEncode({'primeiroNome': primeiroNome, 'ultimoNome': ultimoNome, 'email': email, 'password': password}),
-      ).timeout(ApiConfig.connectionTimeout);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return (true, 'Conta criada com sucesso!');
-      } else {
-        return (false, _extrairErro(response.body));
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode(corpo),
+          )
+          .timeout(ApiConfig.connectionTimeout);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return (true, sucesso);
       }
+      final doServidor = _extrairErro(response.body);
+      return (false, doServidor.isNotEmpty ? doServidor : erro);
     } on TimeoutException catch (_) {
-      return (false, 'O servidor demorou muito tempo a responder no registo.');
-    } catch (e) {
-      return (false, 'Erro de ligação à rede.');
+      return (false, 'O servidor demorou muito tempo a responder.');
+    } catch (_) {
+      return (false, 'Não foi possível ligar ao servidor.');
     }
   }
 
