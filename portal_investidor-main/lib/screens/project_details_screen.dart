@@ -5,6 +5,8 @@ import '../theme/co_tokens.dart';
 import '../services/api_service.dart';
 import '../models/user_model.dart';
 import '../utils/ui_helpers.dart';
+import '../widgets/secao_acabamentos.dart';
+import '../widgets/secao_fracoes.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
   final int projectId;
@@ -493,6 +495,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 );
                               },
                             ),
+                          ],
+
+                          // FRAÇÕES (projectFractions) e ACABAMENTOS
+                          // (projectFinishes). Cada secção decide-se sozinha:
+                          // sem dados na API não aparece, como no site.
+                          if (project.fractions.isNotEmpty) ...[
+                            const SizedBox(height: COTokens.space9),
+                            SecaoFracoes(fracoes: project.fractions),
+                          ],
+
+                          if (project.finishes.isNotEmpty) ...[
+                            const SizedBox(height: COTokens.space9),
+                            SecaoAcabamentos(acabamentos: project.finishes),
                           ],
 
                           const SizedBox(height: 24),
