@@ -102,7 +102,7 @@ class _MapScreenState extends State<MapScreen> {
                                 height: 160,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _noImageHeader(color),
+                                errorBuilder: (_, _, _) => _noImageHeader(color),
                               )
                             : _noImageHeader(color),
                       ),

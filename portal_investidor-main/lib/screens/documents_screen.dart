@@ -85,9 +85,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // Quando o servidor diz porquê (ex.: o download ainda não está
+        // ligado), mostra-se isso. "Não foi possível abrir" sozinho deixava
+        // a pessoa a pensar que o ficheiro estava estragado.
+        final motivo = e is ApiException ? e.message : 'Não foi possível abrir "$name".';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Não foi possível abrir "$name"'),
+            content: Text(motivo),
             backgroundColor: COColors.brand700,
           ),
         );
@@ -280,7 +284,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                             bottom: COTokens.space6,
                           ),
                           itemCount: documents.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          separatorBuilder: (_, _) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final doc = documents[index];
                             final String? paymentState = doc['paymentState'];
