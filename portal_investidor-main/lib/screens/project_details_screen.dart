@@ -510,26 +510,12 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             SecaoAcabamentos(acabamentos: project.finishes),
                           ],
 
-                          const SizedBox(height: 24),
-
-                          // BOTÃO DE MANIFESTAR INTERESSE
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Interesse registado! Um gestor irá contactá-lo.'), backgroundColor: COColors.brand500),
-                                );
-                              },
-                              icon: const Icon(Icons.mail_outline, color: COColors.brand900),
-                              label: const Text('MANIFESTAR INTERESSE', style: TextStyle(color: COColors.brand900, fontWeight: COTokens.fwBold, letterSpacing: 1.5)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: COColors.brand300,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(COTokens.radiusSm)),
-                              ),
-                            ),
-                          ),
+                          // Aqui estava o botão "MANIFESTAR INTERESSE". Dizia
+                          // "Interesse registado! Um gestor irá contactá-lo."
+                          // e não fazia chamada nenhuma à API — não havia
+                          // interesse nenhum registado em sítio algum. Saiu
+                          // até haver endpoint para isso. No site o
+                          // equivalente (DevCTA) manda para o registo.
                           const SizedBox(height: 40),
                         ],
                       ),
