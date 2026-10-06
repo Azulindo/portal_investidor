@@ -86,8 +86,11 @@ class _MapScreenState extends State<MapScreen> {
                   margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
                   decoration: BoxDecoration(
                     color: COColors.brand700,
-                    borderRadius: BorderRadius.circular(12.0),
-                    border: Border.all(color: COColors.brand500, width: 1),
+                    borderRadius: BorderRadius.circular(COTokens.radiusSm),
+                    border: Border.all(
+                      color: COColors.brand500,
+                      width: COTokens.borderWidth,
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -95,7 +98,9 @@ class _MapScreenState extends State<MapScreen> {
                     children: [
                       // Image or colour header
                       ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12.0)),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(COTokens.radiusSm),
+                        ),
                         child: mainImage != null && mainImage.isNotEmpty
                             ? Image.network(
                                 mainImage,
