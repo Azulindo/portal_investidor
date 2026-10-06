@@ -5,8 +5,11 @@ import '../services/api_service.dart';
 import '../widgets/co_card.dart';
 import '../widgets/co_drawer.dart';
 import '../models/investidor_model.dart';
+import '../models/sale_order.dart';
 import '../models/user_model.dart';
 import '../utils/ui_helpers.dart';
+import '../widgets/secao_carteira.dart';
+import '../widgets/secao_encomendas.dart';
 import 'project_details_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -20,16 +23,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final ApiService _apiService = ApiService();
   late Future<InvestidorModel?> _investidorFuture;
 
+  /// As encomendas vêm de um endpoint à parte (/document/sale-orders) e são o
+  /// que alimenta os totais. Não travam o painel: se falharem, mostram-se as
+  /// obras sem os totais, em vez de um ecrã de erro por cima de dados que já
+  /// chegaram bem.
+  late Future<List<SaleOrder>> _encomendasFuture;
+
   @override
   void initState() {
     super.initState();
-    _investidorFuture = _apiService.buscarDadosDoInvestidor(ApiService.idLogado ?? 0);
+    _carregar();
+  }
+
+  void _carregar() {
+    _investidorFuture =
+        _apiService.buscarDadosDoInvestidor(ApiService.idLogado ?? 0);
+    _encomendasFuture = _apiService
+        .buscarOrdensDeCompra()
+        // Sem isto, uma falha aqui aparecia como um erro não tratado.
+        .catchError((_) => <SaleOrder>[]);
   }
 
   void _recarregar() {
-    setState(() {
-      _investidorFuture = _apiService.buscarDadosDoInvestidor(ApiService.idLogado ?? 0);
-    });
+    setState(_carregar);
   }
 
   @override
@@ -114,6 +130,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const Text('Bem-vindo ao seu painel de investimentos.',
                           style: COText.small),
                       const SizedBox(height: COTokens.space9),
+
+                      // TOTAIS e AQUISIÇÕES — vêm das encomendas, por isso
+                      // esperam pelo seu próprio pedido. Enquanto não chega,
+                      // ou se falhar, não aparece nada aqui e as obras em
+                      // baixo mostram-se como sempre.
+                      FutureBuilder<List<SaleOrder>>(
+                        future: _encomendasFuture,
+                        builder: (context, snap) {
+                          final encomendas = snap.data ?? const <SaleOrder>[];
+                          if (encomendas.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SecaoCarteira(
+                                encomendas: encomendas,
+                                nomesDosProjetos:
+                                    obras.map((o) => o.title).toList(),
+                              ),
+                              const SizedBox(height: COTokens.space9),
+                              SecaoEncomendas(encomendas: encomendas),
+                              const SizedBox(height: COTokens.space9),
+                            ],
+                          );
+                        },
+                      ),
 
                       const CoOverline('Status das obras'),
 

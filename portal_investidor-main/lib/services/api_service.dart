@@ -3,6 +3,7 @@ import 'dart:async';
 import '../models/user_model.dart';
 import 'package:http/http.dart' as http;
 import '../models/investidor_model.dart';
+import '../models/sale_order.dart';
 import '../config/api_config.dart';
 import 'auth_service.dart';
 
@@ -372,6 +373,109 @@ class ApiService {
   // ============================================================
 
   /// GET /api/document/list
+  /// As encomendas do cliente, cada uma com as suas faturas.
+  ///
+  /// É daqui que saem os totais do painel (investido, pago, por pagar) — ver
+  /// utils/carteira.dart. O endpoint já estava declarado no ApiConfig mas não
+  /// havia nada a chamá-lo.
+  Future<List<SaleOrder>> buscarOrdensDeCompra() async {
+    if (ApiConfig.useMock) {
+      await Future.delayed(const Duration(milliseconds: 600));
+      return _ordensSimuladas();
+    }
+
+    final url =
+        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.saleOrdersEndpoint}');
+    try {
+      final response = await http
+          .get(url, headers: await _authHeaders())
+          .timeout(ApiConfig.connectionTimeout);
+
+      if (response.statusCode == 200) {
+        final parsed = jsonDecode(response.body);
+        final data = parsed['data'];
+        if (data is List) {
+          return data
+              .whereType<Map>()
+              .map((e) => SaleOrder.fromJson(e.cast<String, dynamic>()))
+              .toList();
+        }
+        return [];
+      }
+      throw ApiException(
+        _extrairErro(response.body),
+        statusCode: response.statusCode,
+      );
+    } on TimeoutException catch (_) {
+      throw ApiException('O servidor demorou muito tempo a responder.');
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException('Erro de ligação à rede.');
+    }
+  }
+
+  /// Encomendas de exemplo, com os casos que interessam: uma toda paga, uma
+  /// parcial e uma por pagar, e duas encomendas no mesmo empreendimento com
+  /// uma fração repetida (para se ver que a carteira não a conta duas vezes).
+  List<SaleOrder> _ordensSimuladas() {
+    return [
+      SaleOrder(
+        id: 1,
+        name: 'SO0001',
+        projectName: 'Aires Ornelas',
+        fractions: const ['A', 'B'],
+        amountTotal: 185000,
+        date: '2026-01-15',
+        invoices: [
+          Invoice(
+            id: 11,
+            name: 'INV/2026/0001',
+            date: '2026-01-20',
+            paymentState: 'paid',
+            amountTotal: 92500,
+            amountResidual: 0,
+          ),
+          Invoice(
+            id: 12,
+            name: 'INV/2026/0002',
+            date: '2026-04-20',
+            paymentState: 'partial',
+            amountTotal: 92500,
+            amountResidual: 42500,
+          ),
+        ],
+      ),
+      SaleOrder(
+        id: 2,
+        name: 'SO0002',
+        projectName: 'Aires Ornelas',
+        fractions: const ['B'],
+        amountTotal: 12000,
+        date: '2026-02-02',
+        invoices: [
+          Invoice(
+            id: 21,
+            name: 'INV/2026/0003',
+            date: '2026-02-10',
+            paymentState: 'not_paid',
+            amountTotal: 12000,
+            amountResidual: 12000,
+          ),
+        ],
+      ),
+      SaleOrder(
+        id: 3,
+        name: 'SO0003',
+        projectName: 'Quinta das Laranjeiras',
+        fractions: const ['1.ºD'],
+        amountTotal: 240000,
+        date: '2026-03-01',
+        invoices: const [],
+      ),
+    ];
+  }
+
   /// Devolve a lista de documentos (faturas) com anexos do utilizador autenticado.
   Future<List<Map<String, dynamic>>> buscarDocumentos() async {
     if (ApiConfig.useMock) {
