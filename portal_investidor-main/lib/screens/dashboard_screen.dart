@@ -340,8 +340,8 @@ class ObraCardWidget extends StatelessWidget {
 
 // =========================================================
 // TIMELINE HORIZONTAL (interna ao card)
-// Bolas numeradas (stepOrder) + nome do step por baixo.
-// Destacadas (cor brand300) até ao step cujo stepOrder == currentStep.
+// Uma bolinha por fase, acesas até à fase atual, e por baixo uma linha a
+// dizer em que fase vai a obra.
 // =========================================================
 class _Timeline extends StatelessWidget {
   final ConstructionItem obra;
@@ -353,10 +353,28 @@ class _Timeline extends StatelessWidget {
     final steps = obra.steps;
     final currentIndex = steps.indexWhere((s) => s.stepOrder == obra.currentStep);
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _regua(steps, currentIndex),
+        if (currentIndex != -1) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Fase ${currentIndex + 1} de ${steps.length} · '
+            '${steps[currentIndex].name}',
+            style: COText.caption.copyWith(color: COColors.brand300),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _regua(List<ConstructionStep> steps, int currentIndex) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(steps.length, (index) {
-        final step = steps[index];
         final isCurrent = index == currentIndex;
         final isDone = currentIndex != -1 && index <= currentIndex;
         final showLeftLine = index > 0;
@@ -396,21 +414,12 @@ class _Timeline extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Text(
-                  step.name,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isCurrent ? Colors.white : (isDone ? COColors.brand300 : COColors.neutral500),
-                    fontSize: 10,
-                    fontWeight: isCurrent ? COTokens.fwBold : COTokens.fwRegular,
-                  ),
-                ),
-              ),
+              // Aqui estava o nome da fase debaixo de cada bolinha. Com cinco
+              // fases num telemóvel cada coluna fica com ~60px, e nomes como
+              // "Fundações" ou "Acabamentos" partiam-se a meio da palavra
+              // ("Fundaçõ / es"). O nome da fase passou para uma linha só,
+              // debaixo da régua — é também como o cartão do portfólio o
+              // mostra, por isso os dois ecrãs passam a ler-se igual.
             ],
           ),
         );

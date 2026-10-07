@@ -257,16 +257,23 @@ class CoLinkAuth extends StatelessWidget {
             const SizedBox(width: 6),
             InkWell(
               onTap: aoCarregar,
-              child: Padding(
+              child: Container(
                 // Alvo de toque com altura decente, sem afastar o texto.
-                padding: const EdgeInsets.symmetric(vertical: 6),
+                padding: const EdgeInsets.only(top: 6, bottom: 4),
+                // Risco por baixo em vez de TextDecoration.underline: o
+                // sublinhado do Flutter passa por cima dos descendentes, e
+                // em "Recuperar acesso" e "Criar conta" o traço cortava o
+                // "p" e o "ç" a meio.
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: COColors.brand300),
+                  ),
+                ),
                 child: Text(
                   acao,
                   style: COText.small.copyWith(
                     color: COColors.white,
                     fontWeight: COTokens.fwMedium,
-                    decoration: TextDecoration.underline,
-                    decorationColor: COColors.brand300,
                   ),
                 ),
               ),

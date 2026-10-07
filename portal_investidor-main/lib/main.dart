@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'config/api_config.dart';
 import 'theme/co_colors.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -68,10 +69,25 @@ void main() async {
   // arrancava sempre com idLogado == null e caía no fallback "?? 0".
   // "obterSessaoValida" também limpa a sessão guardada se o token (JWT) já
   // tiver expirado, em vez de mostrar a Dashboard e só falhar no 1º pedido.
-  final userId = await AuthService.obterSessaoValida();
+  var userId = await AuthService.obterSessaoValida();
   if (userId != null) {
     ApiService.idLogado = userId;
     ApiService.definirToken(await AuthService.obterToken());
+  }
+
+  // Arranque direto no painel, para trabalhar nos ecrãs de dentro sem ter de
+  // passar pelo login a cada recarregamento:
+  //
+  //   flutter run --dart-define=USE_MOCK=true --dart-define=SKIP_LOGIN=true
+  //
+  // Só funciona com USE_MOCK ligado — e com ele ligado a app não fala com a
+  // API nenhuma, por isso isto não é uma porta para dados reais. Sem
+  // USE_MOCK é ignorado.
+  if (ApiConfig.useMock &&
+      const bool.fromEnvironment('SKIP_LOGIN') &&
+      userId == null) {
+    userId = 999;
+    ApiService.idLogado = userId;
   }
 
   runApp(
