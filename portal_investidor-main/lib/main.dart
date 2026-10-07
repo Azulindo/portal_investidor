@@ -120,10 +120,27 @@ class CleverOptionApp extends StatelessWidget {
         ),
       ),
       builder: (context, child) {
+        // O tamanho de letra que a pessoa escolheu no telemóvel, limitado
+        // entre 1x e 1,3x.
+        //
+        // Antes isto era TextScaler.linear(1.1), fixo. Dois problemas:
+        //
+        //  - deitava fora a definição de acessibilidade do sistema. Quem
+        //    tem o telemóvel com letra grande porque precisa recebia na
+        //    mesma 1,1x, e quem a tem pequena também. A app era a única a
+        //    não obedecer.
+        //  - multiplicava a escala do design system por 1,1, por isso os
+        //    24/20/16/14/12 nunca eram os tamanhos verdadeiros.
+        //
+        // Com o clamp, o 1x é a escala do design system tal como está
+        // escrita, e o máximo de 1,3x é o que os ecrãs aguentam sem partir
+        // linhas — acima disso os cartões começam a cortar texto.
+        final escala = MediaQuery.textScalerOf(context).clamp(
+          minScaleFactor: 1.0,
+          maxScaleFactor: 1.3,
+        );
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: const TextScaler.linear(1.1),
-          ),
+          data: MediaQuery.of(context).copyWith(textScaler: escala),
           child: child!,
         );
       },
