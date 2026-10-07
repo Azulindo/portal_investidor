@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'portfolio.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 
@@ -101,40 +102,58 @@ class UIHelpers {
     );
   }
 
-  // Badge de estado do projeto (pill) - reutilizável entre ecrãs
+  /// Etiqueta do estado do empreendimento, reutilizada em todos os ecrãs.
+  ///
+  /// BUG CORRIGIDO: o switch comparava o estado por igualdade exata
+  /// ('Construção', 'Desenvolvimento', 'Concluído'), mas a API manda
+  /// "Em construção" e "Em desenvolvimento" — por isso caía SEMPRE no
+  /// default e saía cinzento com um ícone de informação, nunca com as cores
+  /// que tinha preparadas. Agora usa os grupos de Portfolio.grupoDeEstado,
+  /// os mesmos dos filtros do portfólio.
+  ///
+  /// O aspeto também mudou: era uma pílula de cantos redondos com cores do
+  /// Material (azul e verde vivos) e um ícone maior do que o texto. Passa a
+  /// ser uma etiqueta sóbria do design system — canto de 5px, fundo navy,
+  /// texto branco — com um ponto de cor a marcar o estado. Fica legível por
+  /// cima das fotos sem gritar.
   static Widget buildStatusBadge(String apiStatus) {
-    String label;
-    IconData icon;
-    switch (apiStatus) {
-      case 'Desenvolvimento': label = 'Em Desenvolvimento'; icon = Icons.architecture; break;
-      case 'Construção':      label = 'Em Construção';      icon = Icons.construction;  break;
-      case 'Concluído':       label = 'Concluído';          icon = Icons.check;      break;
-      default:                label = apiStatus;             icon = Icons.info_outline;
-    }
+    if (apiStatus.trim().isEmpty) return const SizedBox.shrink();
 
-    Color bg, border, text;
-    switch (apiStatus) {
-      case 'Concluído':
-        bg = const Color(0xFF1B5E20); border = const Color(0xFF43A047); text = const Color(0xFF69F0AE); break;
-      case 'Construção':
-        bg = const Color(0xFF0D47A1); border = const Color(0xFF42A5F5); text = const Color(0xFF90CAF9); break;
+    final Color ponto;
+    switch (Portfolio.grupoDeEstado(apiStatus)) {
+      case 'concluido':
+        ponto = const Color(0xFF5BBFBF); // o mesmo teal dos documentos
+      case 'desenvolvimento':
+        ponto = COColors.neutral500;
       default:
-        bg = const Color(0xFF4A4A4A); border = const Color(0xFF9E9E9E); text = const Color(0xFFBDBDBD);
+        ponto = COColors.brand300;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: border, width: 1.5),
+        color: COColors.brand900.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(COTokens.radiusSm),
+        border: Border.all(color: COColors.white.withValues(alpha: 0.22)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: text, size: 20),
-          const SizedBox(width: 5),
-          Text(label.toUpperCase(), style: TextStyle(color: text, fontWeight: COTokens.fwBold, fontSize: 10, letterSpacing: 1)),
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: ponto, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            apiStatus.toUpperCase(),
+            style: COText.caption.copyWith(
+              color: COColors.white,
+              fontSize: 10,
+              fontWeight: COTokens.fwBold,
+              letterSpacing: 0.8,
+            ),
+          ),
         ],
       ),
     );
