@@ -41,7 +41,7 @@ class SecaoLocalizacao extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CoOverline('Localização'),
+        const CoTitulo('Localização'),
         Text('Onde fica', style: COText.h2),
         const SizedBox(height: COTokens.space4),
 

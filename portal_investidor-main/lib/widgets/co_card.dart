@@ -75,8 +75,11 @@ class CoCard extends StatelessWidget {
 ///
 /// Sempre em maiúsculas, como o brandbook manda, e com o espaço por baixo já
 /// incluído, para não haver três SizedBox diferentes espalhados pelos ecrãs.
-class CoOverline extends StatelessWidget {
-  const CoOverline(this.texto, {super.key, this.espacoAbaixo = COTokens.space4});
+/// Titulo de uma seccao. Era a CoTitulo, em maiusculas. Num ecra com sete
+/// ou oito delas as maiusculas deixavam de marcar seccao nenhuma: ficava
+/// tudo com o mesmo peso. Passa a ser um titulo normal, em caixa de frase.
+class CoTitulo extends StatelessWidget {
+  const CoTitulo(this.texto, {super.key, this.espacoAbaixo = COTokens.space4});
 
   final String texto;
   final double espacoAbaixo;
@@ -85,7 +88,25 @@ class CoOverline extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: espacoAbaixo),
-      child: Text(texto.toUpperCase(), style: COText.overline),
+      child: Text(texto, style: COText.h2.copyWith(fontSize: 18)),
+    );
+  }
+}
+
+/// Etiqueta pequena por cima de um valor ("Total investido" e o numero por
+/// baixo) ou de uma lista curta. Nao e um titulo de seccao: fica discreta de
+/// proposito, para o valor ser o que se le primeiro.
+class CoEtiqueta extends StatelessWidget {
+  const CoEtiqueta(this.texto, {super.key, this.espacoAbaixo = 2});
+
+  final String texto;
+  final double espacoAbaixo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: espacoAbaixo),
+      child: Text(texto, style: COText.small),
     );
   }
 }

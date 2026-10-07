@@ -32,7 +32,7 @@ class SecaoLugar extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CoOverline('O lugar'),
+        const CoTitulo('O lugar'),
         if (info.zoneTitle?.trim().isNotEmpty ?? false) ...[
           Text(info.zoneTitle!, style: COText.h2),
           const SizedBox(height: COTokens.space2),
@@ -77,7 +77,7 @@ class SecaoLugar extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CoOverline(titulo, espacoAbaixo: COTokens.space2),
+        CoEtiqueta(titulo),
         for (var i = 0; i < itens.length; i++)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 10),

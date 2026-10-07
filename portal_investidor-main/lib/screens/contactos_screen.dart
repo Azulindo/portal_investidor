@@ -102,7 +102,7 @@ class _ContactosScreenState extends State<ContactosScreen> {
           COTokens.space12,
         ),
         children: [
-          const CoOverline('Fale connosco'),
+          const CoTitulo('Fale connosco'),
           Text('Estamos disponíveis para si', style: COText.h1),
           const SizedBox(height: COTokens.space8),
 
@@ -136,7 +136,7 @@ class _ContactosScreenState extends State<ContactosScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const CoOverline('Enviar uma mensagem'),
+                const CoTitulo('Enviar uma mensagem'),
                 Text(
                   'O formulário de contacto abre no browser do telefone.',
                   style: COText.small,
@@ -180,7 +180,7 @@ class _ContactosScreenState extends State<ContactosScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const CoOverline('Redes sociais'),
+                const CoTitulo('Redes sociais'),
                 Wrap(
                   spacing: COTokens.space6,
                   runSpacing: COTokens.space2,

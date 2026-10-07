@@ -28,7 +28,7 @@ class SecaoVideo extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CoOverline('Vídeo'),
+        const CoTitulo('Vídeo'),
         CoCard(
           semPadding: true,
           margin: EdgeInsets.zero,

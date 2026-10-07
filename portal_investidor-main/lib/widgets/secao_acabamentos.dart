@@ -29,7 +29,7 @@ class _SecaoAcabamentosState extends State<SecaoAcabamentos> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CoOverline('Acabamentos'),
+        const CoTitulo('Acabamentos'),
         Text('Mapa de acabamentos e serviços', style: COText.h2),
         const SizedBox(height: COTokens.space4),
 

@@ -242,7 +242,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const CoOverline('Total investido', espacoAbaixo: COTokens.space2),
+                          const CoEtiqueta('Total investido'),
                           Text(
                             '${totalInvestido.toStringAsFixed(2)} €',
                             style: COText.valor,
@@ -259,7 +259,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const CoOverline('Empreendimentos', espacoAbaixo: COTokens.space2),
+                          const CoEtiqueta('Empreendimentos'),
                           Text('$nEmpreendimentos', style: COText.valor),
                         ],
                       ),
@@ -270,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: COTokens.space9),
 
-            const CoOverline('Opções'),
+            const CoTitulo('Opções'),
 
             _buildMenuItem(Icons.person, 'Os Meus Dados', () {
               ScaffoldMessenger.of(context).showSnackBar(

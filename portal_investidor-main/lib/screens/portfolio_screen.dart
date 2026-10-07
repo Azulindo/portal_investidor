@@ -192,7 +192,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
           .toList();
       if (doGrupo.isEmpty) continue;
 
-      widgets.add(CoOverline(_nomesDosGrupos[grupo]!));
+      widgets.add(CoTitulo(_nomesDosGrupos[grupo]!));
       widgets.addAll(doGrupo.map(_cartao));
       widgets.add(const SizedBox(height: COTokens.space6));
     }
@@ -218,7 +218,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CoOverline('Porto e Vila Nova de Gaia', espacoAbaixo: 4),
+        const CoEtiqueta('Porto e Vila Nova de Gaia'),
         Text('Empreendimentos', style: COText.h1),
         if (partes.isNotEmpty) ...[
           const SizedBox(height: 6),

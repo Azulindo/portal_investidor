@@ -4,6 +4,7 @@ import '../models/sale_order.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../utils/carteira.dart';
+import 'co_card.dart';
 
 /// As encomendas do cliente, cada uma a abrir as suas faturas.
 ///
@@ -36,11 +37,7 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'As suas aquisições',
-          style: COText.h2.copyWith(fontSize: 18),
-        ),
-        const SizedBox(height: COTokens.space4),
+        const CoTitulo('As suas aquisições'),
         for (final grupo in porProjeto.entries) ...[
           if (grupo.key.isNotEmpty)
             Padding(

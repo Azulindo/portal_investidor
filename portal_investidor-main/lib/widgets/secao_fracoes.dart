@@ -90,7 +90,7 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CoOverline('Tipologias'),
+        const CoTitulo('Tipologias'),
         Text('Frações e características', style: COText.h2),
         const SizedBox(height: COTokens.space2),
         Text(

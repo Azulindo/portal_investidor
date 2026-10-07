@@ -143,7 +143,7 @@ class _SobreScreenState extends State<SobreScreen> {
           COTokens.space12,
         ),
         children: [
-          const CoOverline('Sobre a empresa'),
+          const CoTitulo('Sobre a empresa'),
           Text('Sobre a Cleveroption', style: COText.h1),
           const SizedBox(height: COTokens.space2),
           Text(
@@ -153,7 +153,7 @@ class _SobreScreenState extends State<SobreScreen> {
           ),
 
           const SizedBox(height: COTokens.space12),
-          const CoOverline('A nossa história'),
+          const CoTitulo('A nossa história'),
           Text(
             'Mais de uma década de experiência no setor',
             style: COText.h2,
@@ -163,17 +163,17 @@ class _SobreScreenState extends State<SobreScreen> {
             _marco(_marcos[i], ultimo: i == _marcos.length - 1),
 
           const SizedBox(height: COTokens.space12),
-          const CoOverline('Em números'),
+          const CoTitulo('Em números'),
           for (final n in _numeros) _numero(n),
 
           const SizedBox(height: COTokens.space12),
-          const CoOverline('Os nossos valores'),
+          const CoTitulo('Os nossos valores'),
           Text('O que nos define', style: COText.h2),
           const SizedBox(height: COTokens.space4),
           for (var i = 0; i < _valores.length; i++) _valor(i, _valores[i]),
 
           const SizedBox(height: COTokens.space12),
-          const CoOverline('Historial completo'),
+          const CoTitulo('Historial completo'),
           Text('Todos os empreendimentos', style: COText.h2),
           const SizedBox(height: COTokens.space4),
           _historial(),

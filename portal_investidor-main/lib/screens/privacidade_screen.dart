@@ -139,7 +139,7 @@ class PrivacidadeScreen extends StatelessWidget {
           COTokens.space12,
         ),
         children: [
-          const CoOverline('Informação legal'),
+          const CoTitulo('Informação legal'),
           Text('Política de Privacidade', style: COText.h1),
           const SizedBox(height: COTokens.space2),
           Text('Última atualização: junho de 2026', style: COText.caption),

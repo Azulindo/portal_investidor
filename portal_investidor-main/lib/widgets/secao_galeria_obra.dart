@@ -28,7 +28,7 @@ class SecaoGaleriaObra extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CoOverline('Galeria da obra'),
+        const CoTitulo('Galeria da obra'),
         Text(
           imagens.length == 1
               ? '1 fotografia do acompanhamento'

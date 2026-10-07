@@ -84,10 +84,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onPressed: () => Scaffold.of(context).openDrawer(),
                       ),
                     ),
-                    flexibleSpace: FlexibleSpaceBar(
-                      title: Image.asset('assets/images/logo.png', height: 45),
-                      centerTitle: true,
-                    ),
+                    elevation: 0,
+                    scrolledUnderElevation: 0,
                   ),
                   SliverFillRemaining(
                     hasScrollBody: false,
@@ -159,13 +157,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         },
                       ),
 
-                      // Era uma overline em maiúsculas. Num ecrã que já tinha
-                      // seis ou sete delas, as maiúsculas deixavam de marcar
-                      // nada. Passa a ser um título normal, igual ao das
-                      // aquisições, e a hierarquia volta a ler-se.
-                      Text('Estado das obras',
-                          style: COText.h2.copyWith(fontSize: 18)),
-                      const SizedBox(height: COTokens.space4),
+                      const CoTitulo('Estado das obras'),
 
                       if (obras.isEmpty)
                         Padding(
@@ -396,7 +388,6 @@ class _Timeline extends StatelessWidget {
         final Color dotColor = isCurrent
             ? COColors.white
             : (isDone ? COColors.brand300 : COColors.brand700);
-        final Color dotBorder = isCurrent ? COColors.white : dotColor;
 
         return Expanded(
           child: Column(
@@ -415,7 +406,6 @@ class _Timeline extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: dotColor,
-                      border: isCurrent ? Border.all(color: dotBorder, width: 2) : null,
                     ),
                   ),
                   Expanded(

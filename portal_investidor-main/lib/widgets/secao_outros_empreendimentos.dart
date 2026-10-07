@@ -66,7 +66,7 @@ class _SecaoOutrosEmpreendimentosState
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const CoOverline('Portfólio'),
+            const CoTitulo('Portfólio'),
             Text('Outros empreendimentos', style: COText.h2),
             const SizedBox(height: COTokens.space4),
 

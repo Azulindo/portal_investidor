@@ -424,13 +424,12 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 final isDone = step.stepOrder <= safeCurrentStep;
                                 final isLast = index == steps.length - 1;
 
-                                // Cor da linha que liga este passo ao próximo:
-                                // - antes do atual (já concluído): verde
-                                // - a sair do passo atual (a avançar): verde
-                                // - ainda não chegámos lá: cinzento neutro
-                                final Color corLinha = isCurrent
-                                    ? Colors.green
-                                    : (isDone ? Colors.green : COColors.brand700);
+                                // A régua era verde do Material e a marca não
+                                // tem verde nenhum. Passa a ser monocromática
+                                // sobre o navy, igual à do painel: feito em
+                                // cinza claro, por fazer em navy escuro.
+                                final Color corLinha =
+                                    isDone ? COColors.brand300 : COColors.brand700;
 
                                 // IntrinsicHeight garante que a linha entre as bolinhas
                                 // acompanha a altura real da descrição (deixa de cortar
@@ -467,9 +466,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                                 width: 16,
                                                 height: 16,
                                                 decoration: BoxDecoration(
-                                                  color: isCurrent ? Colors.greenAccent : (isDone ? Colors.green : COColors.brand700),
+                                                  color: isCurrent
+                                                      ? COColors.white
+                                                      : (isDone ? COColors.brand300 : COColors.brand700),
                                                   shape: BoxShape.circle,
-                                                  border: isCurrent ? Border.all(color: Colors.white, width: 2) : null,
                                                 ),
                                               ),
                                             ),
