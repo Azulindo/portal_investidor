@@ -4,6 +4,27 @@ import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 
 class UIHelpers {
+  /// A cor de cada grupo de estado.
+  ///
+  /// Esta correspondência já estava escrita em três sítios — na etiqueta dos
+  /// cartões, nos filtros do portfólio e no mapa — e dos três saiu diferente:
+  /// no mapa ainda eram o verde e o azul do Material, que não são cores da
+  /// marca. Fica aqui para não voltar a fugir.
+  ///
+  /// [fundoClaro] é para o mapa, que é branco. Sobre o navy dos cartões os
+  /// cinzentos claros leem-se bem; sobre o mapa desapareciam, por isso lá o
+  /// estado "a decorrer" usa o navy da marca.
+  static Color corDoGrupo(String? apiStatus, {bool fundoClaro = false}) {
+    switch (Portfolio.grupoDeEstado(apiStatus)) {
+      case 'concluido':
+        return const Color(0xFF5BBFBF); // o mesmo teal dos documentos
+      case 'desenvolvimento':
+        return fundoClaro ? COColors.brand500 : COColors.neutral500;
+      default:
+        return fundoClaro ? COColors.brand900 : COColors.brand300;
+    }
+  }
+
   // Ecrã de carregamento total com o logótipo a pulsar
   static Future<void> showLoadingDialog(BuildContext context) async {
     return showDialog<void>(
@@ -119,15 +140,7 @@ class UIHelpers {
   static Widget buildStatusBadge(String apiStatus) {
     if (apiStatus.trim().isEmpty) return const SizedBox.shrink();
 
-    final Color ponto;
-    switch (Portfolio.grupoDeEstado(apiStatus)) {
-      case 'concluido':
-        ponto = const Color(0xFF5BBFBF); // o mesmo teal dos documentos
-      case 'desenvolvimento':
-        ponto = COColors.neutral500;
-      default:
-        ponto = COColors.brand300;
-    }
+    final Color ponto = corDoGrupo(apiStatus);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),

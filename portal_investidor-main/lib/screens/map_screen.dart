@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../services/api_service.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import '../utils/ui_helpers.dart';
 import '../widgets/co_drawer.dart';
 import 'project_details_screen.dart';
 
@@ -40,18 +41,16 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  Color _corPorStatus(String? status) {
-    switch (status) {
-      case 'Concluído':
-        return const Color(0xFF43A047); // bright green
-      case 'Construção':
-        return const Color(0xFF42A5F5); // light blue
-      case 'Desenvolvimento':
-        return const Color(0xFF9E9E9E); // neutral grey
-      default:
-        return const Color(0xFF9E9E9E);
-    }
-  }
+  /// A cor do pino.
+  ///
+  /// Comparava o estado por igualdade — case 'Construção', case
+  /// 'Desenvolvimento' — mas a API escreve "Em construção" e "Em
+  /// desenvolvimento". Nenhum dos dois casos batia certo, por isso saíam
+  /// todos cinzentos menos os concluídos. É o mesmo erro que já tinha
+  /// aparecido nos filtros do portfólio e na etiqueta dos cartões; agora
+  /// os três usam a mesma função.
+  Color _corPorStatus(String? status) =>
+      UIHelpers.corDoGrupo(status, fundoClaro: true);
 
   List<Marker> _buildMarkers() {
     final markers = <Marker>[];
@@ -277,10 +276,10 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         backgroundColor: COColors.brand900,
         foregroundColor: COColors.white,
-        title: const Text(
-          'MAPA DE PROJETOS',
-          style: TextStyle(fontSize: 13, fontWeight: COTokens.fwBold, letterSpacing: 1.5),
-        ),
+        title: const Text('Mapa de projetos',
+            style: TextStyle(fontSize: 18, fontWeight: COTokens.fwBold)),
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -378,9 +377,13 @@ class _MapScreenState extends State<MapScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Flexible(child: _legendaItem(const Color(0xFF9E9E9E), 'Em Desenvolvimento')),
-          Flexible(child: _legendaItem(const Color(0xFF42A5F5), 'Em Construção')),
-          Flexible(child: _legendaItem(const Color(0xFF43A047), 'Concluído')),
+          for (final estado in ['Em desenvolvimento', 'Em construção', 'Concluído'])
+            Flexible(
+              child: _legendaItem(
+                UIHelpers.corDoGrupo(estado, fundoClaro: true),
+                estado,
+              ),
+            ),
         ],
       ),
     );
