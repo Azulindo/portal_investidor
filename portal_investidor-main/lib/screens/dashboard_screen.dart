@@ -105,20 +105,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             return CustomScrollView(
               slivers: [
+                // O logótipo saiu daqui. Já está no menu lateral e na página
+                // de entrada; repeti-lo em cima de cada ecrã interno gastava
+                // 100px de altura sem dizer nada de novo. O que fica é o
+                // botão do menu — o título do ecrã é o "Olá, ..." em baixo.
                 SliverAppBar(
-                  expandedHeight: 100,
                   floating: true,
                   pinned: true,
                   backgroundColor: COColors.brand900,
+                  elevation: 0,
+                  scrolledUnderElevation: 0,
                   leading: Builder(
                     builder: (context) => IconButton(
                       icon: const Icon(Icons.menu, color: COColors.white),
                       onPressed: () => Scaffold.of(context).openDrawer(),
                     ),
-                  ),
-                  flexibleSpace: FlexibleSpaceBar(
-                    title: Image.asset('assets/images/logo.png', height: 65),
-                    centerTitle: true,
                   ),
                 ),
                 SliverPadding(
@@ -158,7 +159,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         },
                       ),
 
-                      const CoOverline('Status das obras'),
+                      // Era uma overline em maiúsculas. Num ecrã que já tinha
+                      // seis ou sete delas, as maiúsculas deixavam de marcar
+                      // nada. Passa a ser um título normal, igual ao das
+                      // aquisições, e a hierarquia volta a ler-se.
+                      Text('Estado das obras',
+                          style: COText.h2.copyWith(fontSize: 18)),
+                      const SizedBox(height: COTokens.space4),
 
                       if (obras.isEmpty)
                         Padding(
@@ -382,10 +389,14 @@ class _Timeline extends StatelessWidget {
         final leftLineDone = currentIndex != -1 && index <= currentIndex;
         final rightLineDone = currentIndex != -1 && index < currentIndex;
 
+        // Os verdes do Material (greenAccent/green) saiam fora da marca:
+        // a Cleveroption nao tem verde em sitio nenhum. A regua passa a ser
+        // monocromatica sobre o navy — por fazer e escuro, feito e cinza
+        // claro, a fase atual e branca. Le-se melhor e e da casa.
         final Color dotColor = isCurrent
-            ? Colors.greenAccent
-            : (isDone ? Colors.green : COColors.brand700);
-        final Color dotBorder = isCurrent ? Colors.white : dotColor;
+            ? COColors.white
+            : (isDone ? COColors.brand300 : COColors.brand700);
+        final Color dotBorder = isCurrent ? COColors.white : dotColor;
 
         return Expanded(
           child: Column(
@@ -395,12 +406,12 @@ class _Timeline extends StatelessWidget {
                 children: [
                   Expanded(
                     child: showLeftLine
-                        ? Container(height: 2, color: leftLineDone ? Colors.green : COColors.brand700)
+                        ? Container(height: 1, color: leftLineDone ? COColors.brand300 : COColors.brand700)
                         : const SizedBox(),
                   ),
                   Container(
-                    width: 16,
-                    height: 16,
+                    width: 10,
+                    height: 10,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: dotColor,
@@ -409,7 +420,7 @@ class _Timeline extends StatelessWidget {
                   ),
                   Expanded(
                     child: showRightLine
-                        ? Container(height: 2, color: rightLineDone ? Colors.green : COColors.brand700)
+                        ? Container(height: 1, color: rightLineDone ? COColors.brand300 : COColors.brand700)
                         : const SizedBox(),
                   ),
                 ],
