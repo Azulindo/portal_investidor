@@ -6,6 +6,7 @@ import '../models/investidor_model.dart';
 import '../models/sale_order.dart';
 import '../config/api_config.dart';
 import 'auth_service.dart';
+import 'dados_de_exemplo.dart';
 
 /// Exceção customizada para erros "de negócio" da API (resposta válida mas
 /// com erro), para se distinguir de erros de rede/timeout.
@@ -46,36 +47,8 @@ class ApiService {
     }
   }
 
-  InvestidorModel _gerarDadosSimulados() {
-    return InvestidorModel.fromJson({
-      'id': 999,
-      'name': 'Guilherme Gonçalves',
-      'email': 'guilherme@cleveroption.pt',
-      'totalInvested': '125500.0',
-      'roiEsperado': '8.5',
-      'createdAt': '2026-06-09T10:00:00Z',
-      'obras': [
-        {
-          'id': 101,
-          'name': 'Empreendimento Central',
-          'city': 'São João da Madeira, Portugal',
-          // ALTERADO: antes 'currentStepId' (id do step). Agora 'currentStep'
-          // (número de "stepOrder" do passo atual).
-          'currentStep': 2,
-          'mainImageUrl': 'https://images.unsplash.com/photo-1541881430816-17b8f95c37eb?w=800',
-          'steps': [
-            {'id': 1, 'stepOrder': 1, 'name': 'Projeto', 'description': 'Aprovado'},
-            {'id': 2, 'stepOrder': 2, 'name': 'Fundações', 'description': 'Executadas'},
-            {'id': 3, 'stepOrder': 3, 'name': 'Estrutura', 'description': 'Em curso'},
-          ]
-        }
-      ],
-      'faturas': [
-        {'title': 'Adjudicação Terreno', 'status': 'Pago', 'valor': '50000.0', 'data': '10 Maio 2026'},
-        {'title': 'Materiais Estrutura', 'status': 'Pendente', 'valor': '15000.0', 'data': '01 Junho 2026'},
-      ]
-    });
-  }
+  InvestidorModel _gerarDadosSimulados() =>
+      InvestidorModel.fromJson(DadosDeExemplo.investidor());
 
   Map<String, dynamic> _decodeJwt(String token) {
     final parts = token.split('.');
@@ -270,33 +243,9 @@ class ApiService {
           .timeout(ApiConfig.connectionTimeout);
 
       if (response.statusCode == 200) {
-        final fullResponse = jsonDecode(response.body);
-        final data = fullResponse['data'] as Map<String, dynamic>? ?? {};
-        final userDataList = data['userData'] as List? ?? [];
-        final userData = userDataList.isNotEmpty ? userDataList[0] as Map<String, dynamic> : <String, dynamic>{};
-        final projects = data['projects'] as List? ?? [];
-
-        List<ConstructionItem> obrasConvertidas = [];
-        for (var proj in projects) {
-          try {
-            obrasConvertidas.add(ConstructionItem.fromJson(proj as Map<String, dynamic>));
-          } catch (_) {
-            // ignora projeto malformado
-          }
-        }
-
-        final investidor = InvestidorModel(
-          id: idAtual,
-          name: '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim(),
-          email: userData['email']?.toString() ?? '',
-          // Soma dos totais de todas as encomendas do cliente. Estava fixo a
-          // 0.0 e por isso o painel mostrava sempre zero, apesar de a API
-          // mandar o valor.
-          totalInvested: double.tryParse(data['totalInvested']?.toString() ?? '') ?? 0.0,
-          roiEsperado: null,
-          createdAt: DateTime.now(),
-          obras: obrasConvertidas,
-          faturas: [],
+        final investidor = InvestidorModel.fromJson(
+          jsonDecode(response.body) as Map<String, dynamic>,
+          idDeRecurso: idAtual,
         );
 
         dadosLogado = investidor;
@@ -323,21 +272,7 @@ class ApiService {
   Future<List<dynamic>> buscarPortfolio() async {
     if (ApiConfig.useMock) {
       await Future.delayed(const Duration(milliseconds: 800));
-      return [
-        {
-          'id': 1,
-          'name': 'Torre Comercial SJM',
-          'city': 'São João da Madeira',
-          'mainImageUrl': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800',
-          // ALTERADO: antes 'currentStepId' (id do step). Agora 'currentStep'
-          // (número de "stepOrder" do passo atual).
-          'currentStep': 1,
-          'steps': [
-            {'id': 1, 'stepOrder': 1, 'name': 'Projeto', 'description': 'Em aprovação'},
-            {'id': 2, 'stepOrder': 2, 'name': 'Fundações', 'description': 'Previsto'},
-          ]
-        }
-      ];
+      return DadosDeExemplo.portfolio();
     }
 
     final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.portfolioEndpoint}');
@@ -381,7 +316,7 @@ class ApiService {
   Future<List<SaleOrder>> buscarOrdensDeCompra() async {
     if (ApiConfig.useMock) {
       await Future.delayed(const Duration(milliseconds: 600));
-      return _ordensSimuladas();
+      return DadosDeExemplo.encomendas();
     }
 
     final url =
@@ -415,89 +350,12 @@ class ApiService {
     }
   }
 
-  /// Encomendas de exemplo, com os casos que interessam: uma toda paga, uma
-  /// parcial e uma por pagar, e duas encomendas no mesmo empreendimento com
-  /// uma fração repetida (para se ver que a carteira não a conta duas vezes).
-  List<SaleOrder> _ordensSimuladas() {
-    return [
-      SaleOrder(
-        id: 1,
-        name: 'SO0001',
-        projectName: 'Aires Ornelas',
-        fractions: const ['A', 'B'],
-        amountTotal: 185000,
-        date: '2026-01-15',
-        invoices: [
-          Invoice(
-            id: 11,
-            name: 'INV/2026/0001',
-            date: '2026-01-20',
-            paymentState: 'paid',
-            amountTotal: 92500,
-            amountResidual: 0,
-          ),
-          Invoice(
-            id: 12,
-            name: 'INV/2026/0002',
-            date: '2026-04-20',
-            paymentState: 'partial',
-            amountTotal: 92500,
-            amountResidual: 42500,
-          ),
-        ],
-      ),
-      SaleOrder(
-        id: 2,
-        name: 'SO0002',
-        projectName: 'Aires Ornelas',
-        fractions: const ['B'],
-        amountTotal: 12000,
-        date: '2026-02-02',
-        invoices: [
-          Invoice(
-            id: 21,
-            name: 'INV/2026/0003',
-            date: '2026-02-10',
-            paymentState: 'not_paid',
-            amountTotal: 12000,
-            amountResidual: 12000,
-          ),
-        ],
-      ),
-      SaleOrder(
-        id: 3,
-        name: 'SO0003',
-        projectName: 'Quinta das Laranjeiras',
-        fractions: const ['1.ºD'],
-        amountTotal: 240000,
-        date: '2026-03-01',
-        invoices: const [],
-      ),
-    ];
-  }
-
   /// Devolve a lista de documentos (faturas) com anexos do utilizador autenticado.
+
   Future<List<Map<String, dynamic>>> buscarDocumentos() async {
     if (ApiConfig.useMock) {
       await Future.delayed(const Duration(milliseconds: 800));
-      return [
-        {
-          'id': 1,
-          'name': 'INV/2026/0001',
-          'paymentState': 'paid',
-          'amountTotal': 50000.0,
-          'attachments': [
-            {'id': 5, 'name': 'factura_001.pdf', 'mimetype': 'application/pdf'},
-          ],
-        },
-        {
-          'id': 2,
-          'name': 'INV/2026/0002',
-          'paymentState': 'not_paid',
-          'amountTotal': 15000.0,
-          'attachments': [],
-        },
-      ];
+      return DadosDeExemplo.documentos();
     }
 
     final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.documentListEndpoint}');
@@ -569,32 +427,7 @@ class ApiService {
   Future<ProjectDetailModel> buscarDetalhesProjeto(int projectId) async {
     if (ApiConfig.useMock) {
       await Future.delayed(const Duration(milliseconds: 800));
-      return ProjectDetailModel.fromJson({
-        'data': {
-          'projectInfo': [
-            {
-              'name': 'Torre Comercial SJM',
-              'address': 'Rua Exemplo, 123',
-              'city': 'São João da Madeira',
-              'status': 'Em Curso',
-              // ALTERADO: antes 'currentStepId' (id do step). Agora
-              // 'currentStep' (número de "stepOrder" do passo atual).
-              'currentStep': 1,
-              'description': 'Descrição de exemplo do projeto em modo mock.',
-              'mainImageUrl': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800',
-            }
-          ],
-          'projectSteps': [
-            // ALTERADO: antes 'stepId', agora 'id' (mesmo formato dos outros
-            // endpoints - ver ProjectStepDetail em user_model.dart).
-            {'id': 1, 'stepOrder': 1, 'name': 'Projeto', 'description': 'Em aprovação'},
-            {'id': 2, 'stepOrder': 2, 'name': 'Fundações', 'description': 'Previsto'},
-          ],
-          'projectImages': [
-            {'imageId': 1, 'imageUrl': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800', 'imageDescription': 'Capa'},
-          ],
-        }
-      });
+      return ProjectDetailModel.fromJson(DadosDeExemplo.detalhes(projectId));
     }
 
     final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.projectDetailsEndpoint(projectId)}');
