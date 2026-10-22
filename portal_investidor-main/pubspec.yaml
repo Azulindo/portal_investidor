@@ -21,6 +21,9 @@ dependencies:
   # Guarda as fotografias em disco. Sem isto, cada regresso ao ecra volta a
   # descarregar a mesma imagem pelos dados moveis do investidor.
   cached_network_image: ^3.4.1
+  # O token JWT nao pode ficar em SharedPreferences, que e um ficheiro XML
+  # em claro. Isto poe-no no Keystore (Android) ou no Keychain (iOS).
+  flutter_secure_storage: ^9.2.4
   
   # UI e utilitários
   cupertino_icons: ^1.0.8
