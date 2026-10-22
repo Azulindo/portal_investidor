@@ -12,6 +12,7 @@ import '../utils/carteira.dart';
 import '../utils/ui_helpers.dart';
 import 'documents_screen.dart';
 import 'project_details_screen.dart';
+import '../widgets/co_imagem.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -298,14 +299,11 @@ class ObraCardWidget extends StatelessWidget {
                     child: Material(
                       type: MaterialType.transparency,
                       child: urlImagem.isNotEmpty
-                          ? Image.network(
+                          ? CoImagem(
                               urlImagem,
-                              height: 190,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return _imagePlaceholder(broken: true);
-                              },
+                              altura: 190,
+                              largura: double.infinity,
+                              erro: _imagePlaceholder(broken: true),
                             )
                           : _imagePlaceholder(broken: false),
                     ),

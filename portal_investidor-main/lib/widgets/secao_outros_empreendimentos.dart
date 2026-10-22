@@ -7,6 +7,7 @@ import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../utils/ui_helpers.dart';
 import 'co_card.dart';
+import 'co_imagem.dart';
 
 /// "Outros empreendimentos" no fim do detalhe — o equivalente ao
 /// OutrosEmpreendimentos do site.
@@ -137,13 +138,7 @@ class _SecaoOutrosEmpreendimentosState
                     tag: heroTag,
                     child: Material(
                       type: MaterialType.transparency,
-                      child: imagem.isEmpty
-                          ? _semImagem()
-                          : Image.network(
-                              imagem,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => _semImagem(),
-                            ),
+                      child: CoImagem(imagem, erro: _semImagem()),
                     ),
                   ),
                 ),

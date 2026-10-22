@@ -10,6 +10,7 @@ import '../widgets/barra_progresso_obra.dart';
 import '../widgets/co_card.dart';
 import '../widgets/co_drawer.dart';
 import 'project_details_screen.dart';
+import '../widgets/co_imagem.dart';
 
 /// O portfólio, a par da página /portfolio do site: contadores no cabeçalho,
 /// filtros de estado, cidade e comercialização, e os empreendimentos
@@ -422,11 +423,9 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                     type: MaterialType.transparency,
                     child: imageUrl.isEmpty
                         ? _semImagem(Icons.image_not_supported)
-                        : Image.network(
+                        : CoImagem(
                             imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) =>
-                                _semImagem(Icons.broken_image),
+                            erro: _semImagem(Icons.broken_image),
                           ),
                   ),
                 ),

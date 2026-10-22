@@ -5,6 +5,7 @@ import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import 'co_card.dart';
 import 'visualizador_imagens.dart';
+import 'co_imagem.dart';
 
 /// Galeria da obra — o equivalente à "Galeria da Obra" do site.
 ///
@@ -61,14 +62,12 @@ class SecaoGaleriaObra extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(COTokens.radiusSm),
-        child: Image.network(
+        child: CoImagem(
           img.imageUrl,
-          width: 210,
-          height: 150,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, progresso) =>
-              progresso == null ? child : _vazio(const SizedBox.shrink()),
-          errorBuilder: (_, _, _) => _vazio(
+          largura: 210,
+          altura: 150,
+          aCarregar: _vazio(const SizedBox.shrink()),
+          erro: _vazio(
             const Icon(
               Icons.broken_image_outlined,
               color: COColors.brand300,

@@ -18,6 +18,9 @@ dependencies:
   url_launcher: ^6.3.2
   shimmer: ^3.0.0
   local_auth: ^3.0.1
+  # Guarda as fotografias em disco. Sem isto, cada regresso ao ecra volta a
+  # descarregar a mesma imagem pelos dados moveis do investidor.
+  cached_network_image: ^3.4.1
   
   # UI e utilitários
   cupertino_icons: ^1.0.8

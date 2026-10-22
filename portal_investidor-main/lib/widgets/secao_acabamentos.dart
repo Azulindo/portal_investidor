@@ -4,6 +4,7 @@ import '../models/user_model.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import 'co_card.dart';
+import 'co_imagem.dart';
 
 /// Mapa de acabamentos — o equivalente ao FinishesSection do site.
 ///
@@ -126,13 +127,12 @@ class _SecaoAcabamentosState extends State<SecaoAcabamentos> {
             const SizedBox(height: COTokens.space2),
             ClipRRect(
               borderRadius: BorderRadius.circular(COTokens.radiusSm),
-              child: Image.network(
+              child: CoImagem(
                 cat.imageUrl!,
-                width: double.infinity,
-                fit: BoxFit.cover,
+                largura: double.infinity,
                 // Imagem em falta não deve deixar um erro vermelho no meio da
                 // lista: desaparece e os acabamentos continuam a ler-se.
-                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                erro: const SizedBox.shrink(),
               ),
             ),
           ],

@@ -5,6 +5,7 @@ import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../utils/video.dart';
 import 'co_card.dart';
+import 'co_imagem.dart';
 
 /// Vídeo do empreendimento.
 ///
@@ -38,13 +39,11 @@ class SecaoVideo extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.network(
+                CoImagem(
                   Video.miniatura(id),
-                  fit: BoxFit.cover,
                   // Sem miniatura (vídeo privado ou apagado) fica o fundo e o
                   // botão, que continuam a dizer que há um vídeo para ver.
-                  errorBuilder: (_, _, _) =>
-                      const ColoredBox(color: COColors.brand700),
+                  erro: const ColoredBox(color: COColors.brand700),
                 ),
                 const ColoredBox(color: Color(0x33000000)),
                 Center(

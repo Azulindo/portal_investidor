@@ -9,6 +9,7 @@ import '../theme/co_tokens.dart';
 import '../utils/ui_helpers.dart';
 import '../widgets/co_drawer.dart';
 import 'project_details_screen.dart';
+import '../widgets/co_imagem.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -101,12 +102,11 @@ class _MapScreenState extends State<MapScreen> {
                           top: Radius.circular(COTokens.radiusSm),
                         ),
                         child: mainImage != null && mainImage.isNotEmpty
-                            ? Image.network(
+                            ? CoImagem(
                                 mainImage,
-                                height: 160,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => _noImageHeader(color),
+                                altura: 160,
+                                largura: double.infinity,
+                                erro: _noImageHeader(color),
                               )
                             : _noImageHeader(color),
                       ),

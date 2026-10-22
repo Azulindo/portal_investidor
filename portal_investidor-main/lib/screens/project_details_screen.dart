@@ -19,6 +19,7 @@ import '../widgets/secao_lugar.dart';
 import '../widgets/secao_outros_empreendimentos.dart';
 import '../widgets/secao_video.dart';
 import '../widgets/visualizador_imagens.dart';
+import '../widgets/co_imagem.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
   final int projectId;
@@ -271,20 +272,18 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                   },
                                   itemBuilder: (context, index) {
                                     final isPrimeiraFoto = index == 0;
-                                    final imagemWidget = Image.network(
+                                    final imagemWidget = CoImagem(
                                       galeria[index],
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stack) =>
-                                          Container(
-                                            color: COColors.brand700,
-                                            child: const Center(
-                                              child: Icon(
-                                                Icons.broken_image,
-                                                color: COColors.brand300,
-                                                size: 50,
-                                              ),
-                                            ),
+                                      erro: Container(
+                                        color: COColors.brand700,
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            color: COColors.brand300,
+                                            size: 50,
                                           ),
+                                        ),
+                                      ),
                                     );
 
                                     if (isPrimeiraFoto) {
@@ -689,9 +688,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(COTokens.radiusSm),
                 ),
-                child: widget.initialImageUrl.isNotEmpty
-                    ? Image.network(widget.initialImageUrl, fit: BoxFit.cover)
-                    : Container(color: COColors.brand700),
+                child: CoImagem(widget.initialImageUrl),
               ),
             ),
           ),

@@ -4,6 +4,7 @@ import '../models/user_model.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import 'co_card.dart';
+import 'co_imagem.dart';
 
 /// As etapas da obra numa régua horizontal, em vez de uma lista vertical.
 ///
@@ -101,12 +102,11 @@ class _EtapasHorizontaisState extends State<EtapasHorizontais> {
             onTap: () => widget.aoTocarNaFoto?.call(etapa.imageUrl!, etapa.name),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(COTokens.radiusSm),
-              child: Image.network(
+              child: CoImagem(
                 etapa.imageUrl!,
-                height: 160,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stack) => Container(
+                altura: 160,
+                largura: double.infinity,
+                erro: Container(
                   height: 160,
                   color: COColors.brand700,
                   child: const Icon(Icons.broken_image,

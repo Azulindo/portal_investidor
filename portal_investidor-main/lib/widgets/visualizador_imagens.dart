@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import 'co_imagem.dart';
 
 /// Imagens em ecrã inteiro: arrasta-se para o lado para passar à seguinte e
 /// faz-se zoom com dois dedos.
@@ -81,10 +82,10 @@ class _VisualizadorImagensState extends State<VisualizadorImagens> {
                 minScale: 1,
                 maxScale: 4,
                 child: Center(
-                  child: Image.network(
+                  child: CoImagem(
                     widget.imagens[i],
                     fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const Icon(
+                    erro: const Icon(
                       Icons.broken_image_outlined,
                       color: COColors.neutral500,
                       size: 48,
