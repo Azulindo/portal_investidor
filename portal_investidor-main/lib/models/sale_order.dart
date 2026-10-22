@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 // Encomendas do cliente e respetivas faturas — GET /document/sale-orders.
 //
 // Vêm do Odoo (view_sale_order e account.move). É o que alimenta os totais do
@@ -5,8 +7,8 @@
 
 /// Anexo de uma fatura.
 ///
-/// O download está desligado na API (ver ApiConfig.downloadDeAnexosDisponivel),
-/// por isso por agora isto só serve para saber que existe um ficheiro.
+/// O download já funciona: a API reativou as rotas em 2026-10-08. Ver
+/// ApiConfig.downloadDeAnexosDisponivel.
 class InvoiceAttachment {
   final int? id;
   final String? name;
@@ -41,6 +43,12 @@ class Invoice {
 
   final List<InvoiceAttachment> attachments;
 
+  /// As linhas de artigo da fatura, que dizem de que ela é.
+  ///
+  /// Vem da account_move_line, uma entrada por linha — quase sempre uma só.
+  /// Linhas sem descrição nao chegam cá: a API já as deixa de fora.
+  final List<String> description;
+
   Invoice({
     required this.id,
     required this.name,
@@ -49,6 +57,7 @@ class Invoice {
     this.amountTotal = 0,
     this.amountResidual = 0,
     this.attachments = const [],
+    this.description = const [],
   });
 
   /// Quanto desta fatura já está liquidado.
@@ -63,6 +72,17 @@ class Invoice {
     }
     return 0;
   }
+
+  /// Quanto desta fatura já foi faturado ao cliente, esteja pago ou não.
+  ///
+  /// As estornadas valem 0: foram anuladas por nota de crédito, e notas de
+  /// crédito a API não devolve (a consulta só traz move_type = 'out_invoice'),
+  /// por isso contá-las mostrava uma dívida que já não existe. É a mesma regra
+  /// do site (invoiceIssued).
+  double get faturado => paymentState == 'reversed' ? 0 : amountTotal;
+
+  /// As linhas de artigo numa linha só, ou vazio se a fatura não trouxer nenhuma.
+  String get descricao => description.join('  ·  ');
 
   /// Etiqueta em português do estado de pagamento.
   String get estado {
@@ -96,6 +116,10 @@ class Invoice {
       attachments: (json['attachments'] as List? ?? [])
           .whereType<Map>()
           .map((e) => InvoiceAttachment.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      description: (json['description'] as List? ?? [])
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
           .toList(),
     );
   }
@@ -131,6 +155,23 @@ class SaleOrder {
   double get pago => invoices.fold(0.0, (soma, f) => soma + f.pago);
 
   double get porPagar => amountTotal - pago;
+
+  /// O meio da barra: já faturado, ainda por pagar.
+  ///
+  /// Quase sempre é zero, porque está tudo pago. Vai limitado dos dois lados
+  /// porque uma encomenda pode vir sobrefaturada, e a fatia não pode comer
+  /// mais do que o que falta pagar nem ficar negativa.
+  double get faturadoPorPagar {
+    final faturado = invoices.fold(0.0, (soma, f) => soma + f.faturado);
+    return math.min(
+      math.max(faturado - pago, 0),
+      math.max(amountTotal - pago, 0),
+    );
+  }
+
+  /// O resto: o que ainda nem sequer foi faturado.
+  double get porFaturar =>
+      math.max(amountTotal - pago - faturadoPorPagar, 0);
 
   factory SaleOrder.fromJson(Map<String, dynamic> json) {
     return SaleOrder(

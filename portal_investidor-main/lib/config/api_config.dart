@@ -64,11 +64,14 @@ class ApiConfig {
 
   /// Download de anexos.
   ///
-  /// As rotas /document/attachment/:id/token e /document/attachment/:id estão
-  /// comentadas na API ("desativado temporariamente — TODO: desenvolver esta
-  /// parte mais tarde"), por isso chamá-las dá 404. Quando voltarem, é só pôr
-  /// isto a true; o código do lado da app já está feito.
-  static const bool downloadDeAnexosDisponivel = false;
+  /// As rotas estiveram comentadas na API e voltaram em 2026-10-08, já
+  /// corrigidas para os novos formatos de dados. Confirmado no repositório da
+  /// API: /document/attachment/:id/token devolve {data: {token}} e
+  /// /document/attachment/:id?token=... devolve o ficheiro, com um token de
+  /// 5 minutos que não serve como token de sessão.
+  ///
+  /// Por confirmar contra o servidor real, que a app ainda não usa.
+  static const bool downloadDeAnexosDisponivel = true;
 
   static String attachmentTokenEndpoint(int attachmentId) =>
       '/document/attachment/$attachmentId/token';

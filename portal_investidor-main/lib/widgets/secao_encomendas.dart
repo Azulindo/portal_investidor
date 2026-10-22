@@ -117,6 +117,10 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
                     ].join('  ·  '),
                     style: COText.caption,
                   ),
+                  if (temFaturas) ...[
+                    const SizedBox(height: 8),
+                    _BarraDeProgresso(o),
+                  ],
                 ],
               ),
             ),
@@ -156,6 +160,15 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(f.name, style: COText.caption),
+                        // De que é a fatura. Sem isto o investidor via só o
+                        // numero e o valor, e tinha de abrir o PDF para saber.
+                        if (f.descricao.isNotEmpty)
+                          Text(
+                            f.descricao,
+                            style: COText.caption.copyWith(
+                              color: COColors.brand300,
+                            ),
+                          ),
                         Text(
                           '${Carteira.data(f.date)}  ·  ${f.estado.toLowerCase()}',
                           style: COText.caption.copyWith(
@@ -177,6 +190,71 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// A barra de uma encomenda, em três fatias: pago, faturado por pagar, e o que
+/// ainda nem sequer foi faturado.
+///
+/// É a mesma barra do site. A do meio quase sempre não existe — está tudo pago
+/// — e nesse caso nem aparece. Serve para distinguir "ainda não me pediram" de
+/// "pediram e eu não paguei", que para quem investe não é a mesma coisa.
+class _BarraDeProgresso extends StatelessWidget {
+  const _BarraDeProgresso(this.encomenda);
+
+  final SaleOrder encomenda;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = encomenda.amountTotal;
+    if (total <= 0) return const SizedBox.shrink();
+
+    final pago = encomenda.pago;
+    final faturado = encomenda.faturadoPorPagar;
+
+    // As fatias vão como peso num Row e não em percentagens arredondadas: o
+    // arredondamento a somar 99 ou 101 deixava uma falha ou um salto na ponta.
+    final restante = encomenda.porFaturar;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: SizedBox(
+            height: 4,
+            child: Row(
+              children: [
+                if (pago > 0)
+                  Expanded(
+                    flex: (pago * 1000).round(),
+                    child: const ColoredBox(color: COColors.accent),
+                  ),
+                if (faturado > 0)
+                  Expanded(
+                    flex: (faturado * 1000).round(),
+                    child: const ColoredBox(color: COColors.brand300),
+                  ),
+                if (restante > 0)
+                  Expanded(
+                    flex: (restante * 1000).round(),
+                    child: const ColoredBox(color: COColors.brand700),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        // A legenda só aparece quando há a fatia do meio. Sem ela a barra tem
+        // duas cores e a linha de cima ja diz quanto foi pago.
+        if (faturado > 0) ...[
+          const SizedBox(height: 4),
+          Text(
+            '${Carteira.euros(faturado)} faturado, por pagar',
+            style: COText.caption.copyWith(color: COColors.brand300),
+          ),
+        ],
+      ],
     );
   }
 }

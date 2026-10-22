@@ -521,10 +521,10 @@ class ApiService {
   /// GET /api/document/attachment/:id/token
   /// Pede ao servidor um URL de download de curta duração (token na query string).
   ///
-  /// ATENÇÃO: estas rotas estão comentadas na API neste momento ("desativado
-  /// temporariamente — TODO: desenvolver esta parte mais tarde"), por isso
-  /// chamá-las dá 404. O código fica feito; quando voltarem, é só pôr
-  /// ApiConfig.downloadDeAnexosDisponivel a true.
+  /// As rotas voltaram a estar ligadas na API desde 2026-10-08, por isso a
+  /// ApiConfig.downloadDeAnexosDisponivel já está a true. O token dura 5
+  /// minutos e viaja na query string, porque quem abre o ficheiro é o browser
+  /// ou o webview, numa navegação normal que não leva o header Authorization.
   Future<String> getAttachmentUrl(int attachmentId) async {
     if (!ApiConfig.downloadDeAnexosDisponivel) {
       throw ApiException(

@@ -227,6 +227,7 @@ class DadosDeExemplo {
               paymentState: 'partial',
               amountTotal: 92500,
               amountResidual: 42500,
+              description: const ['2.ª tranche — conclusão da estrutura'],
             ),
           ],
         ),
@@ -247,6 +248,7 @@ class DadosDeExemplo {
               // Não paga com residual a zero: é o caso que obriga a regra do
               // Invoice.pago a existir.
               amountResidual: 0,
+              description: const ['Extras de acabamentos — fração B'],
             ),
           ],
         ),
