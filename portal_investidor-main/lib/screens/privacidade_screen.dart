@@ -122,7 +122,7 @@ class PrivacidadeScreen extends StatelessWidget {
         centerTitle: true,
         iconTheme: const IconThemeData(color: COColors.white),
         title: Text(
-          'PRIVACIDADE',
+          'Privacidade',
           style: COText.small.copyWith(
             color: COColors.white,
             fontSize: 13,

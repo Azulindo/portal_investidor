@@ -34,7 +34,14 @@ class SecaoLugar extends StatelessWidget {
       children: [
         const CoTitulo('O lugar'),
         if (info.zoneTitle?.trim().isNotEmpty ?? false) ...[
-          Text(info.zoneTitle!, style: COText.h2),
+          Text(
+            info.zoneTitle!,
+            style: const TextStyle(
+              color: COColors.white,
+              fontSize: 16,
+              fontWeight: COTokens.fwBold,
+            ),
+          ),
           const SizedBox(height: COTokens.space2),
         ],
         if (info.zoneDescription?.trim().isNotEmpty ?? false)

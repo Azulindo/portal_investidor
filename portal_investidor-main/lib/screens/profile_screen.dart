@@ -155,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('FECHAR', style: TextStyle(color: COColors.brand300, fontWeight: COTokens.fwBold, letterSpacing: 1)),
+              child: const Text('Fechar', style: TextStyle(color: COColors.brand300, fontWeight: COTokens.fwBold, letterSpacing: 1)),
             ),
           ],
         );
@@ -193,8 +193,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: COColors.brand900,
       drawer: const CoDrawer(),
       appBar: AppBar(
-        title: const Text('PERFIL',
-            style: TextStyle(letterSpacing: 1.5, fontSize: 13, fontWeight: COTokens.fwBold, color: COColors.white)),
+        title: const Text('Perfil', style: COText.tituloEcra),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -291,7 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: const EdgeInsets.symmetric(vertical: COTokens.space6),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(COTokens.radiusSm)),
                 ),
-                child: const Text('TERMINAR SESSÃO',
+                child: const Text('Terminar sessão',
                     style: TextStyle(color: COColors.brand500, letterSpacing: 1.5, fontWeight: COTokens.fwBold, fontSize: 13)),
               ),
             ),

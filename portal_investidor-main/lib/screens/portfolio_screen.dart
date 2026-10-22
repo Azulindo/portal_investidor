@@ -84,9 +84,8 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
       drawer: const CoDrawer(),
       appBar: AppBar(
         title: const Text(
-          'O NOSSO PORTFÓLIO',
+          'O nosso portfólio',
           style: TextStyle(
-            letterSpacing: 1.5,
             fontSize: 13,
             fontWeight: COTokens.fwBold,
             color: COColors.white,

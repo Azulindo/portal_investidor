@@ -106,7 +106,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       appBar: AppBar(
         backgroundColor: COColors.brand900,
         title: const Text(
-          'OS SEUS DOCUMENTOS',
+          'Os seus documentos',
           style: TextStyle(
             color: COColors.white,
             fontSize: 13,
@@ -251,7 +251,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                         color: COColors.neutral500,
                         fontSize: 11,
                         fontWeight: COTokens.fwBold,
-                        letterSpacing: 1.5,
                       ),
                     ),
                   ),

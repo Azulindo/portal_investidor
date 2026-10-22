@@ -66,8 +66,7 @@ class _SecaoOutrosEmpreendimentosState
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const CoTitulo('Portfólio'),
-            Text('Outros empreendimentos', style: COText.h2),
+            const CoTitulo('Outros empreendimentos'),
             const SizedBox(height: COTokens.space4),
 
             for (final p in aMostrar) _cartao(p as Map),

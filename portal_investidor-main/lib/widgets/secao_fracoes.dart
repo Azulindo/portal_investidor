@@ -90,8 +90,7 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CoTitulo('Tipologias'),
-        Text('Frações e características', style: COText.h2),
+        const CoTitulo('Frações e características'),
         const SizedBox(height: COTokens.space2),
         Text(
           'Toque numa tipologia para ver só essas frações.',

@@ -6,6 +6,8 @@ import '../services/api_service.dart';
 import '../models/user_model.dart';
 import '../utils/ui_helpers.dart';
 import '../utils/video.dart';
+import '../widgets/co_card.dart';
+import '../widgets/etapas_horizontais.dart';
 import '../widgets/secao_acabamentos.dart';
 import '../widgets/secao_fracoes.dart';
 import '../widgets/secao_galeria_obra.dart';
@@ -36,15 +38,46 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   late Future<ProjectDetailModel> _projectFuture;
   final PageController _galeriaController = PageController();
 
+  /// A imagem de cima é fixa: o conteúdo passa-lhe por baixo e ela fica
+  /// quieta, o que dá a sensação de o ecrã estar preso. Em vez de a pôr a
+  /// rolar — o que custaria o carrossel, que tem de ficar no topo — ela
+  /// desvanece à medida que o conteúdo sobe.
+  ///
+  /// Fica num ValueNotifier e não no setState: a cada pixel de scroll só
+  /// se reconstrói o Opacity da imagem, não o ecrã inteiro com a galeria,
+  /// as frações e os acabamentos lá dentro.
+  final ScrollController _scrollController = ScrollController();
+  final ValueNotifier<double> _opacidadeImagem = ValueNotifier<double>(1);
+
+  /// Ao fim de quantos pixéis de scroll a imagem fica invisível. 260 de
+  /// uma imagem com 320 de altura: desaparece pouco antes de o conteúdo
+  /// lhe chegar ao fundo, em vez de só no último pixel.
+  static const double _alturaDoDesvanecer = 260;
+
   @override
   void initState() {
     super.initState();
     _projectFuture = ApiService().buscarDetalhesProjeto(widget.projectId);
+    _scrollController.addListener(_aoRolar);
+  }
+
+  void _aoRolar() {
+    if (!_scrollController.hasClients) return;
+    // clamp porque o scroll pode passar dos limites (o efeito de elástico
+    // do iOS dá posições negativas).
+    final fracao = (_scrollController.offset / _alturaDoDesvanecer).clamp(
+      0.0,
+      1.0,
+    );
+    _opacidadeImagem.value = 1 - fracao;
   }
 
   @override
   void dispose() {
     _galeriaController.dispose();
+    _scrollController.removeListener(_aoRolar);
+    _scrollController.dispose();
+    _opacidadeImagem.dispose();
     super.dispose();
   }
 
@@ -140,13 +173,15 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           // Categoria de cada imagem do carrossel, pela mesma ordem. Fica a
           // partir da galeria verdadeira, e não da lista acima, que pode ter
           // sido preenchida com a imagem de recurso.
-          final categorias =
-              project.imagensDaGaleria.map((i) => i.category).toList();
+          final categorias = project.imagensDaGaleria
+              .map((i) => i.category)
+              .toList();
           final mostrarCategoria = project.galeriaTemInteriorEExterior;
 
           // As duas secções novas decidem-se sozinhas, mas o espaçamento que
           // as precede fica aqui, por isso precisa de saber de antemão.
-          final temLugar = (info.zoneTitle?.trim().isNotEmpty ?? false) ||
+          final temLugar =
+              (info.zoneTitle?.trim().isNotEmpty ?? false) ||
               (info.zoneDescription?.trim().isNotEmpty ?? false) ||
               info.zoneNearbyInfrastructures.isNotEmpty ||
               info.zoneNearbyLocations.isNotEmpty;
@@ -158,434 +193,424 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
 
           return Stack(
             children: [
-              Column(
-                children: [
-                  SizedBox(
-                    height: 320,
-                    width: double.infinity,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (galeria.isNotEmpty)
-                          // O PageView trata o swipe nativamente. Em desktop/web o
-                          // comportamento de scroll por omissão ignora o rato, por isso
-                          // usamos um ScrollConfiguration que inclui o rato (e touchpad)
-                          // como dispositivos de arrasto válidos.
-                          ScrollConfiguration(
-                            behavior: ScrollConfiguration.of(context).copyWith(
-                              dragDevices: {
-                                PointerDeviceKind.touch,
-                                PointerDeviceKind.mouse,
-                                PointerDeviceKind.trackpad,
-                                PointerDeviceKind.stylus,
-                              },
-                            ),
-                            child: PageView.builder(
-                              controller: _galeriaController,
-                              itemCount: galeria.length,
-                              onPageChanged: (index) {
-                                setState(() => _paginaAtual = index);
-                              },
-                              itemBuilder: (context, index) {
-                                final isPrimeiraFoto = index == 0;
-                                final imagemWidget = Image.network(
-                                  galeria[index],
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stack) => Container(
-                                    color: COColors.brand700,
-                                    child: const Center(
-                                      child: Icon(Icons.broken_image, color: COColors.brand300, size: 50),
+              CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  // A imagem era um bloco fixo de 320px com o conteúdo a
+                  // rolar por baixo: ficava sempre no sítio, e os 320px
+                  // nunca mais voltavam ao utilizador. Agora é um
+                  // SliverAppBar, por isso sobe com o dedo e devolve o
+                  // espaço ao conteúdo — e desvanece pelo caminho, em vez
+                  // de ser cortada a direito pelo rebordo da barra.
+                  SliverAppBar(
+                    expandedHeight: 320,
+                    pinned: true,
+                    stretch: true,
+                    backgroundColor: COColors.brand900,
+                    elevation: 0,
+                    scrolledUnderElevation: 0,
+                    // O botão de voltar é o que está sobreposto, em baixo.
+                    automaticallyImplyLeading: false,
+                    flexibleSpace: ValueListenableBuilder<double>(
+                      valueListenable: _opacidadeImagem,
+                      builder: (context, opacidade, filho) {
+                        // Com a imagem quase invisível não vale a pena
+                        // deixá-la a apanhar toques: o IgnorePointer evita
+                        // que o carrossel roube swipes ao conteúdo.
+                        return IgnorePointer(
+                          ignoring: opacidade < 0.05,
+                          child: Opacity(opacity: opacidade, child: filho),
+                        );
+                      },
+                      child: SizedBox(
+                        height: 320,
+                        width: double.infinity,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            if (galeria.isNotEmpty)
+                              // O PageView trata o swipe nativamente. Em desktop/web o
+                              // comportamento de scroll por omissão ignora o rato, por isso
+                              // usamos um ScrollConfiguration que inclui o rato (e touchpad)
+                              // como dispositivos de arrasto válidos.
+                              ScrollConfiguration(
+                                behavior: ScrollConfiguration.of(context)
+                                    .copyWith(
+                                      dragDevices: {
+                                        PointerDeviceKind.touch,
+                                        PointerDeviceKind.mouse,
+                                        PointerDeviceKind.trackpad,
+                                        PointerDeviceKind.stylus,
+                                      },
                                     ),
-                                  ),
-                                );
+                                child: PageView.builder(
+                                  controller: _galeriaController,
+                                  itemCount: galeria.length,
+                                  onPageChanged: (index) {
+                                    setState(() => _paginaAtual = index);
+                                  },
+                                  itemBuilder: (context, index) {
+                                    final isPrimeiraFoto = index == 0;
+                                    final imagemWidget = Image.network(
+                                      galeria[index],
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stack) =>
+                                          Container(
+                                            color: COColors.brand700,
+                                            child: const Center(
+                                              child: Icon(
+                                                Icons.broken_image,
+                                                color: COColors.brand300,
+                                                size: 50,
+                                              ),
+                                            ),
+                                          ),
+                                    );
 
-                                if (isPrimeiraFoto) {
-                                  return Hero(
-                                    tag: widget.heroTag,
-                                    child: Material(
-                                      type: MaterialType.transparency,
-                                      child: ClipRRect(
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(COTokens.radiusSm)),
-                                        child: imagemWidget,
+                                    if (isPrimeiraFoto) {
+                                      return Hero(
+                                        tag: widget.heroTag,
+                                        child: Material(
+                                          type: MaterialType.transparency,
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                const BorderRadius.vertical(
+                                                  top: Radius.circular(
+                                                    COTokens.radiusSm,
+                                                  ),
+                                                ),
+                                            child: imagemWidget,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return imagemWidget;
+                                  },
+                                ),
+                              )
+                            else
+                              Container(color: COColors.brand700),
+
+                            // Gradiente puramente decorativo: IgnorePointer garante que
+                            // não intercepta o gesto de swipe destinado ao PageView abaixo.
+                            const IgnorePointer(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Color(0x99000000),
+                                      Colors.transparent,
+                                      COColors.brand900,
+                                    ],
+                                    stops: [0.0, 0.5, 1.0],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // ETIQUETA DA CATEGORIA DA IMAGEM
+                            //
+                            // O site parte a galeria em duas secções, "Galeria ·
+                            // Exterior" e "Galeria · Interior". Num telemóvel dois
+                            // carrosséis seguidos só obrigam a rolar mais, por isso
+                            // aqui o carrossel é um só e diz a que grupo pertence a
+                            // imagem que está à vista. Só aparece quando há imagens
+                            // dos dois tipos — com só exteriores não informa nada,
+                            // que é a mesma decisão do site (separarGaleria).
+                            if (mostrarCategoria &&
+                                _paginaAtual < categorias.length)
+                              Positioned(
+                                top: COTokens.space4,
+                                left: COTokens.space4,
+                                child: IgnorePointer(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                    child: Text(
+                                      categorias[_paginaAtual].toUpperCase(),
+                                      style: COText.overline.copyWith(
+                                        color: COColors.white,
                                       ),
                                     ),
-                                  );
-                                }
-                                return imagemWidget;
-                              },
-                            ),
-                          )
-                        else
-                          Container(color: COColors.brand700),
-
-                        // Gradiente puramente decorativo: IgnorePointer garante que
-                        // não intercepta o gesto de swipe destinado ao PageView abaixo.
-                        const IgnorePointer(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Color(0x99000000),
-                                  Colors.transparent,
-                                  COColors.brand900,
-                                ],
-                                stops: [0.0, 0.5, 1.0],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // ETIQUETA DA CATEGORIA DA IMAGEM
-                        //
-                        // O site parte a galeria em duas secções, "Galeria ·
-                        // Exterior" e "Galeria · Interior". Num telemóvel dois
-                        // carrosséis seguidos só obrigam a rolar mais, por isso
-                        // aqui o carrossel é um só e diz a que grupo pertence a
-                        // imagem que está à vista. Só aparece quando há imagens
-                        // dos dois tipos — com só exteriores não informa nada,
-                        // que é a mesma decisão do site (separarGaleria).
-                        if (mostrarCategoria && _paginaAtual < categorias.length)
-                          Positioned(
-                            top: COTokens.space4,
-                            left: COTokens.space4,
-                            child: IgnorePointer(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.45),
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                                child: Text(
-                                  categorias[_paginaAtual].toUpperCase(),
-                                  style: COText.overline.copyWith(color: COColors.white),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
 
-                        // SETAS DE NAVEGAÇÃO DA GALERIA
-                        if (galeria.length > 1) ...[
-                          Positioned(
-                            left: 8,
-                            top: 0,
-                            bottom: 0,
-                            child: Center(
-                              child: _GalleryArrowButton(
-                                icon: Icons.chevron_left,
-                                visible: _paginaAtual > 0,
-                                onPressed: () => _irParaImagem(_paginaAtual - 1, galeria.length),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            right: 8,
-                            top: 0,
-                            bottom: 0,
-                            child: Center(
-                              child: _GalleryArrowButton(
-                                icon: Icons.chevron_right,
-                                visible: _paginaAtual < galeria.length - 1,
-                                onPressed: () => _irParaImagem(_paginaAtual + 1, galeria.length),
-                              ),
-                            ),
-                          ),
-                        ],
-
-                        if (galeria.length > 1)
-                          Positioned(
-                            bottom: 24,
-                            left: 0,
-                            right: 0,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(galeria.length, (index) {
-                                return GestureDetector(
-                                  onTap: () => _irParaImagem(index, galeria.length),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                                    width: _paginaAtual == index ? 24 : 9,
-                                    height: 9,
-                                    decoration: BoxDecoration(
-                                      color: _paginaAtual == index ? Colors.white : COColors.brand500,
-                                      borderRadius: BorderRadius.circular(4.5),
+                            // SETAS DE NAVEGAÇÃO DA GALERIA
+                            if (galeria.length > 1) ...[
+                              Positioned(
+                                left: 8,
+                                top: 0,
+                                bottom: 0,
+                                child: Center(
+                                  child: _GalleryArrowButton(
+                                    icon: Icons.chevron_left,
+                                    visible: _paginaAtual > 0,
+                                    onPressed: () => _irParaImagem(
+                                      _paginaAtual - 1,
+                                      galeria.length,
                                     ),
                                   ),
-                                );
-                              }),
-                            ),
-                          ),
-                      ],
+                                ),
+                              ),
+                              Positioned(
+                                right: 8,
+                                top: 0,
+                                bottom: 0,
+                                child: Center(
+                                  child: _GalleryArrowButton(
+                                    icon: Icons.chevron_right,
+                                    visible: _paginaAtual < galeria.length - 1,
+                                    onPressed: () => _irParaImagem(
+                                      _paginaAtual + 1,
+                                      galeria.length,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+
+                            if (galeria.length > 1)
+                              Positioned(
+                                bottom: 24,
+                                left: 0,
+                                right: 0,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: List.generate(galeria.length, (
+                                    index,
+                                  ) {
+                                    return GestureDetector(
+                                      onTap: () =>
+                                          _irParaImagem(index, galeria.length),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 8,
+                                        ),
+                                        width: _paginaAtual == index ? 24 : 9,
+                                        height: 9,
+                                        decoration: BoxDecoration(
+                                          color: _paginaAtual == index
+                                              ? Colors.white
+                                              : COColors.brand500,
+                                          borderRadius: BorderRadius.circular(
+                                            4.5,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
 
                   // ===========================================
-                  // CONTEÚDO DO PROJETO — scroll independente da galeria
+                  // CONTEÚDO DO PROJETO — no mesmo scroll da imagem, para
+                  // o espaço que ela liberta ao subir ser aproveitado.
                   // ===========================================
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(COTokens.space6),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(titulo, style: const TextStyle(color: COColors.white, fontSize: 24, fontWeight: COTokens.fwBold, height: 1.2)),
+                  SliverPadding(
+                    padding: const EdgeInsets.all(COTokens.space6),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        Text(
+                          titulo,
+                          style: const TextStyle(
+                            color: COColors.white,
+                            fontSize: 24,
+                            fontWeight: COTokens.fwBold,
+                            height: 1.2,
+                          ),
+                        ),
 
-                          if (info.city.isNotEmpty || info.address.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              [info.address, info.city].where((s) => s.isNotEmpty).join(', '),
-                              style: const TextStyle(color: COColors.neutral500, fontSize: 13),
+                        if (info.city.isNotEmpty ||
+                            info.address.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            [
+                              info.address,
+                              info.city,
+                            ].where((s) => s.isNotEmpty).join(', '),
+                            style: const TextStyle(
+                              color: COColors.neutral500,
+                              fontSize: 13,
                             ),
-                          ],
+                          ),
+                        ],
 
-                          if (info.nFractions != null) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                const Icon(Icons.apartment, color: COColors.neutral500, size: 20),
-                                const SizedBox(width: 5),
-                                Text(
-                                  '${info.nFractions} frações',
-                                  style: const TextStyle(color: COColors.neutral500, fontSize: 15),
-                                ),
-                              ],
-                            ),
-                          ],
-
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
+                        if (info.nFractions != null) ...[
+                          const SizedBox(height: 6),
+                          Row(
                             children: [
-                              UIHelpers.buildStatusBadge(status),
-                              if (status != 'Desenvolvimento')
-                                _ForSaleBadge(forSale: info.forSale),
+                              const Icon(
+                                Icons.apartment,
+                                color: COColors.neutral500,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                '${info.nFractions} frações',
+                                style: const TextStyle(
+                                  color: COColors.neutral500,
+                                  fontSize: 15,
+                                ),
+                              ),
                             ],
                           ),
-
-                          const SizedBox(height: COTokens.space6),
-
-                          const Text('SOBRE O PROJETO', style: TextStyle(color: COColors.neutral500, fontSize: 12, fontWeight: COTokens.fwBold, letterSpacing: 1.5)),
-                          const SizedBox(height: COTokens.space4),
-                          Text(descricao, style: const TextStyle(color: COColors.brand300, fontSize: 16, height: 1.6)),
-
-                          // O LUGAR — a envolvente (campos zone* de
-                          // projectInfo). No site vem logo depois da
-                          // descrição, antes das galerias.
-                          if (temLugar) ...[
-                            const SizedBox(height: COTokens.space9),
-                            SecaoLugar(info: info),
-                          ],
-
-                          // GALERIA DA OBRA (imagens de categoria "obra").
-                          // No site vem antes da timeline, pela mesma razão:
-                          // vê-se a obra e depois lê-se em que fase está.
-                          if (project.imagensDeObra.isNotEmpty) ...[
-                            const SizedBox(height: COTokens.space9),
-                            SecaoGaleriaObra(imagens: project.imagensDeObra),
-                          ],
-
-                          const SizedBox(height: 32),
-
-                          // ETAPAS DO PROJETO (projectSteps)
-                          if (status == 'Desenvolvimento') ...[
-                            const Text('ETAPAS DO DESENVOLVIMENTO', style: TextStyle(color: COColors.neutral500, fontSize: 12, fontWeight: COTokens.fwBold, letterSpacing: 1.5)),
-                            const SizedBox(height: COTokens.space4),
-                            const Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Projeto em desenvolvimento.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: COColors.brand300, fontSize: 15),
-                                ),
-                                Text(
-                                  'Timeline disponível em breve!',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: COColors.brand300, fontSize: 15),
-                                ),
-                              ],
-                            ),
-                          ] else if (steps.isNotEmpty) ...[
-                            const Text('ETAPAS DO DESENVOLVIMENTO', style: TextStyle(color: COColors.neutral500, fontSize: 12, fontWeight: COTokens.fwBold, letterSpacing: 1.5)),
-                            const SizedBox(height: COTokens.space4),
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: steps.length,
-                              itemBuilder: (context, index) {
-                                final step = steps[index];
-
-                                // ALTERADO: antes comparava "step.stepId" com "safeCurrentStepId".
-                                // Agora compara o número de ordem ("stepOrder") com "safeCurrentStep".
-                                final isCurrent = step.stepOrder == safeCurrentStep;
-                                final isDone = step.stepOrder <= safeCurrentStep;
-                                final isLast = index == steps.length - 1;
-
-                                // A régua era verde do Material e a marca não
-                                // tem verde nenhum. Passa a ser monocromática
-                                // sobre o navy, igual à do painel: feito em
-                                // cinza claro, por fazer em navy escuro.
-                                final Color corLinha =
-                                    isDone ? COColors.brand300 : COColors.brand700;
-
-                                // IntrinsicHeight garante que a linha entre as bolinhas
-                                // acompanha a altura real da descrição (deixa de cortar
-                                // quando o texto do passo é mais longo).
-                                return IntrinsicHeight(
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      SizedBox(
-                                        width: 16,
-                                        child: Stack(
-                                          fit: StackFit.expand,
-                                          clipBehavior: Clip.none,
-                                          children: [
-                                            if (!isLast && !isCurrent)
-                                              Positioned(
-                                                top: 16,
-                                                left: 7,
-                                                bottom: 0,
-                                                child: Container(width: 2, color: corLinha),
-                                              ),
-                                            if (!isLast && isCurrent)
-                                              Positioned(
-                                                top: 16,
-                                                bottom: 0,
-                                                left: 0,
-                                                right: 0,
-                                                child: _PulsingForwardConnector(color: corLinha),
-                                              ),
-                                            Positioned(
-                                              top: 0,
-                                              left: 0,
-                                              child: Container(
-                                                width: 16,
-                                                height: 16,
-                                                decoration: BoxDecoration(
-                                                  color: isCurrent
-                                                      ? COColors.white
-                                                      : (isDone ? COColors.brand300 : COColors.brand700),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      // Detalhes da Etapa
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              step.name,
-                                              style: TextStyle(
-                                                color: isCurrent ? Colors.white : (isDone ? COColors.brand300 : COColors.neutral500),
-                                                fontWeight: isCurrent ? COTokens.fwBold : FontWeight.normal,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              step.description,
-                                              style: const TextStyle(color: COColors.neutral500, fontSize: 13),
-                                            ),
-                                            const SizedBox(height: 16),
-                                          ],
-                                        ),
-                                      ),
-                                      // FOTO DA ETAPA (se existir)
-                                      if (step.imageUrl != null && step.imageUrl!.isNotEmpty) ...[
-                                        const SizedBox(width: 12),
-                                        GestureDetector(
-                                          onTap: () {
-                                            final indexNaGaleria = galeria.indexOf(step.imageUrl!);
-                                            if (indexNaGaleria != -1) {
-                                              _irParaImagem(indexNaGaleria, galeria.length);
-                                            } else {
-                                              // A foto deste passo não está na
-                                              // galeria do empreendimento (é só
-                                              // da timeline): abre sozinha, no
-                                              // mesmo visualizador das outras.
-                                              VisualizadorImagens.abrir(
-                                                context,
-                                                imagens: [step.imageUrl!],
-                                                legendas: [step.name],
-                                              );
-                                            }
-                                          },
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(COTokens.radiusSm),
-                                            child: Image.network(
-                                              step.imageUrl!,
-                                              width: 56,
-                                              height: 56,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stack) => Container(
-                                                width: 56,
-                                                height: 56,
-                                                color: COColors.brand700,
-                                                child: const Icon(Icons.broken_image, color: COColors.brand300, size: 20),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-
-                          // VÍDEO — no site aparece logo abaixo dos passos
-                          // da timeline.
-                          if (temVideo) ...[
-                            const SizedBox(height: COTokens.space9),
-                            SecaoVideo(videoUrl: info.videoUrl),
-                          ],
-
-                          // FRAÇÕES (projectFractions) e ACABAMENTOS
-                          // (projectFinishes). Cada secção decide-se sozinha:
-                          // sem dados na API não aparece, como no site.
-                          if (project.fractions.isNotEmpty) ...[
-                            const SizedBox(height: COTokens.space9),
-                            SecaoFracoes(fracoes: project.fractions),
-                          ],
-
-                          if (project.finishes.isNotEmpty) ...[
-                            const SizedBox(height: COTokens.space9),
-                            SecaoAcabamentos(acabamentos: project.finishes),
-                          ],
-
-                          // ONDE FICA — mapa só deste empreendimento. No site
-                          // vem depois da timeline e antes das frações; aqui
-                          // ficou mais abaixo, porque as frações são o que a
-                          // pessoa vem ver e um mapa pelo meio afastava-as.
-                          const SizedBox(height: COTokens.space9),
-                          SecaoLocalizacao(info: info),
-
-                          // OUTROS EMPREENDIMENTOS — como no site, fecha a
-                          // página.
-                          const SizedBox(height: COTokens.space9),
-                          SecaoOutrosEmpreendimentos(
-                            projectIdAtual: widget.projectId,
-                          ),
-
-                          // Aqui estava o botão "MANIFESTAR INTERESSE". Dizia
-                          // "Interesse registado! Um gestor irá contactá-lo."
-                          // e não fazia chamada nenhuma à API — não havia
-                          // interesse nenhum registado em sítio algum. Saiu
-                          // até haver endpoint para isso. No site o
-                          // equivalente (DevCTA) manda para o registo.
-                          const SizedBox(height: 40),
                         ],
-                      ),
+
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            UIHelpers.buildStatusBadge(status),
+                            if (status != 'Desenvolvimento')
+                              _ForSaleBadge(forSale: info.forSale),
+                          ],
+                        ),
+
+                        const SizedBox(height: COTokens.space6),
+
+                        const CoTitulo('Sobre o projeto'),
+                        const SizedBox(height: COTokens.space4),
+                        Text(
+                          descricao,
+                          style: const TextStyle(
+                            color: COColors.brand300,
+                            fontSize: 16,
+                            height: 1.6,
+                          ),
+                        ),
+
+                        // O LUGAR — a envolvente (campos zone* de
+                        // projectInfo). No site vem logo depois da
+                        // descrição, antes das galerias.
+                        if (temLugar) ...[
+                          const SizedBox(height: COTokens.space9),
+                          SecaoLugar(info: info),
+                        ],
+
+                        // GALERIA DA OBRA (imagens de categoria "obra").
+                        // No site vem antes da timeline, pela mesma razão:
+                        // vê-se a obra e depois lê-se em que fase está.
+                        if (project.imagensDeObra.isNotEmpty) ...[
+                          const SizedBox(height: COTokens.space9),
+                          SecaoGaleriaObra(imagens: project.imagensDeObra),
+                        ],
+
+                        const SizedBox(height: 32),
+
+                        // ETAPAS DO PROJETO (projectSteps)
+                        if (status == 'Desenvolvimento') ...[
+                          const CoTitulo('Etapas do desenvolvimento'),
+                          const Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Projeto em desenvolvimento.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: COColors.brand300,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Text(
+                                'Timeline disponível em breve!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: COColors.brand300,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ] else if (steps.isNotEmpty) ...[
+                          // Era uma lista vertical: cada etapa ocupava a
+                          // largura toda com nome, descrição e foto, uma
+                          // debaixo da outra. Passou a uma régua
+                          // horizontal com a etapa escolhida em baixo —
+                          // ver lib/widgets/etapas_horizontais.dart.
+                          EtapasHorizontais(
+                            etapas: steps,
+                            etapaAtual: safeCurrentStep,
+                            aoTocarNaFoto: (url, legenda) {
+                              final naGaleria = galeria.indexOf(url);
+                              if (naGaleria != -1) {
+                                _irParaImagem(naGaleria, galeria.length);
+                              } else {
+                                // A foto desta etapa não está na galeria
+                                // do empreendimento: abre sozinha, no
+                                // mesmo visualizador das outras.
+                                VisualizadorImagens.abrir(
+                                  context,
+                                  imagens: [url],
+                                  legendas: [legenda],
+                                );
+                              }
+                            },
+                          ),
+                        ],
+
+                        // VÍDEO — no site aparece logo abaixo dos passos
+                        // da timeline.
+                        if (temVideo) ...[
+                          const SizedBox(height: COTokens.space9),
+                          SecaoVideo(videoUrl: info.videoUrl),
+                        ],
+
+                        // FRAÇÕES (projectFractions) e ACABAMENTOS
+                        // (projectFinishes). Cada secção decide-se sozinha:
+                        // sem dados na API não aparece, como no site.
+                        if (project.fractions.isNotEmpty) ...[
+                          const SizedBox(height: COTokens.space9),
+                          SecaoFracoes(fracoes: project.fractions),
+                        ],
+
+                        if (project.finishes.isNotEmpty) ...[
+                          const SizedBox(height: COTokens.space9),
+                          SecaoAcabamentos(acabamentos: project.finishes),
+                        ],
+
+                        // ONDE FICA — mapa só deste empreendimento. No site
+                        // vem depois da timeline e antes das frações; aqui
+                        // ficou mais abaixo, porque as frações são o que a
+                        // pessoa vem ver e um mapa pelo meio afastava-as.
+                        const SizedBox(height: COTokens.space9),
+                        SecaoLocalizacao(info: info),
+
+                        // OUTROS EMPREENDIMENTOS — como no site, fecha a
+                        // página.
+                        const SizedBox(height: COTokens.space9),
+                        SecaoOutrosEmpreendimentos(
+                          projectIdAtual: widget.projectId,
+                        ),
+
+                        // Aqui estava o botão "MANIFESTAR INTERESSE". Dizia
+                        // "Interesse registado! Um gestor irá contactá-lo."
+                        // e não fazia chamada nenhuma à API — não havia
+                        // interesse nenhum registado em sítio algum. Saiu
+                        // até haver endpoint para isso. No site o
+                        // equivalente (DevCTA) manda para o registo.
+                        const SizedBox(height: 40),
+                      ]),
                     ),
                   ),
                 ],
@@ -621,7 +646,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
             child: Material(
               type: MaterialType.transparency,
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(COTokens.radiusSm)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(COTokens.radiusSm),
+                ),
                 child: widget.initialImageUrl.isNotEmpty
                     ? Image.network(widget.initialImageUrl, fit: BoxFit.cover)
                     : Container(color: COColors.brand700),
@@ -687,10 +714,12 @@ class _PulsingForwardConnector extends StatefulWidget {
   const _PulsingForwardConnector({required this.color});
 
   @override
-  State<_PulsingForwardConnector> createState() => _PulsingForwardConnectorState();
+  State<_PulsingForwardConnector> createState() =>
+      _PulsingForwardConnectorState();
 }
 
-class _PulsingForwardConnectorState extends State<_PulsingForwardConnector> with SingleTickerProviderStateMixin {
+class _PulsingForwardConnectorState extends State<_PulsingForwardConnector>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
@@ -771,9 +800,13 @@ class _ForSaleBadge extends StatelessWidget {
           ),
           const SizedBox(width: 5),
           Text(
-            forSale ? 'FRAÇÕES DISPONÍVEIS PARA VENDA' : 'TODAS AS FRAÇÕES VENDIDAS',
+            forSale
+                ? 'FRAÇÕES DISPONÍVEIS PARA VENDA'
+                : 'TODAS AS FRAÇÕES VENDIDAS',
             style: TextStyle(
-              color: forSale ? const Color(0xFFB3BCEF) : const Color(0xFFBDBDBD),
+              color: forSale
+                  ? const Color(0xFFB3BCEF)
+                  : const Color(0xFFBDBDBD),
               fontWeight: COTokens.fwBold,
               fontSize: 10,
               letterSpacing: 1,
@@ -795,4 +828,3 @@ class _SlidingGradientTransform extends GradientTransform {
     return Matrix4.translationValues(0.0, bounds.height * slidePercent, 0.0);
   }
 }
-

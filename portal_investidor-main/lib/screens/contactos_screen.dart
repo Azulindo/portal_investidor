@@ -81,7 +81,7 @@ class _ContactosScreenState extends State<ContactosScreen> {
       appBar: AppBar(
         backgroundColor: COColors.brand900,
         title: Text(
-          'CONTACTOS',
+          'Contactos',
           style: COText.small.copyWith(
             color: COColors.white,
             fontSize: 13,
@@ -154,7 +154,6 @@ class _ContactosScreenState extends State<ContactosScreen> {
                       'ABRIR FORMULÁRIO',
                       style: COText.small.copyWith(
                         fontWeight: COTokens.fwBold,
-                        letterSpacing: 1.5,
                         color: COColors.white,
                       ),
                     ),

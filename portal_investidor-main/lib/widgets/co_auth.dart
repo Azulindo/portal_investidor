@@ -60,7 +60,7 @@ class CoAuthScaffold extends StatelessWidget {
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: COTokens.space8),
-                  Text('ÁREA RESERVADA',
+                  Text('Área reservada',
                       style: COText.overline, textAlign: TextAlign.center),
                   const SizedBox(height: COTokens.space2),
                   Text(titulo, style: COText.h1, textAlign: TextAlign.center),

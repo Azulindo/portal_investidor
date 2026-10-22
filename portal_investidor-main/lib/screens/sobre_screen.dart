@@ -126,7 +126,7 @@ class _SobreScreenState extends State<SobreScreen> {
         centerTitle: true,
         iconTheme: const IconThemeData(color: COColors.white),
         title: Text(
-          'SOBRE NÓS',
+          'Sobre nós',
           style: COText.small.copyWith(
             color: COColors.white,
             fontSize: 13,
@@ -439,7 +439,6 @@ class _SobreScreenState extends State<SobreScreen> {
               style: COText.small.copyWith(
                 color: COColors.white,
                 fontWeight: COTokens.fwBold,
-                letterSpacing: 1.5,
               ),
             ),
           ),

@@ -29,8 +29,7 @@ class _SecaoAcabamentosState extends State<SecaoAcabamentos> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CoTitulo('Acabamentos'),
-        Text('Mapa de acabamentos e serviços', style: COText.h2),
+        const CoTitulo('Mapa de acabamentos e serviços'),
         const SizedBox(height: COTokens.space4),
 
         for (var i = 0; i < widget.acabamentos.length; i++)

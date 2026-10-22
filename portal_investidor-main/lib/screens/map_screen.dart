@@ -190,7 +190,7 @@ class _MapScreenState extends State<MapScreen> {
                                           ),
                                         );
                                       },
-                                      child: const Text('Ver Detalhes',
+                                      child: const Text('Ver detalhes',
                                           style: TextStyle(fontWeight: COTokens.fwBold)),
                                     ),
                                   ),
@@ -276,8 +276,7 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         backgroundColor: COColors.brand900,
         foregroundColor: COColors.white,
-        title: const Text('Mapa de projetos',
-            style: TextStyle(fontSize: 18, fontWeight: COTokens.fwBold)),
+        title: const Text('Mapa de projetos', style: COText.tituloEcra),
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [

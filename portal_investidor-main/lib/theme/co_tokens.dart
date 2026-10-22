@@ -86,6 +86,16 @@ class COText {
   );
 
   /// Etiquetas de secção, sempre em maiúsculas ("STATUS DAS OBRAS").
+  /// O titulo da barra de cima. Cada ecra tinha o seu, escrito a mao, e
+  /// todos em MAIUSCULAS com letterSpacing — "OS SEUS DOCUMENTOS", "O
+  /// NOSSO PORTFOLIO". Depois de os titulos das seccoes terem passado a
+  /// caixa de frase, as barras eram a ultima camada a gritar.
+  static const TextStyle tituloEcra = TextStyle(
+    color: COColors.white,
+    fontSize: 18,
+    fontWeight: COTokens.fwBold,
+  );
+
   static const TextStyle overline = TextStyle(
     fontSize: 12,
     fontWeight: COTokens.fwMedium,
