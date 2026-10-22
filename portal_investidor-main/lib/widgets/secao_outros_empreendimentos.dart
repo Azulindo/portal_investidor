@@ -33,6 +33,12 @@ class _SecaoOutrosEmpreendimentosState
     extends State<SecaoOutrosEmpreendimentos> {
   static const int _maximo = 3;
 
+  /// Imagem (100) + o bloco de texto por baixo. Fixa, porque numa fila
+  /// horizontal todos os cartoes recebem a altura da fila: se o texto de
+  /// um deles crescesse, estourava.
+  static const double _alturaDaFila = 184;
+  static const double _larguraDoCartao = 164;
+
   late Future<List<dynamic>> _portfolio;
 
   @override
@@ -69,7 +75,21 @@ class _SecaoOutrosEmpreendimentosState
             const CoTitulo('Outros empreendimentos'),
             const SizedBox(height: COTokens.space4),
 
-            for (final p in aMostrar) _cartao(p as Map),
+            // Eram tres cartoes da largura toda, empilhados: uns 690px no
+            // fundo de uma pagina que ja e longa. Passam a uma fila que se
+            // arrasta para o lado, com cartoes pequenos — cerca de 180px ao
+            // todo. O terceiro fica meio a espreitar na margem, que e o que
+            // diz a pessoa que a fila anda.
+            SizedBox(
+              height: _alturaDaFila,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                itemCount: aMostrar.length,
+                itemBuilder: (context, i) => _cartao(aMostrar[i] as Map),
+              ),
+            ),
+            const SizedBox(height: COTokens.space2),
 
             _linkPortfolio(outros.length),
           ],
@@ -90,66 +110,82 @@ class _SecaoOutrosEmpreendimentosState
     // Hero com a mesma tag no mesmo ecrã dão erro.
     final heroTag = 'hero-outros-${widget.projectIdAtual}-$id';
 
-    return CoCard(
-      semPadding: true,
-      margin: const EdgeInsets.only(bottom: COTokens.space4),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ProjectDetailsScreen(
-            projectId: id,
-            heroTag: heroTag,
-            initialImageUrl: imagem,
-          ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              SizedBox(
-                width: double.infinity,
-                height: 150,
-                child: Hero(
-                  tag: heroTag,
-                  child: Material(
-                    type: MaterialType.transparency,
-                    child: imagem.isEmpty
-                        ? _semImagem()
-                        : Image.network(
-                            imagem,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => _semImagem(),
-                          ),
-                  ),
-                ),
-              ),
-              if (estado.isNotEmpty)
-                Positioned(
-                  top: COTokens.space2,
-                  left: COTokens.space2,
-                  child: UIHelpers.buildStatusBadge(estado),
-                ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(COTokens.space4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (cidade.isNotEmpty) ...[
-                  Text(cidade.toUpperCase(), style: COText.overline),
-                  const SizedBox(height: 4),
-                ],
-                Text(
-                  nome,
-                  style: COText.body.copyWith(fontWeight: COTokens.fwBold),
-                ),
-              ],
+    return SizedBox(
+      width: _larguraDoCartao,
+      child: CoCard(
+        semPadding: true,
+        margin: const EdgeInsets.only(right: COTokens.space4),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProjectDetailsScreen(
+              projectId: id,
+              heroTag: heroTag,
+              initialImageUrl: imagem,
             ),
           ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: 100,
+                  child: Hero(
+                    tag: heroTag,
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: imagem.isEmpty
+                          ? _semImagem()
+                          : Image.network(
+                              imagem,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => _semImagem(),
+                            ),
+                    ),
+                  ),
+                ),
+                if (estado.isNotEmpty)
+                  Positioned(
+                    top: COTokens.space2,
+                    left: COTokens.space2,
+                    child: UIHelpers.buildStatusBadge(estado),
+                  ),
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (cidade.isNotEmpty) ...[
+                      // Era o nome da cidade em MAIUSCULAS. Num cartao
+                      // pequeno isso ocupava o lugar do nome sem dizer mais.
+                      Text(cidade, style: COText.caption),
+                      const SizedBox(height: 2),
+                    ],
+                    Expanded(
+                      child: Text(
+                        nome,
+                        style: const TextStyle(
+                          color: COColors.white,
+                          fontSize: 14,
+                          fontWeight: COTokens.fwBold,
+                          height: 1.25,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
