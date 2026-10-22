@@ -50,8 +50,7 @@ class Carteira {
       for (final nome in nomesDosProjetos)
         LinhaCarteira(
           empreendimento: nome,
-          fracoes: encomendas
-              .where((o) => o.projectName == nome)
+          fracoes: doEmpreendimento(nome, encomendas)
               .expand((o) => o.fractions)
               .toSet()
               .length,
@@ -59,12 +58,36 @@ class Carteira {
     ];
   }
 
+  /// Chave para comparar nomes de empreendimentos vindos de endpoints
+  /// diferentes.
+  ///
+  /// O nome chega por dois caminhos — o app_project.name do /user/:id e o
+  /// projectName do /document/sale-orders — e nada garante que venham
+  /// escritos exatamente igual: um espaço a mais no fim, dois espaços no
+  /// meio, uma maiúscula trocada. São o mesmo empreendimento para quem lê.
+  ///
+  /// Isto não é zelo a mais: a comparação exata de texto já falhou três
+  /// vezes nesta app, sempre com estados ("Construção" contra "Em
+  /// construção") — nos filtros do portfólio, na etiqueta dos cartões e nos
+  /// pinos do mapa. Aqui o preço de falhar é maior, porque o que se perde é
+  /// dinheiro: o cartão do empreendimento aparecia sem o investido nem o
+  /// por pagar, e a soma dos cartões deixava de dar o total do cabeçalho.
+  ///
+  /// Acentos não se tocam de propósito. "Ornelas" e "Ornélas" são nomes
+  /// diferentes e devem falhar à vista, em vez de se juntarem em silêncio.
+  static String _chaveDoProjeto(String nome) =>
+      nome.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
+  /// Se dois nomes se referem ao mesmo empreendimento.
+  static bool mesmoProjeto(String a, String b) =>
+      _chaveDoProjeto(a) == _chaveDoProjeto(b);
+
   /// Encomendas de um empreendimento.
   static List<SaleOrder> doEmpreendimento(
     String nome,
     List<SaleOrder> encomendas,
   ) =>
-      encomendas.where((o) => o.projectName == nome).toList();
+      encomendas.where((o) => mesmoProjeto(o.projectName, nome)).toList();
 
   /// Total de frações da carteira, sem repetições dentro de cada
   /// empreendimento.

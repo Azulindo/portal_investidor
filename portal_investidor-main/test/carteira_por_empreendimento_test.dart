@@ -108,6 +108,35 @@ void main() {
       );
     });
 
+    test('o nome junta-se mesmo vindo escrito de maneira diferente', () {
+      // O nome chega por dois caminhos: o app_project.name do /user/:id e o
+      // projectName do /document/sale-orders. Nada garante que venham
+      // iguais ao caracter. Se esta juncao falhar, o cartao aparece sem
+      // dinheiro nenhum e a soma dos cartoes deixa de dar o cabecalho —
+      // que e o erro que os outros testes deste ficheiro guardam.
+      for (final variante in [
+        'Aires Ornelas ',
+        ' Aires Ornelas',
+        'aires ornelas',
+        'AIRES ORNELAS',
+        'Aires  Ornelas',
+      ]) {
+        expect(
+          Carteira.doEmpreendimento(variante, todas).length,
+          2,
+          reason: 'nao juntou "$variante"',
+        );
+      }
+    });
+
+    test('nomes diferentes continuam diferentes', () {
+      // O acento nao se ignora: sao nomes diferentes e devem falhar a
+      // vista, em vez de se juntarem em silencio.
+      expect(Carteira.mesmoProjeto('Aires Ornelas', 'Aires Ornélas'), isFalse);
+      expect(Carteira.mesmoProjeto('Aires Ornelas', 'Quinta das Laranjeiras'),
+          isFalse);
+    });
+
     test('um empreendimento sem encomendas da zero e nao rebenta', () {
       final nenhuma = Carteira.doEmpreendimento('Projeto Que Nao Existe', todas);
       expect(nenhuma, isEmpty);
