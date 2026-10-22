@@ -12,6 +12,11 @@ import 'services/api_service.dart';
 /// sem BuildContext próprio (ex: o ErrorWidget global abaixo).
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+/// Para conseguir mostrar um aviso depois de trocar de ecra, altura em que
+/// o context do ecra antigo ja nao serve.
+final GlobalKey<ScaffoldMessengerState> messengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -90,6 +95,25 @@ void main() async {
     ApiService.idLogado = userId;
   }
 
+  // Se o token morrer com a app aberta, o servidor passa a responder 401.
+  // Ate agora nenhum ecra reagia: ficavam todos a mostrar erro, e o
+  // utilizador carregava em "tentar novamente" contra um token morto.
+  // Agora limpa-se a sessao guardada e volta-se ao login, com um aviso a
+  // dizer porque.
+  ApiService.aoExpirarSessao = () async {
+    await AuthService.limparSessao();
+    navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+    messengerKey.currentState?.showSnackBar(
+      const SnackBar(
+        content: Text('A sua sessao expirou. Volte a entrar.'),
+        backgroundColor: COColors.brand500,
+      ),
+    );
+  };
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => PrivacyService(),
@@ -107,6 +131,7 @@ class CleverOptionApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
+      scaffoldMessengerKey: messengerKey,
       debugShowCheckedModeBanner: false,
       title: 'Clever Option',
       theme: ThemeData(

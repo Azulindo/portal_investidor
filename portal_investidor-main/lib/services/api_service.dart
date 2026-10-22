@@ -29,6 +29,33 @@ class ApiService {
   /// para chamadas seguintes durante esta sessão.
   static void definirToken(String? token) {
     _token = token;
+    // Entrar de novo reabre a porta: sem isto, depois de uma sessao
+    // expirada o aviso nunca mais disparava nesta execucao da app.
+    if (token != null) _jaAvisouQueExpirou = false;
+  }
+
+  /// O que fazer quando o servidor responde 401 a meio da sessao.
+  ///
+  /// Quem liga isto e o main.dart, que e quem tem o Navigator. O
+  /// ApiService nao sabe nada de ecras e e assim que deve ficar.
+  static void Function()? aoExpirarSessao;
+
+  static bool _jaAvisouQueExpirou = false;
+
+  /// Um 401 a meio da sessao quer dizer que o token morreu — expirou,
+  /// foi revogado, ou a API reiniciou. Ate agora nada reagia: o ecra
+  /// mostrava "erro" e o utilizador ficava ali, a carregar em "tentar
+  /// novamente" contra um token que nunca mais ia servir.
+  ///
+  /// Dispara uma vez so. Se o painel fizer tres pedidos ao mesmo tempo e
+  /// os tres levarem 401, o utilizador nao leva tres saltos para o login.
+  static void _sessaoExpirou() {
+    _token = null;
+    idLogado = null;
+    dadosLogado = null;
+    if (_jaAvisouQueExpirou) return;
+    _jaAvisouQueExpirou = true;
+    aoExpirarSessao?.call();
   }
 
   /// Garante que o token está carregado em memória, lendo do armazenamento
@@ -36,6 +63,24 @@ class ApiService {
   Future<String?> _obterTokenValido() async {
     _token ??= await AuthService.obterToken();
     return _token;
+  }
+
+  /// Levanta o erro certo para uma resposta que falhou.
+  ///
+  /// Existe para o 401 ser tratado num sitio so. Antes cada metodo
+  /// lancava a sua ApiException e ninguem olhava para o statusCode.
+  Never _falhou(http.Response response) {
+    if (response.statusCode == 401) {
+      ApiService._sessaoExpirou();
+      throw ApiException(
+        'A sua sessao expirou. Volte a entrar.',
+        statusCode: 401,
+      );
+    }
+    throw ApiException(
+      _extrairErro(response.body),
+      statusCode: response.statusCode,
+    );
   }
 
   String _extrairErro(String responseBody) {
@@ -252,7 +297,7 @@ class ApiService {
         idLogado = investidor.id;
         return investidor;
       } else {
-        throw ApiException(_extrairErro(response.body), statusCode: response.statusCode);
+        _falhou(response);
       }
     } on TimeoutException catch (_) {
       throw ApiException('O servidor demorou muito tempo a responder.');
@@ -292,7 +337,7 @@ class ApiService {
         }
         return [];
       } else {
-        throw ApiException(_extrairErro(response.body), statusCode: response.statusCode);
+        _falhou(response);
       }
     } on TimeoutException catch (_) {
       throw ApiException('O servidor demorou muito tempo a responder.');
@@ -337,10 +382,7 @@ class ApiService {
         }
         return [];
       }
-      throw ApiException(
-        _extrairErro(response.body),
-        statusCode: response.statusCode,
-      );
+      _falhou(response);
     } on TimeoutException catch (_) {
       throw ApiException('O servidor demorou muito tempo a responder.');
     } on ApiException {
@@ -372,7 +414,7 @@ class ApiService {
         }
         return [];
       } else {
-        throw ApiException(_extrairErro(response.body), statusCode: response.statusCode);
+        _falhou(response);
       }
     } on TimeoutException catch (_) {
       throw ApiException('O servidor demorou muito tempo a responder.');
@@ -442,7 +484,7 @@ class ApiService {
       } else if (response.statusCode == 404) {
         throw ApiException('Projeto não encontrado.', statusCode: 404);
       } else {
-        throw ApiException(_extrairErro(response.body), statusCode: response.statusCode);
+        _falhou(response);
       }
     } on TimeoutException catch (_) {
       throw ApiException('O servidor demorou muito tempo a responder.');
