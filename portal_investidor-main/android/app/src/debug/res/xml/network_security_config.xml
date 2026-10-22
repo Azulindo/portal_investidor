@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configuracao de DEBUG. O Gradle usa este ficheiro em vez do que esta em
+  src/main/ sempre que se compila em debug, porque tem o mesmo nome e o
+  source set de debug ganha na fusao de recursos.
+
+  Aqui o http e permitido, e de proposito: a API local corre em
+  http://10.0.2.2:3000 para o emulador, http://localhost:3000 para a web,
+  e num endereco da rede (o IP da Tailscale, por exemplo) quando se testa
+  num telemovel a serio pela variavel API_BASE_URL. Fechar o cleartext
+  aqui so dava trabalho sem ganhar seguranca nenhuma: builds de debug nao
+  vao para a loja.
+
+  O que conta e o ficheiro de release, em src/main/res/xml/.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
