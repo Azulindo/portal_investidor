@@ -47,6 +47,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _recarregar() {
+    // Quem puxa para atualizar quer dados novos, nao os de ha dois
+    // minutos: a cache do ApiService tem de sair da frente.
+    ApiService.limparCache();
     setState(_carregar);
   }
 

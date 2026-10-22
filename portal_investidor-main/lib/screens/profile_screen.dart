@@ -34,6 +34,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _fazerLogout() async {
     await AuthService.limparSessao();
+    // Os dados desta pessoa nao podem ficar guardados para quem entrar a
+    // seguir neste telemovel.
+    ApiService.limparCache();
     ApiService.idLogado = null;
     ApiService.dadosLogado = null;
     ApiService.definirToken(null);
@@ -42,7 +45,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         context,
         PageRouteBuilder(
           pageBuilder: (c, a1, a2) => const LoginScreen(),
-          transitionsBuilder: (c, anim, a2, child) => FadeTransition(opacity: anim, child: child),
+          transitionsBuilder: (c, anim, a2, child) =>
+              FadeTransition(opacity: anim, child: child),
         ),
         (route) => false,
       );
@@ -62,7 +66,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       backgroundColor: COColors.brand900,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(COTokens.radiusSm)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(COTokens.radiusSm),
+        ),
       ),
       builder: (context) {
         return Padding(
@@ -79,11 +85,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: COTokens.space6),
-              const Icon(Icons.support_agent_rounded, size: 50, color: COColors.brand300),
+              const Icon(
+                Icons.support_agent_rounded,
+                size: 50,
+                color: COColors.brand300,
+              ),
               const SizedBox(height: COTokens.space4),
               const Text(
                 'Precisas de ajuda?',
-                style: TextStyle(color: COColors.white, fontSize: 18, fontWeight: COTokens.fwBold),
+                style: TextStyle(
+                  color: COColors.white,
+                  fontSize: 18,
+                  fontWeight: COTokens.fwBold,
+                ),
               ),
               const SizedBox(height: COTokens.space2),
               const Text(
@@ -95,33 +109,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // Telefone
               ListTile(
-                leading: const Icon(Icons.phone_outlined, color: COColors.brand300),
-                title: const Text('+351 912 923 952', style: TextStyle(color: COColors.white)),
+                leading: const Icon(
+                  Icons.phone_outlined,
+                  color: COColors.brand300,
+                ),
+                title: const Text(
+                  '+351 912 923 952',
+                  style: TextStyle(color: COColors.white),
+                ),
                 tileColor: COColors.brand700,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(COTokens.radiusSm)),
-                onTap: () => _launchUrl(Uri(scheme: 'tel', path: '+351912923952')),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(COTokens.radiusSm),
+                ),
+                onTap: () =>
+                    _launchUrl(Uri(scheme: 'tel', path: '+351912923952')),
               ),
               const SizedBox(height: COTokens.space2),
 
               // Email
               ListTile(
-                leading: const Icon(Icons.email_outlined, color: COColors.brand300),
-                title: const Text('geral@cleveroption.pt', style: TextStyle(color: COColors.white)),
+                leading: const Icon(
+                  Icons.email_outlined,
+                  color: COColors.brand300,
+                ),
+                title: const Text(
+                  'geral@cleveroption.pt',
+                  style: TextStyle(color: COColors.white),
+                ),
                 tileColor: COColors.brand700,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(COTokens.radiusSm)),
-                onTap: () => _launchUrl(Uri(scheme: 'mailto', path: 'geral@cleveroption.pt')),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(COTokens.radiusSm),
+                ),
+                onTap: () => _launchUrl(
+                  Uri(scheme: 'mailto', path: 'geral@cleveroption.pt'),
+                ),
               ),
               const SizedBox(height: COTokens.space2),
 
               // Morada (apenas visual, sem acção)
               ListTile(
-                leading: const Icon(Icons.location_on_outlined, color: COColors.brand300),
+                leading: const Icon(
+                  Icons.location_on_outlined,
+                  color: COColors.brand300,
+                ),
                 title: const Text(
                   'Via Eng. Edgar Cardoso 23, 5.º D, Vila Nova de Gaia',
                   style: TextStyle(color: COColors.white, fontSize: 13),
                 ),
                 tileColor: COColors.brand700,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(COTokens.radiusSm)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(COTokens.radiusSm),
+                ),
               ),
               const SizedBox(height: COTokens.space6),
             ],
@@ -145,17 +183,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Icon(Icons.fingerprint, color: COColors.brand300),
               SizedBox(width: 10),
-              Text('Segurança', style: TextStyle(color: COColors.white, fontSize: 16, fontWeight: COTokens.fwBold)),
+              Text(
+                'Segurança',
+                style: TextStyle(
+                  color: COColors.white,
+                  fontSize: 16,
+                  fontWeight: COTokens.fwBold,
+                ),
+              ),
             ],
           ),
           content: const Text(
             'A autenticação biométrica (Face ID / Impressão Digital) está ativa para o teu dispositivo. Os teus dados estão protegidos.',
-            style: TextStyle(color: COColors.neutral500, fontSize: 14, height: 1.5),
+            style: TextStyle(
+              color: COColors.neutral500,
+              fontSize: 14,
+              height: 1.5,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Fechar', style: TextStyle(color: COColors.brand300, fontWeight: COTokens.fwBold, letterSpacing: 1)),
+              child: const Text(
+                'Fechar',
+                style: TextStyle(
+                  color: COColors.brand300,
+                  fontWeight: COTokens.fwBold,
+                  letterSpacing: 1,
+                ),
+              ),
             ),
           ],
         );
@@ -172,8 +228,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: ListTile(
         leading: Icon(icon, color: COColors.brand300, size: 24),
-        title: Text(title, style: const TextStyle(color: COColors.white, fontSize: 14, fontWeight: COTokens.fwMedium)),
-        trailing: const Icon(Icons.chevron_right, color: COColors.brand500, size: 20),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: COColors.white,
+            fontSize: 14,
+            fontWeight: COTokens.fwMedium,
+          ),
+        ),
+        trailing: const Icon(
+          Icons.chevron_right,
+          color: COColors.brand500,
+          size: 20,
+        ),
         onTap: onTap,
       ),
     );
@@ -217,13 +284,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     backgroundColor: COColors.brand700,
                     child: Text(
                       _getInitials(name),
-                      style: const TextStyle(color: COColors.white, fontSize: 24, fontWeight: COTokens.fwBold),
+                      style: const TextStyle(
+                        color: COColors.white,
+                        fontSize: 24,
+                        fontWeight: COTokens.fwBold,
+                      ),
                     ),
                   ),
                   const SizedBox(height: COTokens.space4),
-                  Text(name, style: const TextStyle(color: COColors.white, fontSize: 24, fontWeight: COTokens.fwBold)),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      color: COColors.white,
+                      fontSize: 24,
+                      fontWeight: COTokens.fwBold,
+                    ),
+                  ),
                   const SizedBox(height: COTokens.space2),
-                  Text(email, style: const TextStyle(color: COColors.neutral500, fontSize: 14)),
+                  Text(
+                    email,
+                    style: const TextStyle(
+                      color: COColors.neutral500,
+                      fontSize: 14,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -273,10 +357,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             _buildMenuItem(Icons.person, 'Os Meus Dados', () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edição de perfil disponível em breve!'), backgroundColor: COColors.brand500),
+                const SnackBar(
+                  content: Text('Edição de perfil disponível em breve!'),
+                  backgroundColor: COColors.brand500,
+                ),
               );
             }),
-            _buildMenuItem(Icons.fingerprint, 'Segurança e Biometria', _mostrarBiometria),
+            _buildMenuItem(
+              Icons.fingerprint,
+              'Segurança e Biometria',
+              _mostrarBiometria,
+            ),
             _buildMenuItem(Icons.help_outline, 'Suporte', _mostrarSuporte),
 
             const SizedBox(height: COTokens.space8),
@@ -287,11 +378,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onPressed: _fazerLogout,
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: COColors.brand500, width: 1),
-                  padding: const EdgeInsets.symmetric(vertical: COTokens.space6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(COTokens.radiusSm)),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: COTokens.space6,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(COTokens.radiusSm),
+                  ),
                 ),
-                child: const Text('Terminar sessão',
-                    style: TextStyle(color: COColors.brand500, letterSpacing: 1.5, fontWeight: COTokens.fwBold, fontSize: 13)),
+                child: const Text(
+                  'Terminar sessão',
+                  style: TextStyle(
+                    color: COColors.brand500,
+                    letterSpacing: 1.5,
+                    fontWeight: COTokens.fwBold,
+                    fontSize: 13,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: COTokens.space6),

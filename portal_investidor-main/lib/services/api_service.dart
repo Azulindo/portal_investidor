@@ -38,6 +38,41 @@ class ApiService {
   ///
   /// Quem liga isto e o main.dart, que e quem tem o Navigator. O
   /// ApiService nao sabe nada de ecras e e assim que deve ficar.
+  /// Respostas guardadas por uns minutos.
+  ///
+  /// O portfolio e pedido por sete sitios diferentes — o mapa, o
+  /// portfolio, o "sobre nos", os outros empreendimentos — e as encomendas
+  /// por dois, o painel e o detalhe. Cada ecra pedia por sua conta: abrir
+  /// o painel, entrar num empreendimento e voltar atras fazia a mesma
+  /// chamada tres vezes. Com dados a serio e rede movel isso sente-se, e
+  /// e trafego pago pelo cliente.
+  ///
+  /// Nao e uma cache a serio: nao sabe se os dados mudaram no servidor.
+  /// Por isso a validade e curta e qualquer "puxar para atualizar" a
+  /// limpa primeiro — o utilizador que puxa quer dados novos, e tem de os
+  /// receber.
+  static final Map<String, _Guardado> _cache = {};
+
+  static const Duration _validadeDaCache = Duration(minutes: 3);
+
+  /// Deita fora o que esta guardado.
+  ///
+  /// Chamar sempre que o utilizador pede dados novos de proposito, e
+  /// obrigatoriamente ao sair da sessao: dados de uma pessoa nunca podem
+  /// aparecer a seguinte que entre neste telemovel.
+  static void limparCache() => _cache.clear();
+
+  Future<T> _comCache<T>(String chave, Future<T> Function() buscar) async {
+    final guardado = _cache[chave];
+    if (guardado != null &&
+        DateTime.now().difference(guardado.quando) < _validadeDaCache) {
+      return guardado.valor as T;
+    }
+    final valor = await buscar();
+    _cache[chave] = _Guardado(valor, DateTime.now());
+    return valor;
+  }
+
   static void Function()? aoExpirarSessao;
 
   static bool _jaAvisouQueExpirou = false;
@@ -53,6 +88,9 @@ class ApiService {
     _token = null;
     idLogado = null;
     dadosLogado = null;
+    // Sem isto, quem entrasse a seguir neste telemovel via os dados da
+    // pessoa anterior ate a cache expirar.
+    limparCache();
     if (_jaAvisouQueExpirou) return;
     _jaAvisouQueExpirou = true;
     aoExpirarSessao?.call();
@@ -77,16 +115,43 @@ class ApiService {
         statusCode: 401,
       );
     }
+    // O que o servidor escreve e para o programador, nao para o
+    // investidor. Um erro interno do Odoo a frente de um cliente le-se
+    // mal e pode dizer de mais sobre o que esta por tras.
     throw ApiException(
-      _extrairErro(response.body),
+      _mensagemPara(response),
       statusCode: response.statusCode,
     );
+  }
+
+  /// A mensagem que o utilizador ve.
+  String _mensagemPara(http.Response response) {
+    final codigo = response.statusCode;
+    if (codigo == 403) {
+      return 'Não tem permissão para ver isto.';
+    }
+    if (codigo == 404) {
+      return 'Não encontrámos o que procurava.';
+    }
+    if (codigo >= 500) {
+      // Um 500 e sempre do lado de la: nada do que o servidor diga ajuda
+      // quem esta a segurar o telemovel.
+      return 'O servidor teve um problema. Tente daqui a pouco.';
+    }
+    // Nos outros 4xx a mensagem costuma ser de validacao e e util —
+    // "email ja registado", por exemplo. Se vier vazia, uma generica.
+    final doServidor = _extrairErro(response.body);
+    return doServidor.isNotEmpty
+        ? doServidor
+        : 'Não foi possível completar o pedido.';
   }
 
   String _extrairErro(String responseBody) {
     try {
       final json = jsonDecode(responseBody);
-      return json['message'] ?? json['error'] ?? 'Erro desconhecido no servidor.';
+      return json['message'] ??
+          json['error'] ??
+          'Erro desconhecido no servidor.';
     } catch (_) {
       return 'O servidor devolveu uma resposta inválida.';
     }
@@ -122,7 +187,10 @@ class ApiService {
   // ============================================================
 
   /// Faz login. Devolve (sucesso, mensagem, userId, token)
-  Future<(bool, String, int?, String?)> fazerLoginJson(String email, String password) async {
+  Future<(bool, String, int?, String?)> fazerLoginJson(
+    String email,
+    String password,
+  ) async {
     if (ApiConfig.useMock) {
       await Future.delayed(const Duration(seconds: 1));
       return (true, 'Sucesso', 999, null);
@@ -130,11 +198,16 @@ class ApiService {
 
     final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.loginEndpoint}');
     try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
-      ).timeout(ApiConfig.connectionTimeout);
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode({'email': email, 'password': password}),
+          )
+          .timeout(ApiConfig.connectionTimeout);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> parsed = jsonDecode(response.body);
@@ -153,7 +226,12 @@ class ApiService {
           idLogado = id;
           return (true, 'Sucesso', id, token);
         } else {
-          return (false, 'ID do utilizador não encontrado na resposta', null, null);
+          return (
+            false,
+            'ID do utilizador não encontrado na resposta',
+            null,
+            null,
+          );
         }
       } else {
         return (false, _extrairErro(response.body), null, null);
@@ -281,7 +359,9 @@ class ApiService {
       return investidor;
     }
 
-    final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.userEndpoint(idAtual)}');
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.userEndpoint(idAtual)}',
+    );
     try {
       final response = await http
           .get(url, headers: await _authHeaders())
@@ -314,7 +394,10 @@ class ApiService {
 
   /// GET /api/project/portfolio
   /// Devolve a lista resumida de projetos para o ecrã "Portfólio".
-  Future<List<dynamic>> buscarPortfolio() async {
+  Future<List<dynamic>> buscarPortfolio() =>
+      _comCache('portfolio', _buscarPortfolio);
+
+  Future<List<dynamic>> _buscarPortfolio() async {
     if (ApiConfig.useMock) {
       await Future.delayed(const Duration(milliseconds: 800));
       return DadosDeExemplo.portfolio();
@@ -358,14 +441,18 @@ class ApiService {
   /// É daqui que saem os totais do painel (investido, pago, por pagar) — ver
   /// utils/carteira.dart. O endpoint já estava declarado no ApiConfig mas não
   /// havia nada a chamá-lo.
-  Future<List<SaleOrder>> buscarOrdensDeCompra() async {
+  Future<List<SaleOrder>> buscarOrdensDeCompra() =>
+      _comCache('encomendas', _buscarOrdensDeCompra);
+
+  Future<List<SaleOrder>> _buscarOrdensDeCompra() async {
     if (ApiConfig.useMock) {
       await Future.delayed(const Duration(milliseconds: 600));
       return DadosDeExemplo.encomendas();
     }
 
-    final url =
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.saleOrdersEndpoint}');
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.saleOrdersEndpoint}',
+    );
     try {
       final response = await http
           .get(url, headers: await _authHeaders())
@@ -400,7 +487,9 @@ class ApiService {
       return DadosDeExemplo.documentos();
     }
 
-    final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.documentListEndpoint}');
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.documentListEndpoint}',
+    );
     try {
       final response = await http
           .get(url, headers: await _authHeaders())
@@ -445,18 +534,24 @@ class ApiService {
     }
 
     final url = Uri.parse(
-        '${ApiConfig.baseUrl}${ApiConfig.attachmentTokenEndpoint(attachmentId)}');
+      '${ApiConfig.baseUrl}${ApiConfig.attachmentTokenEndpoint(attachmentId)}',
+    );
     final response = await http
         .get(url, headers: await _authHeaders())
         .timeout(ApiConfig.connectionTimeout);
 
     if (response.statusCode != 200) {
-      throw ApiException('Erro ao obter URL do anexo (${response.statusCode})', statusCode: response.statusCode);
+      throw ApiException(
+        'Erro ao obter URL do anexo (${response.statusCode})',
+        statusCode: response.statusCode,
+      );
     }
 
     final parsed = jsonDecode(response.body);
     final token = parsed['data']?['token'] as String?;
-    if (token == null) throw ApiException('Token de download não encontrado na resposta');
+    if (token == null) {
+      throw ApiException('Token de download não encontrado na resposta');
+    }
     return ApiConfig.attachmentDownloadUrl(attachmentId, token);
   }
 
@@ -472,7 +567,9 @@ class ApiService {
       return ProjectDetailModel.fromJson(DadosDeExemplo.detalhes(projectId));
     }
 
-    final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.projectDetailsEndpoint(projectId)}');
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.projectDetailsEndpoint(projectId)}',
+    );
     try {
       final response = await http
           .get(url, headers: await _authHeaders())
@@ -494,4 +591,12 @@ class ApiService {
       throw ApiException('Erro de ligação à rede.');
     }
   }
+}
+
+/// Uma resposta guardada e a hora a que o foi.
+class _Guardado {
+  final Object? valor;
+  final DateTime quando;
+
+  _Guardado(this.valor, this.quando);
 }

@@ -58,6 +58,9 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   }
 
   void _recarregar() {
+    // Quem puxa para atualizar quer dados novos, nao os de ha dois
+    // minutos: a cache do ApiService tem de sair da frente.
+    ApiService.limparCache();
     setState(() {
       _portfolioFuture = ApiService().buscarPortfolio();
     });
