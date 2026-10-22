@@ -7,6 +7,11 @@ class COColors {
   static const Color brand300 = Color(0xFFA6B4C1);
   static const Color brand100 = Color(0xFFE9EEF2);
 
+  /// O teal da marca. Estava escrito a mao em dois sitios — na etiqueta de
+  /// estado e no chip de fracoes a venda — com o mesmo valor copiado.
+  /// Usa-se com conta: so no que a pessoa tem de fazer alguma coisa.
+  static const Color accent = Color(0xFF5BBFBF);
+
   static const Color white = Color(0xFFFFFFFF);
   static const Color bgLight = Color(0xFFF5F8FB);
   static const Color neutral100 = Color(0xFFE8EDF1);

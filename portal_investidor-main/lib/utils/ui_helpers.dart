@@ -17,7 +17,7 @@ class UIHelpers {
   static Color corDoGrupo(String? apiStatus, {bool fundoClaro = false}) {
     switch (Portfolio.grupoDeEstado(apiStatus)) {
       case 'concluido':
-        return const Color(0xFF5BBFBF); // o mesmo teal dos documentos
+        return COColors.accent;
       case 'desenvolvimento':
         return fundoClaro ? COColors.brand500 : COColors.neutral500;
       default:

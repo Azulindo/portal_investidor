@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../services/api_service.dart';
@@ -7,9 +8,9 @@ import '../widgets/co_drawer.dart';
 import '../models/investidor_model.dart';
 import '../models/sale_order.dart';
 import '../models/user_model.dart';
+import '../utils/carteira.dart';
 import '../utils/ui_helpers.dart';
-import '../widgets/secao_carteira.dart';
-import '../widgets/secao_encomendas.dart';
+import 'documents_screen.dart';
 import 'project_details_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -36,8 +37,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _carregar() {
-    _investidorFuture =
-        _apiService.buscarDadosDoInvestidor(ApiService.idLogado ?? 0);
+    _investidorFuture = _apiService.buscarDadosDoInvestidor(
+      ApiService.idLogado ?? 0,
+    );
     _encomendasFuture = _apiService
         .buscarOrdensDeCompra()
         // Sem isto, uma falha aqui aparecia como um erro não tratado.
@@ -64,7 +66,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           future: _investidorFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: COColors.white));
+              // Era um circulo a rodar no meio do ecra. O esqueleto nao
+              // torna nada mais rapido, mas o olho ja sabe onde as coisas
+              // vao aparecer e a espera sente-se menor.
+              return const _PainelEsqueleto();
             }
 
             if (snapshot.hasError || snapshot.data == null) {
@@ -119,63 +124,106 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onPressed: () => Scaffold.of(context).openDrawer(),
                     ),
                   ),
+                  actions: [
+                    // As faturas estavam a dois toques, dentro do menu
+                    // lateral. Para quem abre a app por causa do que deve,
+                    // sao o destino mais provavel.
+                    TextButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const DocumentsScreen(),
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.receipt_long_outlined,
+                        size: 18,
+                        color: COColors.brand300,
+                      ),
+                      label: const Text(
+                        'Faturas',
+                        style: TextStyle(
+                          color: COColors.brand300,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: COTokens.space2),
+                  ],
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.all(COTokens.space6),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      Text('Olá, ${user.name}', style: COText.h1),
-                      const SizedBox(height: 4),
-                      const Text('Bem-vindo ao seu painel de investimentos.',
-                          style: COText.small),
-                      const SizedBox(height: COTokens.space9),
-
-                      // TOTAIS e AQUISIÇÕES — vêm das encomendas, por isso
-                      // esperam pelo seu próprio pedido. Enquanto não chega,
-                      // ou se falhar, não aparece nada aqui e as obras em
-                      // baixo mostram-se como sempre.
+                      // O painel dizia duas vezes a mesma coisa: listava os
+                      // empreendimentos em "As suas aquisicoes" e outra vez
+                      // em "Estado das obras". Sem fazer scroll via-se os
+                      // totais e meia lista de encomendas — obra nenhuma,
+                      // que e o que a pessoa vem ca ver.
+                      //
+                      // Agora e um cartao por empreendimento com as duas
+                      // coisas juntas, e os dois cabem no ecra.
                       FutureBuilder<List<SaleOrder>>(
                         future: _encomendasFuture,
                         builder: (context, snap) {
+                          // Encomendas em falta ou falhadas nao escondem as
+                          // obras: o cartao aparece na mesma, sem a parte
+                          // do dinheiro.
                           final encomendas = snap.data ?? const <SaleOrder>[];
-                          if (encomendas.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
+                          final aCarregar =
+                              snap.connectionState == ConnectionState.waiting;
+
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SecaoCarteira(
+                              _Cabecalho(
+                                nome: user.name,
                                 encomendas: encomendas,
-                                nomesDosProjetos:
-                                    obras.map((o) => o.title).toList(),
+                                aCarregar: aCarregar,
                               ),
-                              const SizedBox(height: COTokens.space9),
-                              SecaoEncomendas(encomendas: encomendas),
-                              const SizedBox(height: COTokens.space9),
+                              const SizedBox(height: COTokens.space8),
+                              const CoTitulo('Os seus empreendimentos'),
+
+                              if (obras.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: COTokens.space8,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Opacity(
+                                        opacity: 0.2,
+                                        child: Image.asset(
+                                          'assets/images/logo.png',
+                                          height: 80,
+                                        ),
+                                      ),
+                                      const SizedBox(height: COTokens.space6),
+                                      const Text(
+                                        'Ainda não existem registos associados ao seu perfil.',
+                                        style: COText.caption,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else
+                                ...List.generate(
+                                  obras.length,
+                                  (index) => ObraCardWidget(
+                                    obra: obras[index],
+                                    heroTag:
+                                        'hero-dashboard-${obras[index].id}-$index',
+                                    encomendas: Carteira.doEmpreendimento(
+                                      obras[index].title,
+                                      encomendas,
+                                    ),
+                                  ),
+                                ),
                             ],
                           );
                         },
                       ),
-
-                      const CoTitulo('Estado das obras'),
-
-                      if (obras.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: COTokens.space8),
-                          child: Column(
-                            children: [
-                              Opacity(opacity: 0.2, child: Image.asset('assets/images/logo.png', height: 80)),
-                              const SizedBox(height: COTokens.space6),
-                              const Text('Ainda não existem registos associados ao seu perfil.',
-                                  style: COText.caption, textAlign: TextAlign.center),
-                            ],
-                          ),
-                        )
-                      else
-                        ...List.generate(obras.length, (index) => ObraCardWidget(
-                              obra: obras[index],
-                              heroTag: 'hero-dashboard-${obras[index].id}-$index',
-                            )),
 
                       const SizedBox(height: 40),
                     ]),
@@ -201,7 +249,18 @@ class ObraCardWidget extends StatelessWidget {
   final ConstructionItem obra;
   final String heroTag;
 
-  const ObraCardWidget({super.key, required this.obra, required this.heroTag});
+  /// As encomendas deste empreendimento, para o cartao poder dizer quanto
+  /// esta investido e quanto falta pagar. Vazia enquanto o pedido das
+  /// encomendas nao chega, ou se falhar: nesse caso o cartao mostra o
+  /// resto na mesma.
+  final List<SaleOrder> encomendas;
+
+  const ObraCardWidget({
+    super.key,
+    required this.obra,
+    required this.heroTag,
+    this.encomendas = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -238,7 +297,7 @@ class ObraCardWidget extends StatelessWidget {
                       child: urlImagem.isNotEmpty
                           ? Image.network(
                               urlImagem,
-                              height: 180,
+                              height: 190,
                               width: double.infinity,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
@@ -269,19 +328,22 @@ class ObraCardWidget extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
 
-                  CoLinhaInfo(icone: Icons.location_on_outlined, texto: obra.location),
+                  // Eram tres linhas com icone, uma por cima da outra.
+                  // Numa so poupa-se altura e le-se de uma vez.
+                  Text(
+                    [
+                      if (obra.location.isNotEmpty) obra.location,
+                      if (_fracoes > 0)
+                        Carteira.contagem(_fracoes, 'fração', 'frações'),
+                      if (obra.anoFim != null)
+                        'conclusão prevista ${obra.anoFim}',
+                    ].join('  ·  '),
+                    style: COText.caption,
+                  ),
 
-                  // Só o ano: a data inteira ("2028-12-31") não acrescenta nada
-                  // num cartão, e é por ano que se lê em todo o lado.
-                  if (obra.anoFim != null)
-                    CoLinhaInfo(
-                      icone: Icons.calendar_today_outlined,
-                      texto: 'Conclusão prevista: ${obra.anoFim}',
-                    ),
-
-                  const SizedBox(height: COTokens.space6),
+                  const SizedBox(height: COTokens.space4),
 
                   // TIMELINE HORIZONTAL DAS FASES
                   if (obra.status == 'Desenvolvimento')
@@ -293,18 +355,26 @@ class ObraCardWidget extends StatelessWidget {
                           Text(
                             'Projeto em desenvolvimento.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: COColors.brand300, fontSize: 14),
+                            style: TextStyle(
+                              color: COColors.brand300,
+                              fontSize: 14,
+                            ),
                           ),
                           Text(
                             'Timeline disponível em breve!',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: COColors.brand300, fontSize: 14),
+                            style: TextStyle(
+                              color: COColors.brand300,
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
                     )
                   else if (obra.steps.isNotEmpty)
                     _Timeline(obra: obra),
+
+                  if (encomendas.isNotEmpty) _dinheiro(),
                 ],
               ),
             ),
@@ -314,16 +384,75 @@ class ObraCardWidget extends StatelessWidget {
     );
   }
 
+  /// Quantas fracoes a pessoa tem aqui, sem repeticoes — a mesma fracao
+  /// pode vir em mais do que uma encomenda (um reforco, uma alteracao).
+  int get _fracoes => encomendas.expand((o) => o.fractions).toSet().length;
+
+  /// O investido e o por pagar deste empreendimento.
+  ///
+  /// Saem das encomendas, as mesmas contas da carteira, para o cartao e o
+  /// total la de cima nunca discordarem.
+  Widget _dinheiro() {
+    final investido = Carteira.investimentoTotal(encomendas);
+    final porPagar = Carteira.totalPorPagar(encomendas);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: COTokens.space4),
+      child: Container(
+        padding: const EdgeInsets.only(top: COTokens.space4),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: COColors.brand700)),
+        ),
+        child: Row(
+          children: [
+            Expanded(child: _valor('Investido', Carteira.euros(investido))),
+            Expanded(
+              child: _valor(
+                'Por pagar',
+                Carteira.euros(porPagar),
+                // O que falta pagar e a unica coisa aqui sobre a qual a
+                // pessoa tem de agir, por isso e a unica com cor.
+                cor: porPagar > 0 ? COColors.accent : COColors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _valor(String etiqueta, String valor, {Color cor = COColors.white}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(etiqueta, style: COText.caption),
+        const SizedBox(height: 2),
+        Text(
+          valor,
+          style: TextStyle(
+            color: cor,
+            fontSize: 15,
+            fontWeight: COTokens.fwBold,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _imagePlaceholder({required bool broken}) {
     return Container(
-      height: 180,
+      height: 190,
       color: COColors.brand700,
       child: Center(
         child: broken
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.broken_image_outlined, color: COColors.brand300, size: 40),
+                  Icon(
+                    Icons.broken_image_outlined,
+                    color: COColors.brand300,
+                    size: 40,
+                  ),
                   const SizedBox(height: 8),
                   const Text(
                     'Imagem indisponível',
@@ -331,7 +460,11 @@ class ObraCardWidget extends StatelessWidget {
                   ),
                 ],
               )
-            : const Icon(Icons.image_outlined, color: COColors.brand500, size: 40),
+            : const Icon(
+                Icons.image_outlined,
+                color: COColors.brand500,
+                size: 40,
+              ),
       ),
     );
   }
@@ -350,7 +483,9 @@ class _Timeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final steps = obra.steps;
-    final currentIndex = steps.indexWhere((s) => s.stepOrder == obra.currentStep);
+    final currentIndex = steps.indexWhere(
+      (s) => s.stepOrder == obra.currentStep,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,7 +532,12 @@ class _Timeline extends StatelessWidget {
                 children: [
                   Expanded(
                     child: showLeftLine
-                        ? Container(height: 1, color: leftLineDone ? COColors.brand300 : COColors.brand700)
+                        ? Container(
+                            height: 1,
+                            color: leftLineDone
+                                ? COColors.brand300
+                                : COColors.brand700,
+                          )
                         : const SizedBox(),
                   ),
                   Container(
@@ -410,7 +550,12 @@ class _Timeline extends StatelessWidget {
                   ),
                   Expanded(
                     child: showRightLine
-                        ? Container(height: 1, color: rightLineDone ? COColors.brand300 : COColors.brand700)
+                        ? Container(
+                            height: 1,
+                            color: rightLineDone
+                                ? COColors.brand300
+                                : COColors.brand700,
+                          )
                         : const SizedBox(),
                   ),
                 ],
@@ -425,6 +570,201 @@ class _Timeline extends StatelessWidget {
           ),
         );
       }),
+    );
+  }
+}
+
+// =========================================================
+// CABECALHO DO PAINEL
+// =========================================================
+
+/// O numero grande do painel.
+///
+/// Era o investimento total. Mas num modelo em que a Cleveroption constroi
+/// e vende, o total e um numero estatico que o investidor ja sabe de cor —
+/// nao e por causa dele que abre a app. O que o traz ca e o que ainda deve.
+/// O total passa para a linha de baixo, onde continua a dar contexto.
+class _Cabecalho extends StatelessWidget {
+  const _Cabecalho({
+    required this.nome,
+    required this.encomendas,
+    required this.aCarregar,
+  });
+
+  final String nome;
+  final List<SaleOrder> encomendas;
+  final bool aCarregar;
+
+  /// So o primeiro nome. "Ola, Guilherme Goncalves" ocupava duas linhas em
+  /// muitos telemoveis e nao dizia mais do que "Ola, Guilherme".
+  String get _primeiroNome => nome.trim().split(RegExp(r'\s+')).first;
+
+  @override
+  Widget build(BuildContext context) {
+    final saudacao = Text(
+      _primeiroNome.isEmpty ? 'Olá' : 'Olá, $_primeiroNome',
+      style: COText.h1.copyWith(fontSize: 22),
+    );
+
+    // Sem encomendas nao ha numeros para mostrar: fica so a saudacao, em
+    // vez de um "0 €" que parecia um erro.
+    if (encomendas.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          saudacao,
+          if (aCarregar) ...[
+            const SizedBox(height: COTokens.space4),
+            const _Osso(largura: 180, altura: 28),
+          ],
+        ],
+      );
+    }
+
+    final porPagar = Carteira.totalPorPagar(encomendas);
+    final total = Carteira.investimentoTotal(encomendas);
+    final pct = Carteira.percentagemPaga(encomendas);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        saudacao,
+        const SizedBox(height: COTokens.space4),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              Carteira.euros(porPagar),
+              style: COText.h1.copyWith(fontSize: 28, height: 1.1),
+            ),
+            const SizedBox(width: 10),
+            const Text('por pagar', style: COText.small),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'de ${Carteira.euros(total)} investidos  ·  $pct% liquidado',
+          style: COText.caption,
+        ),
+        const SizedBox(height: 10),
+        // A barra repete o que a linha de cima diz por extenso, mas le-se
+        // sem ler.
+        Semantics(
+          label: '$pct por cento liquidado',
+          child: SizedBox(
+            height: 2,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: pct.clamp(0, 100),
+                  child: Container(color: COColors.accent),
+                ),
+                Expanded(
+                  flex: (100 - pct).clamp(0, 100),
+                  child: Container(color: COColors.brand700),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// =========================================================
+// ESQUELETO DE CARREGAMENTO
+// =========================================================
+
+/// A forma do painel enquanto os dados nao chegam.
+///
+/// Segue o que o ecra vai mesmo mostrar: saudacao, o numero grande, e dois
+/// cartoes de empreendimento. Se o painel mudar de forma, isto tem de
+/// mudar com ele — um esqueleto que nao bate certo com o que aparece a
+/// seguir e pior do que nenhum, porque o conteudo salta.
+class _PainelEsqueleto extends StatelessWidget {
+  const _PainelEsqueleto();
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: COColors.brand700,
+      highlightColor: COColors.brand500,
+      child: ListView(
+        padding: const EdgeInsets.all(COTokens.space6),
+        physics: const NeverScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: COTokens.space4),
+          _Osso(largura: 170, altura: 22),
+          SizedBox(height: COTokens.space6),
+          _Osso(largura: 210, altura: 28),
+          SizedBox(height: 10),
+          _Osso(largura: 150, altura: 12),
+          SizedBox(height: 14),
+          _Osso(largura: double.infinity, altura: 2),
+          SizedBox(height: COTokens.space8),
+          _Osso(largura: 180, altura: 18),
+          SizedBox(height: COTokens.space4),
+          _CartaoEsqueleto(),
+          SizedBox(height: COTokens.space4),
+          _CartaoEsqueleto(),
+        ],
+      ),
+    );
+  }
+}
+
+class _CartaoEsqueleto extends StatelessWidget {
+  const _CartaoEsqueleto();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: COColors.brand700),
+        borderRadius: BorderRadius.circular(COTokens.radiusSm),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _Osso(largura: double.infinity, altura: 190, raio: 0),
+          Padding(
+            padding: const EdgeInsets.all(COTokens.cardPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                _Osso(largura: 140, altura: 18),
+                SizedBox(height: 9),
+                _Osso(largura: 200, altura: 12),
+                SizedBox(height: 18),
+                _Osso(largura: double.infinity, altura: 10),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Um retangulo cinzento. O Shimmer por cima e que lhe da o brilho.
+class _Osso extends StatelessWidget {
+  const _Osso({required this.largura, required this.altura, this.raio = 4});
+
+  final double largura;
+  final double altura;
+  final double raio;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: largura,
+      height: altura,
+      decoration: BoxDecoration(
+        color: COColors.brand700,
+        borderRadius: BorderRadius.circular(raio),
+      ),
     );
   }
 }

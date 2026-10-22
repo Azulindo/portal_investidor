@@ -8,7 +8,10 @@ import '../utils/ui_helpers.dart';
 import '../utils/video.dart';
 import '../widgets/co_card.dart';
 import '../widgets/etapas_horizontais.dart';
+import '../models/sale_order.dart';
+import '../utils/carteira.dart';
 import '../widgets/secao_acabamentos.dart';
+import '../widgets/secao_encomendas.dart';
 import '../widgets/secao_fracoes.dart';
 import '../widgets/secao_galeria_obra.dart';
 import '../widgets/secao_localizacao.dart';
@@ -38,6 +41,18 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   late Future<ProjectDetailModel> _projectFuture;
   final PageController _galeriaController = PageController();
 
+  /// As encomendas do cliente, para mostrar as deste empreendimento.
+  ///
+  /// Estavam no painel, mas o painel passou a ter um cartao por
+  /// empreendimento e as encomendas soltas la deixaram de fazer sentido.
+  /// Sem isto desapareciam da app: o numero da encomenda e as faturas
+  /// deixavam de existir em lado nenhum.
+  ///
+  /// Pedido a parte e sem bloquear: quem chega aqui pelo portfolio pode
+  /// nao ter encomenda nenhuma neste projeto, e nesse caso nao aparece
+  /// seccao nenhuma.
+  late final Future<List<SaleOrder>> _encomendasFuture;
+
   /// A imagem de cima é fixa: o conteúdo passa-lhe por baixo e ela fica
   /// quieta, o que dá a sensação de o ecrã estar preso. Em vez de a pôr a
   /// rolar — o que custaria o carrossel, que tem de ficar no topo — ela
@@ -58,6 +73,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
   void initState() {
     super.initState();
     _projectFuture = ApiService().buscarDetalhesProjeto(widget.projectId);
+    _encomendasFuture = ApiService()
+        .buscarOrdensDeCompra()
+        // Uma falha aqui nao pode levar o ecra do empreendimento atras: o
+        // detalhe mostra-se na mesma, sem esta seccao.
+        .catchError((_) => <SaleOrder>[]);
     _scrollController.addListener(_aoRolar);
   }
 
@@ -568,6 +588,26 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             },
                           ),
                         ],
+
+                        // AS ENCOMENDAS DESTE EMPREENDIMENTO
+                        FutureBuilder<List<SaleOrder>>(
+                          future: _encomendasFuture,
+                          builder: (context, snap) {
+                            final minhas = Carteira.doEmpreendimento(
+                              titulo,
+                              snap.data ?? const <SaleOrder>[],
+                            );
+                            if (minhas.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                top: COTokens.space9,
+                              ),
+                              child: SecaoEncomendas(encomendas: minhas),
+                            );
+                          },
+                        ),
 
                         // VÍDEO — no site aparece logo abaixo dos passos
                         // da timeline.
