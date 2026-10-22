@@ -261,7 +261,9 @@ class _SobreScreenState extends State<SobreScreen> {
         children: [
           Text(
             '0${indice + 1}',
-            style: COText.valor.copyWith(color: COColors.brand500),
+            // O brand500 dava 2.21:1 dentro deste cartao, o pior contraste da
+            // app, e isto e um numero para ser lido. O neutral500 da 4.65:1.
+            style: COText.valor.copyWith(color: COColors.neutral500),
           ),
           const SizedBox(height: 4),
           Text(
