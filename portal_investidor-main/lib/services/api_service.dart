@@ -4,6 +4,7 @@ import '../models/user_model.dart';
 import 'package:http/http.dart' as http;
 import '../models/investidor_model.dart';
 import '../models/sale_order.dart';
+import '../models/notificacao.dart';
 import '../config/api_config.dart';
 import 'auth_service.dart';
 import 'dados_de_exemplo.dart';
@@ -510,6 +511,100 @@ class ApiService {
     } on ApiException {
       rethrow;
     } catch (e) {
+      throw ApiException('Erro de ligação à rede.');
+    }
+  }
+
+  // ============================================================
+  // NOTIFICACOES
+  // ============================================================
+
+  /// GET /api/notification
+  ///
+  /// Devolve as visiveis para quem esta ligado, da mais recente para a mais
+  /// antiga, no maximo 30, mais a contagem de nao lidas.
+  ///
+  /// Nao passa pela cache de 3 minutos das outras chamadas: o sininho existe
+  /// para avisar que ha coisas novas, e um aviso com tres minutos de atraso
+  /// perde metade da graca. E uma chamada pequena.
+  Future<NotificacoesResposta> buscarNotificacoes() async {
+    if (ApiConfig.useMock) {
+      await Future.delayed(const Duration(milliseconds: 400));
+      return DadosDeExemplo.notificacoes();
+    }
+
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.notificationsEndpoint}',
+    );
+    try {
+      final response = await http
+          .get(url, headers: await _authHeaders())
+          .timeout(ApiConfig.connectionTimeout);
+
+      if (response.statusCode == 200) {
+        final parsed = jsonDecode(response.body);
+        final data = parsed['data'];
+        if (data is Map) {
+          return NotificacoesResposta.fromJson(data.cast<String, dynamic>());
+        }
+        return const NotificacoesResposta();
+      }
+      _falhou(response);
+    } on TimeoutException catch (_) {
+      throw ApiException('O servidor demorou muito tempo a responder.');
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException('Erro de ligação à rede.');
+    }
+  }
+
+  /// PUT /api/notification/:id/read
+  ///
+  /// Idempotente: marcar duas vezes e o mesmo que marcar uma, por isso a app
+  /// pode repetir o pedido sem estragar nada.
+  ///
+  /// Uma notificacao que nao existe e uma que existe mas nao e para esta
+  /// pessoa devolvem as duas 404 — de proposito, para nao se descobrir que
+  /// notificacoes existem a tentar ids a sorte.
+  Future<void> marcarNotificacaoLida(int id) async {
+    if (ApiConfig.useMock) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      return;
+    }
+    await _marcarLidas(
+      Uri.parse(
+        '${ApiConfig.baseUrl}${ApiConfig.markNotificationReadEndpoint(id)}',
+      ),
+    );
+  }
+
+  /// PUT /api/notification/read-all
+  Future<void> marcarTodasAsNotificacoesLidas() async {
+    if (ApiConfig.useMock) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      return;
+    }
+    await _marcarLidas(
+      Uri.parse(
+        '${ApiConfig.baseUrl}${ApiConfig.markAllNotificationsReadEndpoint}',
+      ),
+    );
+  }
+
+  Future<void> _marcarLidas(Uri url) async {
+    try {
+      final response = await http
+          .put(url, headers: await _authHeaders())
+          .timeout(ApiConfig.connectionTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 204) return;
+      _falhou(response);
+    } on TimeoutException catch (_) {
+      throw ApiException('O servidor demorou muito tempo a responder.');
+    } on ApiException {
+      rethrow;
+    } catch (_) {
       throw ApiException('Erro de ligação à rede.');
     }
   }

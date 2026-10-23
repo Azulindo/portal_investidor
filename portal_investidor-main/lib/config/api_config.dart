@@ -62,6 +62,16 @@ class ApiConfig {
   static const String documentListEndpoint = '/document/list';
   static const String saleOrdersEndpoint = '/document/sale-orders';
 
+  /// Notificacoes.
+  ///
+  /// O caminho e "/notification" no singular e os metodos de marcar lida sao
+  /// PUT e nao PATCH como o resto da API. Nao e engano: foi o site que fixou
+  /// estes caminhos primeiro e a API seguiu-os.
+  static const String notificationsEndpoint = '/notification';
+  static String markNotificationReadEndpoint(int id) => '/notification/$id/read';
+  static const String markAllNotificationsReadEndpoint =
+      '/notification/read-all';
+
   /// Download de anexos.
   ///
   /// As rotas estiveram comentadas na API e voltaram em 2026-10-08, já

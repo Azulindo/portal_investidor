@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../models/sale_order.dart';
@@ -212,10 +214,13 @@ class _BarraDeProgresso extends StatelessWidget {
 
     final pago = encomenda.pago;
     final faturado = encomenda.faturadoPorPagar;
-
-    // As fatias vão como peso num Row e não em percentagens arredondadas: o
-    // arredondamento a somar 99 ou 101 deixava uma falha ou um salto na ponta.
     final restante = encomenda.porFaturar;
+
+    // Peso em milesimos do total, e nao o valor em euros: um flex de
+    // 142 500 000 e um numero sem razao de ser dentro de uma barra de 4px.
+    // O minimo de 1 e para uma fatia muito pequena nao arredondar para zero e
+    // sumir: fica um risco fino, que e a verdade, em vez de nada.
+    int peso(double v) => math.max(1, ((v / total) * 1000).round());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,22 +228,31 @@ class _BarraDeProgresso extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(2),
           child: SizedBox(
+            // A largura tem de ser dita. Dentro de uma Column alinhada a
+            // esquerda os filhos ficam com largura solta, e um Row que so
+            // tem Expanded nao tem largura propria nenhuma: a barra
+            // encolhia para zero e desaparecia, legenda a parte.
+            width: double.infinity,
             height: 4,
             child: Row(
+              // Esticar, senao os filhos ficam centrados e um ColoredBox sem
+              // filho nao tem altura nenhuma: a barra tinha largura e zero de
+              // altura, que da no mesmo que nao estar la.
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (pago > 0)
                   Expanded(
-                    flex: (pago * 1000).round(),
+                    flex: peso(pago),
                     child: const ColoredBox(color: COColors.accent),
                   ),
                 if (faturado > 0)
                   Expanded(
-                    flex: (faturado * 1000).round(),
+                    flex: peso(faturado),
                     child: const ColoredBox(color: COColors.brand300),
                   ),
                 if (restante > 0)
                   Expanded(
-                    flex: (restante * 1000).round(),
+                    flex: peso(restante),
                     child: const ColoredBox(color: COColors.brand700),
                   ),
               ],

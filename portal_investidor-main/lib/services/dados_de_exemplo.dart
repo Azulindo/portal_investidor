@@ -1,3 +1,4 @@
+import '../models/notificacao.dart';
 import '../models/sale_order.dart';
 
 /// Os dados que a app mostra com `--dart-define=USE_MOCK=true`.
@@ -534,4 +535,56 @@ class DadosDeExemplo {
           ],
         },
       ];
+
+  /// GET /notification — o que o sininho mostra sem servidor.
+  ///
+  /// As datas sao relativas a agora, e nao fixas, para a lista mostrar sempre
+  /// "ha 2 horas" e "ha 3 dias" em vez de datas de 2026 que ja passaram.
+  static NotificacoesResposta notificacoes() {
+    final agora = DateTime.now().toUtc();
+    return NotificacoesResposta(
+      notificacoes: [
+        Notificacao(
+          id: 12,
+          tipo: TipoNotificacao.obra,
+          titulo: 'Aires Ornelas — estrutura do bloco 1 concluída',
+          corpo: 'A galeria da obra já tem as fotografias desta fase.',
+          lida: false,
+          criadaEm: agora.subtract(const Duration(hours: 2)),
+          projectId: 1,
+          href: '/empreendimento?projectId=1',
+        ),
+        Notificacao(
+          id: 11,
+          tipo: TipoNotificacao.documento,
+          titulo: 'Fatura INV/2026/0002 disponível',
+          corpo: '2.ª tranche do Aires Ornelas, no valor de 92 500 €.',
+          lida: false,
+          criadaEm: agora.subtract(const Duration(days: 3)),
+          projectId: 1,
+        ),
+        Notificacao(
+          id: 9,
+          tipo: TipoNotificacao.comercial,
+          titulo: 'Quinta das Laranjeiras entrou em comercialização',
+          corpo: 'As frações já podem ser reservadas.',
+          lida: true,
+          criadaEm: agora.subtract(const Duration(days: 12)),
+          projectId: 2,
+        ),
+        Notificacao(
+          id: 4,
+          tipo: TipoNotificacao.geral,
+          titulo: 'A sua conta passou a cliente',
+          corpo: 'A Área Reservada passou a mostrar as suas faturas e encomendas.',
+          lida: true,
+          criadaEm: agora.subtract(const Duration(days: 40)),
+        ),
+      ],
+      // Duas por ler, que e o que o sininho mostra. Nao se conta a partir da
+      // lista de proposito: a API conta sobre todas as visiveis e nao so
+      // sobre as 30 que manda, e o exemplo imita esse comportamento.
+      naoLidas: 2,
+    );
+  }
 }

@@ -13,6 +13,7 @@ import '../utils/ui_helpers.dart';
 import 'documents_screen.dart';
 import 'project_details_screen.dart';
 import '../widgets/co_imagem.dart';
+import '../widgets/sino_notificacoes.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -129,6 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   actions: [
+                    const SinoNotificacoes(),
                     // As faturas estavam a dois toques, dentro do menu
                     // lateral. Para quem abre a app por causa do que deve,
                     // sao o destino mais provavel.

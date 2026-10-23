@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,12 +20,31 @@ class AuthService {
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 
+  /// Na web nao se usa o cofre.
+  ///
+  /// Duas razoes. A pratica: o flutter_secure_storage nao arranca numa
+  /// compilacao de release para web — rebenta com MissingPluginException
+  /// antes do runApp e o ecra fica branco. Em profile passa, o que torna isto
+  /// facil de nao dar por ele.
+  ///
+  /// A de fundo: mesmo que arrancasse, na web nao ha Keystore nem Keychain. A
+  /// implementacao web cifra para dentro do localStorage com uma chave que
+  /// tambem la esta, o que protege de pouco. Nao vale a pena trocar o arranque
+  /// da app por isso.
+  ///
+  /// Onde isto conta mesmo — o telemovel, que e o produto — nada muda.
+  static bool get _usaCofre => !kIsWeb;
+
   /// Guarda o ID do utilizador e o token JWT após o login
   static Future<void> guardarSessao(int userId, [String? token]) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_userIdKey, userId);
-    if (token != null) {
+    if (token == null) return;
+
+    if (_usaCofre) {
       await _cofre.write(key: _tokenKey, value: token);
+    } else {
+      await prefs.setString(_tokenKey, token);
     }
   }
 
@@ -36,6 +56,11 @@ class AuthService {
 
   /// Devolve o token JWT guardado, ou null se não existir
   static Future<String?> obterToken() async {
+    if (!_usaCofre) {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_tokenKey);
+    }
+
     final guardado = await _cofre.read(key: _tokenKey);
     if (guardado != null) return guardado;
     return _mudarTokenAntigoDeSitio();
@@ -64,7 +89,7 @@ class AuthService {
     // Apaga tambem a chave antiga: se o logout acontecer antes de o token
     // chegar a ser mudado de sitio, nao pode ficar la para tras.
     await prefs.remove(_tokenKey);
-    await _cofre.delete(key: _tokenKey);
+    if (_usaCofre) await _cofre.delete(key: _tokenKey);
   }
 
   /// NOVO: Verifica se a sessão guardada ainda é válida - ou seja, se existe
