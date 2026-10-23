@@ -5,6 +5,7 @@ import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../utils/validacao_auth.dart';
 import '../widgets/co_auth.dart';
+import 'confirmar_email_screen.dart';
 import 'reenviar_confirmacao_screen.dart';
 
 /// Criar conta.
@@ -229,6 +230,16 @@ class _RegistoScreenState extends State<RegistoScreen> {
               'Clique nesse link para ativar a conta e poder iniciar sessão. '
               'O link é válido por 24 horas — verifique também a pasta de spam.',
         ),
+        // Sem isto ficava-se preso aqui: o link do e-mail abre o site, e
+        // quem está no telemóvel tinha de sair da app a meio do registo.
+        CoBotao(
+          texto: 'Já recebi o e-mail',
+          aoCarregar: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ConfirmarEmailScreen()),
+          ),
+        ),
+        const SizedBox(height: COTokens.space2),
         CoBotao(
           texto: 'Voltar ao início de sessão',
           aoCarregar: () => Navigator.pop(context),

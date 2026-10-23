@@ -1,8 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/sale_order.dart';
+import '../services/api_service.dart';
+import '../utils/contacto.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../utils/carteira.dart';
@@ -187,10 +190,61 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
                     Carteira.euros(f.amountTotal),
                     style: COText.caption.copyWith(color: COColors.white),
                   ),
+                  // A fatura existe mas nao tem documento. Daqui sabe-se o
+                  // empreendimento, por isso o pedido sai mais completo do
+                  // que o do ecra das faturas.
+                  if (f.attachments.isEmpty)
+                    _PedirFatura(fatura: f, empreendimento: o.projectName),
                 ],
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Pedir uma fatura que não tem documento para descarregar.
+///
+/// Abre o formulário de contacto do Odoo já com o assunto e a mensagem
+/// escritos, como o site faz no DescarregarFatura. Um ícone só, para não
+/// competir com o valor da fatura ao lado.
+class _PedirFatura extends StatelessWidget {
+  const _PedirFatura({required this.fatura, required this.empreendimento});
+
+  final Invoice fatura;
+  final String empreendimento;
+
+  Future<void> _abrir(BuildContext context) async {
+    final investidor = ApiService.dadosLogado;
+    final abriu = await launchUrl(
+      Contacto.pedidoDeFatura(
+        fatura: fatura.name,
+        empreendimento: empreendimento,
+        cliente: investidor?.name,
+        email: investidor?.email,
+      ),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!abriu && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível abrir o formulário de contacto.'),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: () => _abrir(context),
+      tooltip: 'Pedir esta fatura',
+      visualDensity: VisualDensity.compact,
+      icon: const Icon(
+        Icons.mail_outline,
+        size: 16,
+        color: COColors.brand300,
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
+import 'confirmar_email_screen.dart';
 import 'recuperar_acesso_screen.dart';
 
 /// "Não recebeu o e-mail de ativação?" → POST /auth/resend-confirmation.
@@ -23,6 +24,8 @@ class ReenviarConfirmacaoScreen extends StatelessWidget {
           'link de ativação, válido por 24 horas. Verifique também a pasta '
           'de spam.',
       enviar: ApiService().reenviarConfirmacao,
+      ecraDoLink: (_) => const ConfirmarEmailScreen(),
+      textoDoLink: 'Já recebi o e-mail',
     );
   }
 }

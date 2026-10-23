@@ -287,10 +287,15 @@ class ApiService {
   }
 
   /// Define a nova palavra-passe a partir do token que veio no email.
+  ///
+  /// O campo chama-se `newPassword` e nao `password`: e o nome que o
+  /// schemaResetPassword da API exige, e e o que o site manda. Estava
+  /// `password` aqui, o que dava sempre erro de validacao — nunca se notou
+  /// porque nenhum ecra chegava a chamar este metodo.
   Future<(bool, String)> redefinirPassword(String token, String password) {
     return _pedidoAuth(
       ApiConfig.resetPasswordEndpoint,
-      {'token': token, 'password': password},
+      {'token': token, 'newPassword': password},
       sucesso: 'Palavra-passe alterada.',
       erro: 'Não foi possível alterar a palavra-passe.',
     );
@@ -304,6 +309,38 @@ class ApiService {
       sucesso: 'Email reenviado.',
       erro: 'Não foi possível reenviar o email de confirmação.',
     );
+  }
+
+  /// GET /auth/confirm-email?token=...
+  ///
+  /// E o unico destes que nao e POST: o link do email abre-se no browser, e
+  /// por isso a API poe o token na query string. Da app chamamo-lo na mesma,
+  /// para quem cola o link aqui nao ter de sair para o browser.
+  Future<(bool, String)> confirmarEmail(String token) async {
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.confirmEmailEndpoint(token)}',
+    );
+    try {
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(ApiConfig.connectionTimeout);
+
+      final corpo = response.body.isNotEmpty
+          ? jsonDecode(response.body) as Map<String, dynamic>?
+          : null;
+      final mensagem = corpo?['message']?.toString();
+
+      if (response.statusCode == 200) {
+        return (true, mensagem ?? 'Conta confirmada.');
+      }
+      // A API distingue "expirado" de "inválido" e explica-se melhor do que
+      // nós conseguiriamos aqui, por isso passa-se o texto dela à frente.
+      return (false, mensagem ?? 'Não foi possível confirmar a conta.');
+    } on TimeoutException catch (_) {
+      return (false, 'O servidor demorou muito tempo a responder.');
+    } catch (_) {
+      return (false, 'Erro de ligação à rede.');
+    }
   }
 
   /// POST comum a todos os pedidos de autenticação sem sessão.

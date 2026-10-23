@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../theme/co_tokens.dart';
 import '../utils/validacao_auth.dart';
 import '../widgets/co_auth.dart';
+import 'redefinir_password_screen.dart';
 
 /// Ecrã de um campo só (email) para pedir um email à API.
 ///
@@ -19,6 +20,8 @@ class PedidoPorEmailScreen extends StatefulWidget {
     required this.textoBotao,
     required this.mensagemSucesso,
     required this.enviar,
+    this.ecraDoLink,
+    this.textoDoLink,
   });
 
   final String titulo;
@@ -29,6 +32,14 @@ class PedidoPorEmailScreen extends StatefulWidget {
   final String mensagemSucesso;
 
   final Future<(bool, String)> Function(String email) enviar;
+
+  /// O ecrã que acaba o que este começou, quando o e-mail já chegou.
+  ///
+  /// Sem isto, a pessoa ficava presa no "verifique o seu e-mail": o link
+  /// leva-a para o site e obriga-a a sair da app a meio de uma coisa que
+  /// começou aqui.
+  final WidgetBuilder? ecraDoLink;
+  final String? textoDoLink;
 
   @override
   State<PedidoPorEmailScreen> createState() => _PedidoPorEmailScreenState();
@@ -74,6 +85,15 @@ class _PedidoPorEmailScreenState extends State<PedidoPorEmailScreen> {
         titulo: 'Verifique o seu e-mail',
         filhos: [
           CoAviso(erro: false, texto: widget.mensagemSucesso),
+          if (widget.ecraDoLink != null) ...[
+            CoBotao(
+              texto: widget.textoDoLink ?? 'Já tenho o link',
+              aoCarregar: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: widget.ecraDoLink!),
+              ),
+            ),
+            const SizedBox(height: COTokens.space2),
+          ],
           CoBotao(
             texto: 'Voltar ao início de sessão',
             // Volta ao login mesmo quando se chegou aqui a partir do registo,
@@ -149,6 +169,8 @@ class RecuperarAcessoScreen extends StatelessWidget {
           'definir uma nova palavra-passe. O link é válido por tempo '
           'limitado — verifique também a pasta de spam.',
       enviar: ApiService().recuperarAcesso,
+      ecraDoLink: (_) => const RedefinirPasswordScreen(),
+      textoDoLink: 'Já recebi o e-mail',
     );
   }
 }

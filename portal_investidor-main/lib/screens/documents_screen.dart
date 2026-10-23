@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import '../utils/contacto.dart';
 import '../widgets/co_drawer.dart';
 import '../services/api_service.dart';
 
@@ -363,6 +364,18 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                                     ),
                                   ),
 
+                                  // Sem documento, a fatura existe mas nao ha
+                                  // nada para descarregar. Em vez de nao
+                                  // mostrar nada, abre-se o formulario ja
+                                  // preenchido a pedi-la — e o que o site faz
+                                  // no DescarregarFatura.
+                                  if (attachments.isEmpty) ...[
+                                    const SizedBox(width: 12),
+                                    _BotaoPedirFatura(
+                                      fatura: doc['name']?.toString(),
+                                    ),
+                                  ],
+
                                   // PDF button — right, vertically centred
                                   if (attachments.isNotEmpty) ...[
                                     const SizedBox(width: 12),
@@ -419,6 +432,74 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// "Pedir" — abre o formulário de contacto já preenchido com o número da
+/// fatura e com quem está ligado.
+///
+/// Mesmo tamanho e mesma forma do botão do PDF, para a lista não ficar aos
+/// degraus consoante a fatura tenha documento ou não.
+class _BotaoPedirFatura extends StatelessWidget {
+  const _BotaoPedirFatura({this.fatura});
+
+  final String? fatura;
+
+  /// Sem empreendimento de propósito: o GET /document/list devolve a fatura
+  /// sem dizer a que obra pertence. Quem quiser o pedido com essa informação
+  /// faz o mesmo a partir das encomendas, no detalhe do empreendimento, onde
+  /// ela se sabe.
+  Future<void> _abrir(BuildContext context) async {
+    final investidor = ApiService.dadosLogado;
+    final destino = Contacto.pedidoDeFatura(
+      fatura: fatura,
+      cliente: investidor?.name,
+      email: investidor?.email,
+    );
+
+    final abriu = await launchUrl(
+      destino,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!abriu && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível abrir o formulário de contacto.'),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _abrir(context),
+      child: Container(
+        width: 58,
+        height: 58,
+        decoration: BoxDecoration(
+          color: COColors.brand700.withValues(alpha: 0.35),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: COColors.brand300, width: 1),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.mail_outline, color: COColors.brand300, size: 22),
+            SizedBox(height: 4),
+            Text(
+              'PEDIR',
+              style: TextStyle(
+                color: COColors.brand300,
+                fontSize: 10,
+                fontWeight: COTokens.fwBold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
