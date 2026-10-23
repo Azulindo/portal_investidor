@@ -44,8 +44,16 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-        <meta-data android:name="com.google.android.geo.API_KEY"
-               android:value="AIzaSyDKmxSdnRgoxg99HvsiKWHxH4AbjqckPf0"/>
+        <!--
+            A chave do Google Maps saiu daqui. Nao estava a ser usada: os
+            mapas da app sao feitos com o flutter_map e telas do CARTO, e nao
+            ha google_maps_flutter no pubspec nem um GoogleMap em lado nenhum.
+            Era uma sobra de uma tentativa anterior.
+
+            Como esteve neste ficheiro e o repositorio e publico, a chave
+            AIzaSyDKmx... ja esta no historico do git e tem de ser apagada ou
+            trocada no Google Cloud. Tirar daqui nao chega para isso.
+        -->
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

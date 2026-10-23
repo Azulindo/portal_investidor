@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/user_model.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import '../utils/mapa.dart';
 import 'co_card.dart';
 
 /// "Onde fica" — o mapa deste empreendimento, com um marcador só.
@@ -62,12 +63,7 @@ class SecaoLocalizacao extends StatelessWidget {
                 ),
               ),
               children: [
-                TileLayer(
-                  urlTemplate:
-                      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                  subdomains: const ['a', 'b', 'c', 'd'],
-                  userAgentPackageName: 'com.cleveroption.portalinvestidor',
-                ),
+                Mapa.telas(context),
                 MarkerLayer(
                   markers: [
                     Marker(
@@ -78,6 +74,7 @@ class SecaoLocalizacao extends StatelessWidget {
                     ),
                   ],
                 ),
+                Mapa.atribuicao(),
               ],
             ),
           ),

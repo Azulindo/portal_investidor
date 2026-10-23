@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../services/api_service.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import '../utils/mapa.dart';
 import '../utils/ui_helpers.dart';
 import '../widgets/co_drawer.dart';
 import 'project_details_screen.dart';
@@ -322,12 +323,9 @@ class _MapScreenState extends State<MapScreen> {
                               onPositionChanged: (_, _) => setState(() {}),
                             ),
                             children: [
-                              TileLayer(
-                                urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                                subdomains: const ['a', 'b', 'c', 'd'],
-                                userAgentPackageName: 'com.cleveroption.portalinvestidor',
-                              ),
+                              Mapa.telas(context),
                               MarkerLayer(markers: _buildMarkers()),
+                              Mapa.atribuicao(),
                             ],
                           ),
                           // Setas que apontam para projetos fora da área visível.
