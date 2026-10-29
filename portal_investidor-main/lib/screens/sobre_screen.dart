@@ -93,9 +93,9 @@ class _SobreScreenState extends State<SobreScreen> {
     (
       titulo: 'Localização',
       corpo: 'Selecionamos criteriosamente cada terreno, priorizando '
-          'proximidade a transportes, serviços e áreas consolidadas com '
-          'forte potencial de valorização. A localização é sempre um ativo '
-          'estratégico.',
+          'proximidade a transportes, serviços e áreas já consolidadas. A '
+          'localização é a primeira decisão de um projeto e aquela que não '
+          'se corrige depois.',
     ),
     (
       titulo: 'Qualidade',
@@ -105,13 +105,10 @@ class _SobreScreenState extends State<SobreScreen> {
           'excelência.',
     ),
     (
-      titulo: 'Valorização',
-      // A última frase é um aviso legal e fica como está no site.
+      titulo: 'Cumprimento',
       corpo: 'O nosso historial de projetos concluídos dentro do prazo e do '
-          'orçamento reflete o rigor com que trabalhamos. Procuramos criar '
-          'valor sustentado para investidores e compradores. Esta informação '
-          'tem caráter informativo e não constitui aconselhamento de '
-          'investimento.',
+          'orçamento reflete o rigor com que trabalhamos. É esse historial '
+          'que sustenta a confiança de quem compra connosco.',
     ),
   ];
 
@@ -413,7 +410,7 @@ class _SobreScreenState extends State<SobreScreen> {
         const SizedBox(height: COTokens.space2),
         Text(
           'A nossa equipa está disponível para responder a qualquer questão '
-          'sobre os nossos empreendimentos e oportunidades de investimento.',
+          'sobre os nossos empreendimentos e as frações disponíveis.',
           style: COText.small,
         ),
         const SizedBox(height: COTokens.space4),

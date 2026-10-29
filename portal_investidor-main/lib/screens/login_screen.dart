@@ -79,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return CoAuthScaffold(
       titulo: 'Portal do Investidor',
-      subtitulo: 'Acompanhe os seus investimentos imobiliários.',
+      subtitulo: 'Acompanhe a construção do seu imóvel, fase a fase.',
       filhos: [
         if (_erro != null) CoAviso(texto: _erro!),
         Form(

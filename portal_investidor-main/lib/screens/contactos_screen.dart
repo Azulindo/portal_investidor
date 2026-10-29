@@ -29,6 +29,9 @@ class ContactosScreen extends StatefulWidget {
 class _ContactosScreenState extends State<ContactosScreen> {
   static const String _telefone = '+351912923952';
   static const String _telefoneVisivel = '+351 912 923 952';
+
+  /// O wa.me exige o número sem "+" nem espaços.
+  static const String _whatsapp = 'https://wa.me/351912923952';
   static const String _email = 'geral@cleveroption.pt';
   static const String _morada =
       'Via Eng. Edgar Cardoso 23, 5.º D, Vila Nova de Gaia';
@@ -113,6 +116,18 @@ class _ContactosScreenState extends State<ContactosScreen> {
             aoCarregar: () => _abrir(
               Uri.parse('tel:$_telefone'),
               'Não foi possível abrir o telefone.',
+            ),
+          ),
+          // Linha própria e não um atalho dentro do telemóvel: quem quer
+          // ligar toca no número, quem prefere escrever toca aqui. O wa.me
+          // abre a app do WhatsApp se estiver instalada.
+          _linhaContacto(
+            icone: Icons.chat_outlined,
+            etiqueta: 'WhatsApp',
+            valor: _telefoneVisivel,
+            aoCarregar: () => _abrir(
+              Uri.parse(_whatsapp),
+              'Não foi possível abrir o WhatsApp.',
             ),
           ),
           _linhaContacto(

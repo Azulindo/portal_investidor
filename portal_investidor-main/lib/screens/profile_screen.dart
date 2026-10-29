@@ -101,7 +101,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: COTokens.space2),
               const Text(
-                'A nossa equipa está disponível para te ajudar com os teus investimentos.',
+                'A nossa equipa está disponível para te ajudar com o teu imóvel.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: COColors.neutral500, fontSize: 14),
               ),
@@ -248,7 +248,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final name = ApiService.dadosLogado?.name ?? 'Investidor';
+    final name = ApiService.dadosLogado?.name ?? 'Cliente';
     final email = ApiService.dadosLogado?.email ?? 'Sem email associado';
     final totalInvestido = ApiService.dadosLogado?.totalInvested ?? 0.0;
     // O ROI saiu: a API não tem campo nenhum para isso, por isso aparecia
@@ -325,7 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const CoEtiqueta('Total investido'),
+                          const CoEtiqueta('Valor total'),
                           Text(
                             '${totalInvestido.toStringAsFixed(2)} €',
                             style: COText.valor,

@@ -391,12 +391,16 @@ class ObraCardWidget extends StatelessWidget {
   /// pode vir em mais do que uma encomenda (um reforco, uma alteracao).
   int get _fracoes => encomendas.expand((o) => o.fractions).toSet().length;
 
-  /// O investido e o por pagar deste empreendimento.
+  /// O pago e o por pagar deste empreendimento.
   ///
   /// Saem das encomendas, as mesmas contas da carteira, para o cartao e o
   /// total la de cima nunca discordarem.
+  ///
+  /// O par e "pago" e "por pagar", e nao o total e o que falta: os dois
+  /// somam o valor da encomenda, por isso o total continua a ler-se sem
+  /// precisar de uma terceira coluna num cartao de telemovel.
   Widget _dinheiro() {
-    final investido = Carteira.investimentoTotal(encomendas);
+    final pago = Carteira.totalPago(encomendas);
     final porPagar = Carteira.totalPorPagar(encomendas);
 
     return Padding(
@@ -408,7 +412,7 @@ class ObraCardWidget extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Expanded(child: _valor('Investido', Carteira.euros(investido))),
+            Expanded(child: _valor('Pago', Carteira.euros(pago))),
             Expanded(
               child: _valor(
                 'Por pagar',
@@ -647,7 +651,7 @@ class _Cabecalho extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'de ${Carteira.euros(total)} investidos  ·  $pct% liquidado',
+          'de ${Carteira.euros(total)} no total  ·  $pct% liquidado',
           style: COText.caption,
         ),
         const SizedBox(height: 10),

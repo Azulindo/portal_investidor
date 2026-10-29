@@ -92,7 +92,7 @@ class _RegistoScreenState extends State<RegistoScreen> {
       mostrarVoltar: true,
       titulo: 'Criar Conta',
       subtitulo:
-          'Acesso exclusivo ao acompanhamento dos seus investimentos imobiliários.',
+          'Acesso exclusivo ao acompanhamento da construção do seu imóvel.',
       filhos: [
         if (_erroServidor != null) CoAviso(texto: _erroServidor!),
         Form(
@@ -200,7 +200,7 @@ class _RegistoScreenState extends State<RegistoScreen> {
               child: Text(
                 'Li e aceito a Política de Privacidade e autorizo o tratamento '
                 'dos meus dados pela Cleveroption para fins de acesso ao '
-                'portal de investidores.',
+                'portal de clientes.',
                 style: COText.small,
               ),
             ),
