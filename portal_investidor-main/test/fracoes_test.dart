@@ -14,7 +14,7 @@ ProjectFraction f({
   double? varanda,
   double? preco = 200000,
   String estado = 'Disponível',
-  int? bloco,
+  String? bloco,
   String? piso,
 }) {
   return ProjectFraction(

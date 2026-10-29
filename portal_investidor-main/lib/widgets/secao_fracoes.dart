@@ -408,8 +408,15 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
                 _parzinho('Piso', f.floor!),
               if (f.orientation != null)
                 _parzinho('Orientação', f.orientation!),
-              if (f.totalArea > 0)
-                _parzinho('Área bruta', '${Fracoes.numero(f.totalArea)} m²'),
+              if ((f.totalArea ?? 0) > 0)
+                _parzinho('Área bruta', '${Fracoes.numero(f.totalArea!)} m²'),
+              // As duas que vieram com o import do Excel. Nem todos os
+              // empreendimentos as têm preenchidas.
+              if ((f.grossPrivateArea ?? 0) > 0)
+                _parzinho('Área bruta privativa',
+                    '${Fracoes.numero(f.grossPrivateArea!)} m²'),
+              if ((f.usefulArea ?? 0) > 0)
+                _parzinho('Área útil', '${Fracoes.numero(f.usefulArea!)} m²'),
               if ((f.garageArea ?? 0) > 0)
                 _parzinho('Garagem', '${Fracoes.numero(f.garageArea!)} m²'),
               if ((f.balconyArea ?? 0) > 0)

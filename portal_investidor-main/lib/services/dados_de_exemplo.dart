@@ -420,12 +420,18 @@ class DadosDeExemplo {
           'projectId': 1,
           'fractionNumber': 'A',
           'type': 'T1',
+          // As três áreas e o número interno vêm do import do Excel.
+          'internalNumber': 'AO-A-01',
+          'grossPrivateArea': '48.90',
           'totalArea': '52.40',
+          'usefulArea': '44.10',
           'garageArea': '14.00',
           'balconyArea': '7.20',
           'price': '185000.00',
           'status': 'Disponível',
-          'block': 1,
+          // Bloco com nome, que é a razão por que a coluna passou a texto.
+          // Com o int.tryParse antigo, esta fração ficava sem bloco.
+          'block': 'Nascente',
           'floor': 'R/C',
           'orientation': 'Nascente',
           'floorPlanUrl': 'https://exemplo.pt/plantas/a.pdf',

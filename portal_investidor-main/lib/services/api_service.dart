@@ -9,6 +9,53 @@ import '../config/api_config.dart';
 import 'auth_service.dart';
 import 'dados_de_exemplo.dart';
 
+/// Porque e que a sessao acabou a meio.
+///
+/// Os dois motivos sao os mesmos do site (lib/fimSessao.ts): da-se o mesmo
+/// nome e diz-se a mesma coisa, para quem for bloqueado ler a mesma frase
+/// no telemovel e no computador.
+///
+/// A diferenca importa: "expirou" sugere voltar a entrar e resolve-se
+/// sozinho; "bloqueada" nao se resolve a entrar outra vez e tem de dizer
+/// com quem falar.
+enum FimDeSessao {
+  expirada('A sua sessão terminou. Inicie sessão novamente.'),
+  bloqueada(
+    'A sua conta está bloqueada. Para mais informações contacte '
+    'geral@cleveroption.pt.',
+  );
+
+  const FimDeSessao(this.mensagem);
+
+  final String mensagem;
+
+  /// O motivo para uma resposta que falhou, ou null se a sessao continua
+  /// de pe e o erro e outra coisa qualquer.
+  ///
+  /// Equivale ao motivoFimSessao do site. Olha para o `code` e nao para a
+  /// mensagem: o texto muda com o tempo, o codigo nao.
+  static FimDeSessao? motivoPara(int estado, String corpo) {
+    if (estado == 401) return FimDeSessao.expirada;
+
+    // 403 e nao 401 porque o token e valido — o que deixou de valer foi a
+    // conta. Os outros 403 (falta de permissao) nao terminam a sessao.
+    if (estado == 403 && _codigoDe(corpo) == 'AUTH_ACCOUNT_BLOCKED') {
+      return FimDeSessao.bloqueada;
+    }
+
+    return null;
+  }
+
+  static String _codigoDe(String corpo) {
+    try {
+      final json = jsonDecode(corpo);
+      return json is Map ? (json['code']?.toString() ?? '') : '';
+    } catch (_) {
+      return '';
+    }
+  }
+}
+
 /// Exceção customizada para erros "de negócio" da API (resposta válida mas
 /// com erro), para se distinguir de erros de rede/timeout.
 class ApiException implements Exception {
@@ -74,7 +121,7 @@ class ApiService {
     return valor;
   }
 
-  static void Function()? aoExpirarSessao;
+  static void Function(FimDeSessao motivo)? aoExpirarSessao;
 
   static bool _jaAvisouQueExpirou = false;
 
@@ -85,7 +132,7 @@ class ApiService {
   ///
   /// Dispara uma vez so. Se o painel fizer tres pedidos ao mesmo tempo e
   /// os tres levarem 401, o utilizador nao leva tres saltos para o login.
-  static void _sessaoExpirou() {
+  static void _sessaoExpirou(FimDeSessao motivo) {
     _token = null;
     idLogado = null;
     dadosLogado = null;
@@ -94,7 +141,7 @@ class ApiService {
     limparCache();
     if (_jaAvisouQueExpirou) return;
     _jaAvisouQueExpirou = true;
-    aoExpirarSessao?.call();
+    aoExpirarSessao?.call(motivo);
   }
 
   /// Garante que o token está carregado em memória, lendo do armazenamento
@@ -109,12 +156,18 @@ class ApiService {
   /// Existe para o 401 ser tratado num sitio so. Antes cada metodo
   /// lancava a sua ApiException e ninguem olhava para o statusCode.
   Never _falhou(http.Response response) {
-    if (response.statusCode == 401) {
-      ApiService._sessaoExpirou();
-      throw ApiException(
-        'A sua sessao expirou. Volte a entrar.',
-        statusCode: 401,
-      );
+    // Dois casos acabam com a sessao: o token morreu (401) ou a conta foi
+    // bloqueada no backoffice (403 com AUTH_ACCOUNT_BLOCKED, desde
+    // 2026-10-22). Antes so o primeiro era tratado — no segundo a app
+    // mostrava "nao tem permissao para ver isto" e deixava a pessoa la
+    // dentro, num ecra que nunca carregava.
+    final motivo = FimDeSessao.motivoPara(
+      response.statusCode,
+      response.body,
+    );
+    if (motivo != null) {
+      ApiService._sessaoExpirou(motivo);
+      throw ApiException(motivo.mensagem, statusCode: response.statusCode);
     }
     // O que o servidor escreve e para o programador, nao para o
     // investidor. Um erro interno do Odoo a frente de um cliente le-se

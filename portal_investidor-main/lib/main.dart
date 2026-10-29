@@ -95,21 +95,31 @@ void main() async {
     ApiService.idLogado = userId;
   }
 
-  // Se o token morrer com a app aberta, o servidor passa a responder 401.
-  // Ate agora nenhum ecra reagia: ficavam todos a mostrar erro, e o
-  // utilizador carregava em "tentar novamente" contra um token morto.
-  // Agora limpa-se a sessao guardada e volta-se ao login, com um aviso a
-  // dizer porque.
-  ApiService.aoExpirarSessao = () async {
+  // Se a sessao acabar com a app aberta, limpa-se o que esta guardado e
+  // volta-se ao login com um aviso a dizer porque.
+  //
+  // Sao dois casos. O token morreu (401) — expirou, foi revogado, ou a API
+  // reiniciou — e resolve-se a entrar outra vez. Ou a conta foi bloqueada
+  // no backoffice (403), e aí entrar outra vez nao resolve nada: a
+  // mensagem tem de dizer com quem falar. Antes nenhum deles reagia, e o
+  // segundo nem sequer saía do ecrã.
+  //
+  // O aviso fica mais tempo no caso da conta bloqueada: tem um endereço de
+  // email para a pessoa reter, e o tempo normal de um SnackBar não chega
+  // para o ler.
+  ApiService.aoExpirarSessao = (motivo) async {
     await AuthService.limparSessao();
     navigatorKey.currentState?.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
     );
     messengerKey.currentState?.showSnackBar(
-      const SnackBar(
-        content: Text('A sua sessao expirou. Volte a entrar.'),
+      SnackBar(
+        content: Text(motivo.mensagem),
         backgroundColor: COColors.brand500,
+        duration: motivo == FimDeSessao.bloqueada
+            ? const Duration(seconds: 10)
+            : const Duration(seconds: 4),
       ),
     );
   };

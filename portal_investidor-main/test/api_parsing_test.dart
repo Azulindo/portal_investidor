@@ -123,6 +123,68 @@ void main() {
       expect(d.fracoesDisponiveis, 1);
     });
 
+    test('o bloco é texto, não número', () {
+      // A coluna era smallint e passou a texto em 2026-10-29, para aceitar
+      // blocos com nome. Lida com int.tryParse, uma fração do bloco "A"
+      // perdia o bloco em silêncio — e o site mostrava-o.
+      ProjectFraction comBloco(dynamic bloco) => ProjectFraction.fromJson({
+            'fractionId': 1,
+            'projectId': 1,
+            'fractionNumber': 'A',
+            'type': 'T2',
+            'status': 'Disponível',
+            'block': bloco,
+          });
+
+      expect(comBloco('Nascente').block, 'Nascente');
+      expect(comBloco('A').block, 'A');
+      // Os blocos numéricos de hoje continuam a aparecer, agora como texto.
+      expect(comBloco(1).block, '1');
+      expect(comBloco('2').block, '2');
+      // Ausente, null ou vazio não deixam uma linha "Bloco" em branco.
+      expect(comBloco(null).block, isNull);
+      expect(comBloco('').block, isNull);
+      expect(comBloco('   ').block, isNull);
+    });
+
+    test('lê as áreas que vieram do import do Excel', () {
+      final f = ProjectFraction.fromJson({
+        'fractionId': 1,
+        'projectId': 1,
+        'fractionNumber': 'A',
+        'type': 'T2',
+        'status': 'Disponível',
+        'internalNumber': 'AO-A-01',
+        'grossPrivateArea': '48.90',
+        'totalArea': '52.40',
+        'usefulArea': '44.10',
+      });
+
+      expect(f.internalNumber, 'AO-A-01');
+      expect(f.grossPrivateArea, 48.90);
+      expect(f.totalArea, 52.40);
+      expect(f.usefulArea, 44.10);
+    });
+
+    test('uma fração sem área fica sem área, e não com zero', () {
+      // A coluna total_area deixou de ser obrigatória na mesma migração.
+      // Lida como 0, o intervalo de áreas de uma tipologia passaria a
+      // começar em "0 m²" por causa de uma fração por medir.
+      final f = ProjectFraction.fromJson({
+        'fractionId': 1,
+        'projectId': 1,
+        'fractionNumber': 'A',
+        'type': 'T2',
+        'status': 'Disponível',
+        'totalArea': null,
+      });
+
+      expect(f.totalArea, isNull);
+      expect(f.grossPrivateArea, isNull);
+      expect(f.usefulArea, isNull);
+      expect(f.internalNumber, isNull);
+    });
+
     test('lê os acabamentos já agrupados', () {
       expect(d.finishes.single.categoryName, 'Instalações sanitárias');
       expect(d.finishes.single.details.length, 2);

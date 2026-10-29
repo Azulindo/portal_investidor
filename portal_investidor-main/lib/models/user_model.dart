@@ -317,7 +317,22 @@ class ProjectFraction {
   final int projectId;
   final String fractionNumber;
   final String type;
-  final double totalArea;
+
+  /// Referência interna da fração, como vem no Excel do mapa de frações.
+  /// Não é o que o cliente conhece — serve para falar com a equipa.
+  final String? internalNumber;
+
+  /// Área bruta privativa. Chegou com o import do Excel (2026-10-29).
+  final double? grossPrivateArea;
+
+  /// Pode faltar: a coluna deixou de ser obrigatória quando passou a ser
+  /// preenchida pelo Excel. Se fosse lida como 0, o intervalo de áreas de
+  /// uma tipologia começaria em "0 m²" por causa de uma fração por medir.
+  final double? totalArea;
+
+  /// Área útil. Também veio do import do Excel.
+  final double? usefulArea;
+
   final double? garageArea;
   final double? balconyArea;
   /// null num pedido anónimo — o preço só vem para quem tem sessão. Nesse caso
@@ -325,8 +340,14 @@ class ProjectFraction {
   final double? price;
   /// "Disponível" | "Reservado" | "Vendido".
   final String status;
-  /// Número do edifício; null quando o empreendimento só tem um.
-  final int? block;
+  /// O edifício; null quando o empreendimento só tem um.
+  ///
+  /// Texto e não número. Era `int?` aqui, e a coluna era `smallint` na base
+  /// de dados — mas em 2026-10-29 passou a texto de propósito, para aceitar
+  /// blocos com nome. Enquanto forem "1" e "2" o `int.tryParse` antigo ia
+  /// safando-se; no primeiro bloco "A" ou "Nascente" a app deixava-o cair
+  /// em silêncio e o site mostrava-o.
+  final String? block;
   /// Texto e não número: há pisos não numéricos (ex.: "Vale").
   final String? floor;
   final String? orientation;
@@ -338,7 +359,10 @@ class ProjectFraction {
     required this.projectId,
     required this.fractionNumber,
     required this.type,
-    required this.totalArea,
+    this.internalNumber,
+    this.grossPrivateArea,
+    this.totalArea,
+    this.usefulArea,
     this.garageArea,
     this.balconyArea,
     this.price,
@@ -351,18 +375,31 @@ class ProjectFraction {
 
   bool get disponivel => status.toLowerCase().startsWith('dispon');
 
+  /// Um campo de texto opcional da API: null quando vem null, ausente, ou
+  /// so com espacos.
+  static String? _texto(dynamic valor) {
+    final t = valor?.toString().trim() ?? '';
+    return t.isEmpty ? null : t;
+  }
+
   factory ProjectFraction.fromJson(Map<String, dynamic> json) {
     return ProjectFraction(
       fractionId: int.tryParse(json['fractionId']?.toString() ?? '') ?? 0,
       projectId: int.tryParse(json['projectId']?.toString() ?? '') ?? 0,
       fractionNumber: json['fractionNumber']?.toString() ?? '',
       type: json['type']?.toString() ?? '',
-      totalArea: double.tryParse(json['totalArea']?.toString() ?? '') ?? 0,
+      internalNumber: _texto(json['internalNumber']),
+      grossPrivateArea:
+          double.tryParse(json['grossPrivateArea']?.toString() ?? ''),
+      totalArea: double.tryParse(json['totalArea']?.toString() ?? ''),
+      usefulArea: double.tryParse(json['usefulArea']?.toString() ?? ''),
       garageArea: double.tryParse(json['garageArea']?.toString() ?? ''),
       balconyArea: double.tryParse(json['balconyArea']?.toString() ?? ''),
       price: double.tryParse(json['price']?.toString() ?? ''),
       status: json['status']?.toString() ?? '',
-      block: int.tryParse(json['block']?.toString() ?? ''),
+      // Texto vazio conta como ausente: um "Bloco" sem nome na lista de
+      // detalhes seria pior do que nao haver linha nenhuma.
+      block: _texto(json['block']),
       floor: json['floor']?.toString(),
       orientation: json['orientation']?.toString(),
       floorPlanUrl: json['floorPlanUrl']?.toString(),
