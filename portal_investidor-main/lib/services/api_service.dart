@@ -125,8 +125,32 @@ class ApiService {
 
   static bool _jaAvisouQueExpirou = false;
 
-  /// Um 401 a meio da sessao quer dizer que o token morreu — expirou,
-  /// foi revogado, ou a API reiniciou. Ate agora nada reagia: o ecra
+  /// Sair da conta por vontade da pessoa.
+  ///
+  /// Num sítio só porque estava em dois — o perfil e, agora, o menu lateral —
+  /// e o segundo esquecer-se de uma linha era fácil. A que não pode faltar é
+  /// a cache: sem a limpar, quem entrasse a seguir no mesmo telemóvel via os
+  /// dados da pessoa anterior até ela expirar.
+  ///
+  /// Vive aqui e não no AuthService porque precisa dos dois, e é este que já
+  /// conhece o outro. Ao contrário do [_sessaoExpirou], não chama o
+  /// [aoExpirarSessao]: ninguém tem de ser avisado de que saiu, foi a pessoa
+  /// que carregou no botão.
+  ///
+  /// Não navega. Quem chama decide para onde ir, porque o menu e o perfil
+  /// saem de sítios diferentes da pilha de ecrãs.
+  static Future<void> sair() async {
+    await AuthService.limparSessao();
+    _token = null;
+    idLogado = null;
+    dadosLogado = null;
+    limparCache();
+    // Para o próximo 401 voltar a avisar: este contador é por sessão.
+    _jaAvisouQueExpirou = false;
+  }
+
+  /// A sessao acabou sem ser por vontade da pessoa: o token morreu (401) ou
+  /// a conta foi bloqueada (403). Ate haver isto nada reagia — o ecra
   /// mostrava "erro" e o utilizador ficava ali, a carregar em "tentar
   /// novamente" contra um token que nunca mais ia servir.
   ///

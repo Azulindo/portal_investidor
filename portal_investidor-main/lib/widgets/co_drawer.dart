@@ -3,6 +3,8 @@ import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../screens/contactos_screen.dart';
 import '../screens/dashboard_screen.dart';
+import '../screens/login_screen.dart';
+import '../services/api_service.dart';
 import '../screens/portfolio_screen.dart';
 import '../screens/documents_screen.dart';
 import '../screens/privacidade_screen.dart';
@@ -122,8 +124,43 @@ class CoDrawer extends StatelessWidget {
             title: const Text('Privacidade', style: _estiloItem),
             onTap: () => _navegarSuave(context, const PrivacidadeScreen()),
           ),
+
+          // Sair, separado do resto por um risco: não é mais um destino, é a
+          // única entrada daqui que não leva a lado nenhum da app.
+          //
+          // Fica no menu e não no cabeçalho, ao contrário do site. O site não
+          // tem menu, por isso pôs o botão ao lado do sino — mas aí ele só
+          // existe nos ecrãs que têm aquele cabeçalho. Na app o menu está em
+          // todos, que é precisamente o que se queria: sair de qualquer sítio.
+          const Divider(color: COColors.brand700, height: 1),
+          ListTile(
+            leading: const Icon(Icons.logout, color: COColors.brand300),
+            title: Text(
+              'Terminar sessão',
+              style: _estiloItem.copyWith(color: COColors.brand300),
+            ),
+            onTap: () => _sair(context),
+          ),
         ],
       ),
+    );
+  }
+
+  /// Sai da conta e volta ao login, sem deixar nada atrás na pilha de ecrãs.
+  ///
+  /// O `Navigator` é guardado antes do `await` porque fechar o menu já tira
+  /// este widget da árvore — a seguir ao await o `context` não serve.
+  Future<void> _sair(BuildContext context) async {
+    final navegador = Navigator.of(context);
+    navegador.pop();
+    await ApiService.sair();
+    navegador.pushAndRemoveUntil(
+      PageRouteBuilder(
+        pageBuilder: (c, a1, a2) => const LoginScreen(),
+        transitionsBuilder: (c, anim, a2, child) =>
+            FadeTransition(opacity: anim, child: child),
+      ),
+      (route) => false,
     );
   }
 }

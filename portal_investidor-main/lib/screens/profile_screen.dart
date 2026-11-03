@@ -6,7 +6,6 @@ import '../widgets/co_card.dart';
 import '../widgets/co_drawer.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
-import '../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -33,13 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _fazerLogout() async {
-    await AuthService.limparSessao();
-    // Os dados desta pessoa nao podem ficar guardados para quem entrar a
-    // seguir neste telemovel.
-    ApiService.limparCache();
-    ApiService.idLogado = null;
-    ApiService.dadosLogado = null;
-    ApiService.definirToken(null);
+    await ApiService.sair();
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
