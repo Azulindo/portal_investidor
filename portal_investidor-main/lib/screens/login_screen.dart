@@ -78,7 +78,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return CoAuthScaffold(
-      titulo: 'Portal do Investidor',
+      // O logótipo já está aqui por cima (CoAuthScaffold), por isso o título
+      // diz o que isto é e não repete a marca. "Área Reservada" é o nome que
+      // o site lhe dá.
+      titulo: 'Área Reservada',
       subtitulo: 'Acompanhe a construção do seu imóvel, fase a fase.',
       filhos: [
         if (_erro != null) CoAviso(texto: _erro!),

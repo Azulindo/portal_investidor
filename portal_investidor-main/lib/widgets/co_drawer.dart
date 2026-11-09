@@ -61,7 +61,9 @@ class CoDrawer extends StatelessWidget {
               children: [
                 Image.asset('assets/images/logo.png', height: 55),
                 const SizedBox(height: COTokens.space2),
-                const Text('Portal do investidor', style: TextStyle(color: COColors.brand300, fontSize: 12)),
+                // Por baixo do logótipo, o mesmo que no login.
+                const Text('Área Reservada',
+                    style: TextStyle(color: COColors.brand300, fontSize: 12)),
               ],
             ),
           ),
