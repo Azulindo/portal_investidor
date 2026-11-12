@@ -1,3 +1,5 @@
+import '../config/api_config.dart';
+
 /// Contas sobre a lista de GET /project/portfolio: grupos de estado, ordem de
 /// apresentação, progresso da obra e contagens.
 ///
@@ -32,15 +34,43 @@ class Portfolio {
 
   static String texto(Map p, String chave) => p[chave]?.toString() ?? '';
 
+  /// A fotografia principal, com o endereço completo.
+  ///
+  /// A API devolve caminhos relativos ("/media/..."), que o CachedNetworkImage
+  /// não sabe abrir. Os modelos resolvem isto nos `fromJson`; aqui, onde se
+  /// trabalha com os Map como vêm da API, resolve-se à leitura.
+  static String imagem(Map p) =>
+      ApiConfig.urlDeFicheiro(texto(p, 'mainImageUrl')) ?? '';
+
   static int? inteiro(Map p, String chave) =>
       int.tryParse(p[chave]?.toString() ?? '');
 
-  static bool estaAVenda(Map p) => p['forSale'] == true;
+  /// O empreendimento tem página própria.
+  ///
+  /// Os "só de historial" aparecem nas listas e no mapa, mas não têm detalhes:
+  /// a API responde 404 a quem os pedir. Campo ausente conta como tendo
+  /// página, para uma API anterior a este campo continuar a funcionar.
+  static bool temPagina(Map p) => p['hasDetailPage'] != false;
+
+  /// Em comercialização, como o site o mostra: só quem tem página.
+  ///
+  /// Um empreendimento pode estar marcado à venda no backoffice com a página
+  /// ainda desligada. Anunciá-lo levaria a pessoa a um ecrã que não existe.
+  static bool estaAVenda(Map p) => p['forSale'] == true && temPagina(p);
 
   /// Só o ano da data de conclusão. A API manda a data inteira
   /// ("2028-12-31"), mas é por ano que a conclusão se lê em todo o lado.
   static String? anoFim(Map p) =>
       RegExp(r'\d{4}').firstMatch(texto(p, 'endDate'))?.group(0);
+
+  /// "Concluído em 2018" ou "Conclusão prevista em 2028".
+  ///
+  /// O ano é o mesmo campo nos dois casos, mas nos concluídos já não é uma
+  /// previsão: "conclusão prevista: 2018" num prédio entregue há oito anos lia-se
+  /// como um atraso. O site faz a mesma distinção.
+  static String conclusao(String? status, String ano) => estaConcluido(status)
+      ? 'Concluído em $ano'
+      : 'Conclusão prevista em $ano';
 
   // ── Ordem ─────────────────────────────────────────────────
 

@@ -17,9 +17,20 @@ import 'co_card.dart';
 /// risco fino. Antes eram três caixas com borda seguidas das caixas dos
 /// totais e da obra, e o ecrã lia-se como uma grelha de molduras.
 class SecaoEncomendas extends StatefulWidget {
-  const SecaoEncomendas({super.key, required this.encomendas});
+  const SecaoEncomendas({
+    super.key,
+    required this.encomendas,
+    this.comCabecalho = true,
+  });
 
   final List<SaleOrder> encomendas;
+
+  /// O titulo da seccao e o nome do empreendimento em cada grupo.
+  ///
+  /// Desliga-se quando quem mostra isto ja disse de que empreendimento se
+  /// trata — na folha de contas de um cartao do painel, por exemplo, onde o
+  /// nome esta no topo e repeti-lo nao acrescenta nada.
+  final bool comCabecalho;
 
   @override
   State<SecaoEncomendas> createState() => _SecaoEncomendasState();
@@ -42,9 +53,9 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CoTitulo('As suas aquisições'),
+        if (widget.comCabecalho) const CoTitulo('As suas aquisições'),
         for (final grupo in porProjeto.entries) ...[
-          if (grupo.key.isNotEmpty)
+          if (widget.comCabecalho && grupo.key.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: COTokens.space2, bottom: 2),
               child: Text(grupo.key, style: COText.caption),

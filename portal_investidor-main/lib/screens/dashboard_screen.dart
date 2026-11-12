@@ -9,11 +9,14 @@ import '../models/investidor_model.dart';
 import '../models/sale_order.dart';
 import '../models/user_model.dart';
 import '../utils/carteira.dart';
+import '../utils/portfolio.dart';
 import '../utils/ui_helpers.dart';
 import 'documents_screen.dart';
 import 'project_details_screen.dart';
 import '../widgets/co_imagem.dart';
+import '../widgets/detalhe_de_valores.dart';
 import '../widgets/sino_notificacoes.dart';
+import '../widgets/visualizador_imagens.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -274,18 +277,23 @@ class ObraCardWidget extends StatelessWidget {
 
     return CoCard(
       semPadding: true,
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProjectDetailsScreen(
-              projectId: obra.id,
-              heroTag: obra.imageUrl,
-              initialImageUrl: obra.imageUrl,
-            ),
-          ),
-        );
-      },
+      // Sem pagina nao ha para onde ir: a API responde 404 aos detalhes de um
+      // empreendimento so de historial. O cartao fica sem toque, em vez de
+      // levar a pessoa a um ecra de erro.
+      onTap: obra.temPagina
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProjectDetailsScreen(
+                    projectId: obra.id,
+                    heroTag: obra.imageUrl,
+                    initialImageUrl: obra.imageUrl,
+                  ),
+                ),
+              );
+            }
+          : null,
       child: SizedBox(
         width: double.infinity,
         child: Column(
@@ -301,11 +309,22 @@ class ObraCardWidget extends StatelessWidget {
                     child: Material(
                       type: MaterialType.transparency,
                       child: urlImagem.isNotEmpty
-                          ? CoImagem(
-                              urlImagem,
-                              altura: 190,
-                              largura: double.infinity,
-                              erro: _imagePlaceholder(broken: true),
+                          // Tocar na fotografia abre-a em grande, em vez de
+                          // abrir o empreendimento: e o gesto que se espera
+                          // de uma imagem, e o resto do cartao continua a
+                          // levar aos detalhes.
+                          ? GestureDetector(
+                              onTap: () => VisualizadorImagens.abrir(
+                                context,
+                                imagens: [urlImagem],
+                                legendas: [obra.title],
+                              ),
+                              child: CoImagem(
+                                urlImagem,
+                                altura: 190,
+                                largura: double.infinity,
+                                erro: _imagePlaceholder(broken: true),
+                              ),
                             )
                           : _imagePlaceholder(broken: false),
                     ),
@@ -341,7 +360,9 @@ class ObraCardWidget extends StatelessWidget {
                       if (_fracoes > 0)
                         Carteira.contagem(_fracoes, 'fração', 'frações'),
                       if (obra.anoFim != null)
-                        'conclusão prevista ${obra.anoFim}',
+                        // Em minúsculas porque vem a meio da linha.
+                        Portfolio.conclusao(obra.status, obra.anoFim!)
+                            .toLowerCase(),
                     ].join('  ·  '),
                     style: COText.caption,
                   ),
@@ -377,7 +398,7 @@ class ObraCardWidget extends StatelessWidget {
                   else if (obra.steps.isNotEmpty)
                     _Timeline(obra: obra),
 
-                  if (encomendas.isNotEmpty) _dinheiro(),
+                  if (encomendas.isNotEmpty) _dinheiro(context),
                 ],
               ),
             ),
@@ -399,30 +420,53 @@ class ObraCardWidget extends StatelessWidget {
   /// O par e "pago" e "por pagar", e nao o total e o que falta: os dois
   /// somam o valor da encomenda, por isso o total continua a ler-se sem
   /// precisar de uma terceira coluna num cartao de telemovel.
-  Widget _dinheiro() {
+  Widget _dinheiro(BuildContext context) {
     final pago = Carteira.totalPago(encomendas);
     final porPagar = Carteira.totalPorPagar(encomendas);
 
     return Padding(
       padding: const EdgeInsets.only(top: COTokens.space4),
-      child: Container(
-        padding: const EdgeInsets.only(top: COTokens.space4),
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: COColors.brand700)),
-        ),
-        child: Row(
-          children: [
-            Expanded(child: _valor('Pago', Carteira.euros(pago))),
-            Expanded(
-              child: _valor(
-                'Por pagar',
-                Carteira.euros(porPagar),
-                // O que falta pagar e a unica coisa aqui sobre a qual a
-                // pessoa tem de agir, por isso e a unica com cor.
-                cor: porPagar > 0 ? COColors.accent : COColors.white,
+      child: GestureDetector(
+        // Toque proprio, separado do resto do cartao: "por pagar" junta o que
+        // ja foi faturado com o que ainda nem foi, e essa diferenca nao cabe
+        // aqui. Quem quiser saber, toca.
+        onTap: encomendas.isEmpty
+            ? null
+            : () => DetalheDeValores.abrir(
+                  context,
+                  empreendimento: obra.title,
+                  encomendas: encomendas,
+                ),
+        // Sem isto o toque so conta em cima dos numeros, e falha no espaco
+        // entre eles.
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.only(top: COTokens.space4),
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: COColors.brand700)),
+          ),
+          child: Row(
+            children: [
+              Expanded(child: _valor('Pago', Carteira.euros(pago))),
+              Expanded(
+                child: _valor(
+                  'Por pagar',
+                  Carteira.euros(porPagar),
+                  // O que falta pagar e a unica coisa aqui sobre a qual a
+                  // pessoa tem de agir, por isso e a unica com cor.
+                  cor: porPagar > 0 ? COColors.accent : COColors.white,
+                ),
               ),
-            ),
-          ],
+              // A pista de que isto se toca. Sem encomendas nao ha o que
+              // mostrar, e entao tambem nao aparece.
+              if (encomendas.isNotEmpty)
+                const Icon(
+                  Icons.chevron_right,
+                  color: COColors.brand300,
+                  size: 20,
+                ),
+            ],
+          ),
         ),
       ),
     );

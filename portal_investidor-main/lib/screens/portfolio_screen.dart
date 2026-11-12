@@ -388,7 +388,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
         ? 'Projeto sem título'
         : Portfolio.texto(project, 'name');
     final cidade = Portfolio.texto(project, 'city');
-    final imageUrl = Portfolio.texto(project, 'mainImageUrl');
+    final imageUrl = Portfolio.imagem(project);
     final anoFim = Portfolio.anoFim(project);
     final fracoes = Portfolio.inteiro(project, 'nFractions');
     final estado = Portfolio.texto(project, 'status');
@@ -399,16 +399,20 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
 
     return CoCard(
       semPadding: true,
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ProjectDetailsScreen(
-            projectId: id,
-            heroTag: heroTag,
-            initialImageUrl: imageUrl,
-          ),
-        ),
-      ),
+      // Os empreendimentos so de historial entram na lista mas nao abrem: a
+      // API responde 404 aos detalhes deles, como o site tambem faz.
+      onTap: Portfolio.temPagina(project)
+          ? () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProjectDetailsScreen(
+                    projectId: id,
+                    heroTag: heroTag,
+                    initialImageUrl: imageUrl,
+                  ),
+                ),
+              )
+          : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -463,7 +467,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 if (anoFim != null)
                   CoLinhaInfo(
                     icone: Icons.calendar_today_outlined,
-                    texto: 'Conclusão prevista: $anoFim',
+                    texto: Portfolio.conclusao(estado, anoFim),
                   ),
                 if (fracoes != null)
                   CoLinhaInfo(

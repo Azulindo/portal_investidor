@@ -33,8 +33,34 @@ class ApiConfig {
     return 'http://localhost:3000/api';
   }
 
-  static String get baseUrl =>
-      _baseUrlDefinido.isNotEmpty ? _baseUrlDefinido : _baseUrlLocal;
+  static String get baseUrl {
+    final escolhido =
+        _baseUrlDefinido.isNotEmpty ? _baseUrlDefinido : _baseUrlLocal;
+    // Sem a barra do fim: todos os endpoints aqui começam por "/", e um
+    // API_BASE_URL colado com barra ("...pt/api/") dava caminhos com "//".
+    return escolhido.endsWith('/')
+        ? escolhido.substring(0, escolhido.length - 1)
+        : escolhido;
+  }
+
+  /// O endereço completo de um ficheiro que a API devolveu.
+  ///
+  /// As respostas trazem caminhos relativos desde que os ficheiros passaram a
+  /// ser servidos pela própria API: `/media/aires-de-ornelas/.../hero.webp`.
+  /// O site resolve-os com um proxy no próprio domínio; a app não tem onde,
+  /// e o CachedNetworkImage precisa do endereço inteiro — sem isto a app não
+  /// mostrava uma única fotografia.
+  ///
+  /// Um endereço que já venha completo fica como está: há imagens antigas
+  /// apontadas para fora.
+  static String? urlDeFicheiro(String? caminho) {
+    final limpo = caminho?.trim() ?? '';
+    if (limpo.isEmpty) return null;
+    if (limpo.startsWith('http://') || limpo.startsWith('https://')) {
+      return limpo;
+    }
+    return limpo.startsWith('/') ? '$baseUrl$limpo' : '$baseUrl/$limpo';
+  }
 
   /// Tempo máximo de espera por uma resposta.
   static const Duration connectionTimeout = Duration(seconds: 10);
@@ -50,6 +76,14 @@ class ApiConfig {
   // (no site passam por route handlers em /api/..., mas esses são só proxies
   // finos para estes).
   static const String loginEndpoint = '/auth/login';
+
+  /// Troca o refresh token por um token de acesso novo. O de acesso dura 15
+  /// minutos, por isso sem isto a sessão caía a cada quarto de hora.
+  static const String refreshEndpoint = '/auth/refresh';
+
+  /// Revoga o refresh token e toda a família dele, do lado do servidor.
+  static const String logoutEndpoint = '/auth/logout';
+
   static const String registerEndpoint = '/auth/register';
   static const String forgotPasswordEndpoint = '/auth/forgot-password';
   static const String resetPasswordEndpoint = '/auth/reset-password';

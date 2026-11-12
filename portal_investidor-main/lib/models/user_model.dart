@@ -1,3 +1,20 @@
+import '../config/api_config.dart';
+
+/// Um campo de texto opcional da API: null quando vem null, ausente, ou
+/// so com espacos. Texto vazio conta como ausente, porque uma linha com
+/// rotulo e nada ao lado e pior do que nao haver linha.
+String? _texto(dynamic valor) {
+  final t = valor?.toString().trim() ?? '';
+  return t.isEmpty ? null : t;
+}
+
+/// Um ficheiro da API, com o endereco completo.
+///
+/// As respostas trazem caminhos relativos ("/media/..."), por isso resolve-se
+/// aqui, a entrada, e nao em cada widget: quem le os modelos recebe sempre um
+/// endereco que se pode abrir. Ver ApiConfig.urlDeFicheiro.
+String? _ficheiro(dynamic valor) => ApiConfig.urlDeFicheiro(_texto(valor));
+
 class ConstructionStep {
   final int id;
   final int stepOrder;
@@ -36,6 +53,10 @@ class ConstructionItem {
   final int? nFractions;
   /// Tem frações em comercialização.
   final bool forSale;
+  /// Tem ecrã de detalhes. Os empreendimentos "só de historial" aparecem nas
+  /// listas e no mapa, mas a API responde 404 a quem lhes pedir os detalhes,
+  /// por isso não se deve deixar abri-los.
+  final bool temPagina;
   /// Onde fica, para o mapa. Vem a 0 quando o projeto não tem morada marcada.
   final double? latitude;
   final double? longitude;
@@ -52,10 +73,15 @@ class ConstructionItem {
     this.status = '',
     this.nFractions,
     this.forSale = false,
+    this.temPagina = true,
     this.latitude,
     this.longitude,
     this.address,
   });
+
+  /// Em comercialização, como o site o mostra: só quem tem página. Sem ecrã
+  /// para onde ir, anunciar que há frações à venda não leva a nada.
+  bool get estaAVenda => forSale && temPagina;
 
   /// Dá para marcar no mapa. A API manda 0/0 quando não há coordenadas.
   bool get temCoordenadas =>
@@ -101,11 +127,14 @@ class ConstructionItem {
       location: json['city']?.toString() ?? 'Localização não informada',
       currentStep: json['currentStep'] ?? 0,
       steps: steps,
-      imageUrl: json['mainImageUrl']?.toString() ?? '',
+      imageUrl: _ficheiro(json['mainImageUrl']) ?? '',
       dataFim: json['endDate']?.toString(),
       status: json['status']?.toString() ?? '',
       nFractions: int.tryParse(json['nFractions']?.toString() ?? ''),
       forSale: json['forSale'] == true,
+      // Ausente conta como tendo página, para uma API anterior a este campo
+      // continuar a funcionar.
+      temPagina: json['hasDetailPage'] != false,
       latitude: double.tryParse(json['latitude']?.toString() ?? ''),
       longitude: double.tryParse(json['longitude']?.toString() ?? ''),
       address: json['address']?.toString(),
@@ -124,14 +153,12 @@ class FaturaItem {
 class UserModel {
   final String name;
   final double totalInvestido;
-  final double roiEsperado;
   final List<ConstructionItem> obras;
   final List<FaturaItem> faturas;
 
   UserModel({
     required this.name,
     required this.totalInvestido,
-    required this.roiEsperado,
     required this.obras,
     required this.faturas,
   });
@@ -144,6 +171,8 @@ class UserModel {
 /// Corresponde a uma linha de "projectInfo" devolvida pelo backend.
 class ProjectInfo {
   final String name;
+  /// Linha curta por baixo do nome, quando o empreendimento tem uma.
+  final String? subtitle;
   final int? nFractions;
   final String address;
   final String city;
@@ -171,6 +200,7 @@ class ProjectInfo {
 
   ProjectInfo({
     required this.name,
+    this.subtitle,
     this.nFractions,
     required this.address,
     required this.city,
@@ -201,6 +231,7 @@ class ProjectInfo {
   factory ProjectInfo.fromJson(Map<String, dynamic> json) {
     return ProjectInfo(
       name: json['name']?.toString() ?? 'Projeto sem título',
+      subtitle: _texto(json['subtitle']),
       nFractions: int.tryParse(json['nFractions']?.toString() ?? ''),
       address: json['address']?.toString() ?? '',
       city: json['city']?.toString() ?? '',
@@ -209,11 +240,11 @@ class ProjectInfo {
       description: json['description']?.toString() ?? 'Nenhuma descrição disponível.',
       startDate: json['startDate']?.toString(),
       endDate: json['endDate']?.toString(),
-      mainImageUrl: json['mainImageUrl']?.toString(),
+      mainImageUrl: _ficheiro(json['mainImageUrl']),
       forSale: json['forSale'] == true,
       latitude: double.tryParse(json['latitude']?.toString() ?? ''),
       longitude: double.tryParse(json['longitude']?.toString() ?? ''),
-      descriptionImageUrl: json['descriptionImageUrl']?.toString(),
+      descriptionImageUrl: _ficheiro(json['descriptionImageUrl']),
       videoUrl: json['videoUrl']?.toString(),
       zoneTitle: json['zoneTitle']?.toString(),
       zoneDescription: json['zoneDescription']?.toString(),
@@ -266,7 +297,7 @@ class ProjectStepDetail {
       stepOrder: int.tryParse(json['stepOrder']?.toString() ?? '') ?? 0,
       name: json['name']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
-      imageUrl: json['imageUrl']?.toString(),
+      imageUrl: _ficheiro(json['imageUrl']),
     );
   }
 }
@@ -301,7 +332,7 @@ class ProjectImage {
   factory ProjectImage.fromJson(Map<String, dynamic> json) {
     return ProjectImage(
       imageId: int.tryParse(json['imageId']?.toString() ?? '') ?? 0,
-      imageUrl: json['imageUrl']?.toString() ?? '',
+      imageUrl: _ficheiro(json['imageUrl']) ?? '',
       imageDescription: json['imageDescription']?.toString(),
       category: json['category']?.toString() ?? 'exterior',
       // Ausente conta como ativa: só se esconde o que vier explicitamente a false.
@@ -375,13 +406,6 @@ class ProjectFraction {
 
   bool get disponivel => status.toLowerCase().startsWith('dispon');
 
-  /// Um campo de texto opcional da API: null quando vem null, ausente, ou
-  /// so com espacos.
-  static String? _texto(dynamic valor) {
-    final t = valor?.toString().trim() ?? '';
-    return t.isEmpty ? null : t;
-  }
-
   factory ProjectFraction.fromJson(Map<String, dynamic> json) {
     return ProjectFraction(
       fractionId: int.tryParse(json['fractionId']?.toString() ?? '') ?? 0,
@@ -402,7 +426,7 @@ class ProjectFraction {
       block: _texto(json['block']),
       floor: json['floor']?.toString(),
       orientation: json['orientation']?.toString(),
-      floorPlanUrl: json['floorPlanUrl']?.toString(),
+      floorPlanUrl: _ficheiro(json['floorPlanUrl']),
     );
   }
 }
@@ -429,7 +453,7 @@ class ProjectFinish {
       finishId: int.tryParse(json['finishId']?.toString() ?? '') ?? 0,
       categoryId: int.tryParse(json['categoryId']?.toString() ?? '') ?? 0,
       categoryName: json['categoryName']?.toString() ?? '',
-      imageUrl: json['imageUrl']?.toString(),
+      imageUrl: _ficheiro(json['imageUrl']),
       details: (json['details'] as List? ?? []).map((e) => e.toString()).toList(),
     );
   }

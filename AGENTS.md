@@ -21,6 +21,12 @@ flutter run --dart-define=USE_MOCK=true --dart-define=SKIP_LOGIN=true
 flutter analyze && flutter test        # tem de ficar limpo e tudo a passar
 ```
 
+**O pacote para a Google Play gera-se só com `loja\gerar_pacote.ps1`**, nunca
+com o `flutter build appbundle` à mão: o script põe o servidor de produção e a
+`CARTO_KEY`, e recusa um pacote assinado com a chave de debug. Sem o
+`API_BASE_URL`, a app ia para a loja a apontar para o emulador. O ícone e as
+imagens das lojas saem de `loja\gerar.ps1`.
+
 Opções de build no `portal_investidor-main/README.md`. A `CARTO_KEY` não é
 opcional em produção: sem ela o mapa cai no OpenStreetMap.
 
@@ -53,12 +59,32 @@ opcional em produção: sem ela o mapa cai no OpenStreetMap.
 - **O `block` das frações é texto**, não número: há blocos com nome.
 - **A contagem do sininho vem do `unreadCount`**, nunca de contar a lista — a
   API manda 30 no máximo mas conta todas.
+- **O token de acesso dura 15 minutos** e renova-se sozinho em
+  `/auth/refresh`, no `_obterTokenValido` do ApiService. O refresh token é
+  rodado a cada troca, por isso **nunca renovar dois em paralelo** — a API
+  trata um token repetido como cópia roubada e termina a sessão. Expirado
+  deixou de ser o mesmo que acabado: só se manda a pessoa para o login
+  quando já não há refresh token.
+- **`hasDetailPage: false`** é um empreendimento só de historial: entra nas
+  listas e no mapa, mas não abre — o `/project/details` responde-lhe 404.
+  Campo ausente conta como `true`. Na app é o `Portfolio.temPagina` e o
+  `ConstructionItem.temPagina`, e "em comercialização" exige os dois
+  (`estaAVenda`), como o `aVendaNoSite` do site.
 - **Os tokens dos emails colam-se à mão.** Deep links ficaram de parte: exigem
   ficheiros no domínio, que é do lado do backend.
 - **Na web usa-se SharedPreferences para o token**, não o cofre: o
   `flutter_secure_storage` não arranca numa build de release para web.
 - **Biometria adiada** por decisão do Azulindo, apesar de o `local_auth` estar
   no pubspec.
+- **O identificador do pacote é `com.cleveroption.portalinvestidor`**, igual no
+  Android e no iOS. Mudá-lo depois de a app estar publicada é publicar uma app
+  nova, com instalações a zero.
+- **O `targetSdk` está fixo em 36**, e não herdado do Flutter instalado: é o
+  que a Google exige, e uma atualização do Flutter não deve poder baixá-lo sem
+  ninguém dar por isso.
+- **A assinatura de release lê o `android/key.properties`** (modelo em
+  `android/key.properties.exemplo`). Sem esse ficheiro, o release assina-se
+  com as chaves de debug — serve para testar, e a Play Console recusa-o.
 
 ## Armadilhas que já custaram tempo
 
@@ -70,6 +96,10 @@ opcional em produção: sem ela o mapa cai no OpenStreetMap.
   zero se o filho for um `Row` só com `Expanded`. E um `Row` centra os filhos
   por omissão, portanto um `ColoredBox` sem filho fica com altura zero. As
   duas coisas passam no analyze e nos testes.
+- **`keytool -printcert -jarfile` diz "Not a signed jar file" num APK que está
+  bem assinado.** Os APKs modernos usam o esquema v2, que o `keytool` não lê.
+  Para ver quem assinou:
+  `<SDK>/build-tools/<versão>/apksigner verify --print-certs <apk>`.
 - **O `ApiService` cria o `http.Client` por dentro**, por isso não há como lhe
   meter um cliente falso. Lógica que precise de teste tem de sair para uma
   função pura (ver `FimDeSessao.motivoPara`).

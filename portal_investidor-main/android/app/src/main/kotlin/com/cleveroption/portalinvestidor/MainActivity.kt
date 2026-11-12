@@ -1,4 +1,4 @@
-package com.example.portal_investidor
+package com.cleveroption.portalinvestidor
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

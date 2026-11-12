@@ -54,11 +54,15 @@ class SecaoLocalizacao extends StatelessWidget {
               options: MapOptions(
                 initialCenter: ponto,
                 initialZoom: 15,
-                // Sem rotação: o mapa está dentro de uma página que se rola,
-                // e um gesto de rodar aqui era sempre por acidente.
+                // Só se mexe com dois dedos. O mapa está a meio de uma página
+                // que se rola, e com o arrasto de um dedo ligado quem descia a
+                // página com o dedo por cima do mapa arrastava o mapa — o
+                // marcador fugia do ecrã e a página não andava. Visto num
+                // teste no telemóvel. Rodar também fica de fora: aqui era
+                // sempre por acidente.
                 interactionOptions: const InteractionOptions(
                   flags: InteractiveFlag.pinchZoom |
-                      InteractiveFlag.drag |
+                      InteractiveFlag.pinchMove |
                       InteractiveFlag.doubleTapZoom,
                 ),
               ),

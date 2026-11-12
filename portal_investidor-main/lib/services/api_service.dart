@@ -140,6 +140,30 @@ class ApiService {
   /// Não navega. Quem chama decide para onde ir, porque o menu e o perfil
   /// saem de sítios diferentes da pilha de ecrãs.
   static Future<void> sair() async {
+    // Revoga o refresh token no servidor antes de o apagar daqui — depois de
+    // limparSessao já não há com que o fazer, e um refresh token vivo que
+    // ninguém usa é um que fica a valer até expirar.
+    //
+    // Se a rede falhar, sai-se de qualquer maneira: o que não pode acontecer
+    // é a pessoa ficar presa na conta por o servidor não responder.
+    final refresh = await AuthService.obterRefreshToken();
+    if (refresh != null && !ApiConfig.useMock) {
+      try {
+        await http
+            .post(
+              Uri.parse('${ApiConfig.baseUrl}${ApiConfig.logoutEndpoint}'),
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+              body: jsonEncode({'refreshToken': refresh}),
+            )
+            .timeout(ApiConfig.connectionTimeout);
+      } catch (_) {
+        // Fica para o servidor limpar quando expirar.
+      }
+    }
+
     await AuthService.limparSessao();
     _token = null;
     idLogado = null;
@@ -168,11 +192,98 @@ class ApiService {
     aoExpirarSessao?.call(motivo);
   }
 
-  /// Garante que o token está carregado em memória, lendo do armazenamento
-  /// persistente se necessário (ex: após reiniciar a app).
+  /// Uma renovação de cada vez. Ver [_obterTokenValido].
+  static Future<void>? _aRenovar;
+
+  /// Garante que há em memória um token de acesso que ainda serve, lendo-o do
+  /// armazenamento se for preciso (depois de reiniciar a app) e renovando-o
+  /// quando está a acabar.
+  ///
+  /// O token de acesso dura 15 minutos e é o refresh token que mantém a
+  /// sessão. Sem esta renovação a pessoa era deitada fora do portal a cada
+  /// quarto de hora de uso.
   Future<String?> _obterTokenValido() async {
     _token ??= await AuthService.obterToken();
+    if (!AuthService.precisaDeRenovar(_token)) return _token;
+
+    final refresh = await AuthService.obterRefreshToken();
+    if (refresh == null) return _token;
+
+    // Uma renovação de cada vez. O painel faz vários pedidos ao mesmo tempo,
+    // e a API troca o refresh token a cada renovação: dois pedidos em
+    // paralelo com o mesmo refresh token pareciam-lhe uma cópia roubada, e a
+    // resposta a isso é terminar a sessão.
+    await (_aRenovar ??= _renovarSessao(refresh).whenComplete(() {
+      _aRenovar = null;
+    }));
+
     return _token;
+  }
+
+  /// Troca o refresh token por um token de acesso novo, em
+  /// `POST /auth/refresh`.
+  Future<void> _renovarSessao(String refreshToken) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.refreshEndpoint}');
+    try {
+      final resposta = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode({'refreshToken': refreshToken}),
+          )
+          .timeout(ApiConfig.connectionTimeout);
+
+      if (resposta.statusCode == 200) {
+        final tokens = tokensDeRenovacao(resposta.body);
+        // Resposta com 200 e sem token é coisa que não devia acontecer. Fica
+        // o token velho, e quem o usar leva o 401 que trata disto.
+        if (tokens == null) return;
+
+        _token = tokens.$1;
+        await AuthService.guardarToken(tokens.$1);
+        await AuthService.guardarRefreshToken(tokens.$2);
+        return;
+      }
+
+      // A API responde com os mesmos códigos dos pedidos autenticados, e de
+      // propósito: um refresh recusado é uma sessão que acabou.
+      final motivo = FimDeSessao.motivoPara(
+        resposta.statusCode,
+        resposta.body,
+      );
+      if (motivo != null) {
+        await AuthService.limparSessao();
+        _sessaoExpirou(motivo);
+      }
+    } catch (_) {
+      // Falha de rede não termina sessão nenhuma: fica o token velho e o
+      // pedido a seguir falha com erro de rede, que é o que se passou.
+    }
+  }
+
+  /// Lê os tokens da resposta de `/auth/refresh`.
+  ///
+  /// O `refreshToken` pode vir a null, e isso quer dizer "mantém o que
+  /// tens": aconteceu outro pedido em paralelo e foi esse que levou o novo.
+  ///
+  /// Fora da chamada para poder ser testada — o ApiService cria o cliente
+  /// http por dentro, por isso a resposta não se pode simular.
+  static (String, String?)? tokensDeRenovacao(String corpo) {
+    try {
+      final data = (jsonDecode(corpo) as Map)['data'];
+      if (data is! Map) return null;
+
+      final token = data['token'];
+      if (token is! String || token.isEmpty) return null;
+
+      final refresh = data['refreshToken'];
+      return (token, refresh is String && refresh.isNotEmpty ? refresh : null);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Levanta o erro certo para uma resposta que falhou.
@@ -290,6 +401,12 @@ class ApiService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> parsed = jsonDecode(response.body);
         final token = parsed['data']?['token'] as String?;
+        // O refresh token é o que mantém a sessão viva: o de acesso dura 15
+        // minutos. Guarda-se aqui para quem chama não ter de saber que ele
+        // existe — o ecrã de login continua a lidar só com o id e o token.
+        await AuthService.guardarRefreshToken(
+          parsed['data']?['refreshToken'] as String?,
+        );
         int? id = parsed['data']?['user']?['id'];
 
         if (token != null) {

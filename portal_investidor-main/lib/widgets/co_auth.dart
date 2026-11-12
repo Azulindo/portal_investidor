@@ -60,9 +60,15 @@ class CoAuthScaffold extends StatelessWidget {
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: COTokens.space8),
-                  Text('Área reservada',
-                      style: COText.overline, textAlign: TextAlign.center),
-                  const SizedBox(height: COTokens.space2),
+                  // A sobrelinha diz onde a pessoa esta, e so faz falta quando
+                  // o titulo fala de outra coisa ("Criar conta", "Recuperar
+                  // acesso"). No ecra de entrada o titulo ja e este, e a
+                  // palavra aparecia duas vezes seguidas.
+                  if (titulo.toLowerCase() != 'área reservada') ...[
+                    Text('Área reservada',
+                        style: COText.overline, textAlign: TextAlign.center),
+                    const SizedBox(height: COTokens.space2),
+                  ],
                   Text(titulo, style: COText.h1, textAlign: TextAlign.center),
                   if (subtitulo != null) ...[
                     const SizedBox(height: COTokens.space2),

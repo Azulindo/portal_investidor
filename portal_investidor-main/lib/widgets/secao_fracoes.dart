@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -33,6 +35,17 @@ class SecaoFracoes extends StatefulWidget {
 class _SecaoFracoesState extends State<SecaoFracoes> {
   bool _aberta = false;
 
+  /// Quantas frações se mostram de cada vez.
+  ///
+  /// Um empreendimento pode ter 130 frações, e abri-las todas de uma vez dava
+  /// uma página sem fim — a pessoa ficava a arrastar sem chegar ao mapa que
+  /// vem a seguir. Vinte enchem o ecrã umas vezes e param; quem quiser mais,
+  /// pede. Os filtros em cima continuam a ser o caminho rápido para a fração
+  /// certa.
+  static const int _lote = 20;
+
+  int _aMostrar = _lote;
+
   // null em qualquer um destes é "todas".
   String? _tipologia;
   String? _estado;
@@ -41,13 +54,20 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
   bool get _temFiltro =>
       _tipologia != null || _estado != null || _piso != null;
 
-  void _limpar() => setState(() {
+  /// Mudar de filtro recomeça a contagem: o lote que já estava aberto era de
+  /// outra lista.
+  void _filtrar(void Function() mudanca) => setState(() {
+        mudanca();
+        _aMostrar = _lote;
+      });
+
+  void _limpar() => _filtrar(() {
         _tipologia = null;
         _estado = null;
         _piso = null;
       });
 
-  void _verTipologia(String tipologia) => setState(() {
+  void _verTipologia(String tipologia) => _filtrar(() {
         _estado = null;
         _piso = null;
         _tipologia = tipologia;
@@ -117,8 +137,12 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
                 style: COText.small,
               ),
             )
-          else
-            for (final f in visiveis) _cartaoFracao(f, pisos.isNotEmpty),
+          else ...[
+            for (final f in visiveis.take(_aMostrar))
+              _cartaoFracao(f, pisos.isNotEmpty),
+            if (visiveis.length > _aMostrar)
+              _botaoMaisFracoes(visiveis.length - _aMostrar),
+          ],
         ],
       ],
     );
@@ -207,11 +231,43 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
     );
   }
 
+  /// Mais um lote de frações, no fim da lista.
+  Widget _botaoMaisFracoes(int quantasFaltam) {
+    final proximo = math.min(quantasFaltam, _lote);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: COTokens.space6),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: () => setState(() => _aMostrar += _lote),
+          icon: const Icon(
+            Icons.expand_more,
+            size: 18,
+            color: COColors.brand300,
+          ),
+          label: Text(
+            'Mostrar mais $proximo — faltam $quantasFaltam',
+            style: COText.small.copyWith(
+              color: COColors.brand300,
+              fontWeight: COTokens.fwMedium,
+            ),
+          ),
+          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+        ),
+      ),
+    );
+  }
+
   Widget _botaoVerMais() {
     return Align(
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
-        onPressed: () => setState(() => _aberta = !_aberta),
+        onPressed: () => setState(() {
+          _aberta = !_aberta;
+          // Reabrir recomeça no primeiro lote.
+          if (_aberta) _aMostrar = _lote;
+        }),
         icon: Icon(
           _aberta ? Icons.expand_less : Icons.expand_more,
           size: 18,
@@ -248,7 +304,7 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
             for (final r in resumo)
               (valor: r.tipologia, texto: '${r.tipologia} (${r.quantidade})'),
           ],
-          aoMudar: (v) => setState(() => _tipologia = v),
+          aoMudar: (v) => _filtrar(() => _tipologia = v),
         ),
         // Os filtros de estado e de piso só aparecem quando há mais de um
         // valor — com um só, o filtro não filtra nada. É o que o site faz.
@@ -258,7 +314,7 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
             valor: _estado,
             textoDeTodas: 'Todas',
             opcoes: [for (final e in estados) (valor: e, texto: e)],
-            aoMudar: (v) => setState(() => _estado = v),
+            aoMudar: (v) => _filtrar(() => _estado = v),
           ),
         if (pisos.length > 1)
           _filtro<String>(
@@ -266,7 +322,7 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
             valor: _piso,
             textoDeTodas: 'Todos',
             opcoes: [for (final p in pisos) (valor: p, texto: p)],
-            aoMudar: (v) => setState(() => _piso = v),
+            aoMudar: (v) => _filtrar(() => _piso = v),
           ),
       ],
     );

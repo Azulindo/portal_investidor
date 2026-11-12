@@ -5,7 +5,6 @@ class InvestidorModel {
   final String name;
   final String email;
   final double totalInvested;
-  final double? roiEsperado;
   final DateTime createdAt;
   final List<ConstructionItem> obras;
   final List<dynamic> faturas;
@@ -15,7 +14,6 @@ class InvestidorModel {
     required this.name,
     required this.email,
     required this.totalInvested,
-    this.roiEsperado,
     required this.createdAt,
     required this.obras,
     required this.faturas,
@@ -60,7 +58,6 @@ class InvestidorModel {
       // isso o painel mostrava sempre zero, apesar de a API mandar o valor.
       totalInvested:
           double.tryParse(data['totalInvested']?.toString() ?? '') ?? 0.0,
-      roiEsperado: null,
       createdAt: DateTime.now(),
       obras: obras,
       faturas: const [],

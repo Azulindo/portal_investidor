@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,8 +8,20 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// A chave de assinatura nunca entra no repositorio: o android/.gitignore ja
+// ignora o key.properties e os ficheiros .jks. Enquanto o ficheiro nao existir,
+// o release assina-se com as chaves de debug, para o `flutter run --release`
+// continuar a funcionar na maquina de quem nao tem a chave. Um pacote assinado
+// assim serve para testar, mas a Play Console recusa-o.
+val chaveProps = Properties()
+val chaveFicheiro = rootProject.file("key.properties")
+if (chaveFicheiro.exists()) {
+    FileInputStream(chaveFicheiro).use { chaveProps.load(it) }
+}
+val temChaveDeAssinatura = chaveProps.getProperty("storeFile") != null
+
 android {
-    namespace = "com.example.portal_investidor"
+    namespace = "com.cleveroption.portalinvestidor"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,21 +35,36 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.portal_investidor"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        // Definitivo: mudar isto depois de publicar faz uma app nova na loja,
+        // com instalacoes a zero e sem atualizacoes para quem ja a tinha.
+        applicationId = "com.cleveroption.portalinvestidor"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        // Fixo, e nao herdado do Flutter instalado: a Google exige 36 desde
+        // agosto de 2026, e uma atualizacao do Flutter nao deve poder baixa-lo
+        // sem ninguem dar por isso.
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (temChaveDeAssinatura) {
+            create("upload") {
+                storeFile = file(chaveProps.getProperty("storeFile"))
+                storePassword = chaveProps.getProperty("storePassword")
+                keyAlias = chaveProps.getProperty("keyAlias")
+                keyPassword = chaveProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (temChaveDeAssinatura) {
+                signingConfigs.getByName("upload")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

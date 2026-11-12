@@ -5,6 +5,7 @@ import '../screens/project_details_screen.dart';
 import '../services/api_service.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import '../utils/portfolio.dart';
 import '../utils/ui_helpers.dart';
 import 'co_card.dart';
 import 'co_imagem.dart';
@@ -59,11 +60,15 @@ class _SecaoOutrosEmpreendimentosState
           return const SizedBox.shrink();
         }
 
+        // Fora o que a pessoa esta a ver, e fora os so de historial: estes
+        // cartoes existem para abrir o empreendimento, e esses nao abrem.
+        // E o mesmo filtro do site (temPagina, em OutrosEmpreendimentos).
         final outros = snapshot.data!.where((p) {
-          final id = int.tryParse(
-            (p is Map ? p['id'] : null)?.toString() ?? '',
-          );
-          return id != null && id != widget.projectIdAtual;
+          if (p is! Map) return false;
+          final id = int.tryParse(p['id']?.toString() ?? '');
+          return id != null &&
+              id != widget.projectIdAtual &&
+              Portfolio.temPagina(p);
         }).toList();
 
         if (outros.isEmpty) return const SizedBox.shrink();
@@ -104,7 +109,7 @@ class _SecaoOutrosEmpreendimentosState
     final nome = p['name']?.toString() ?? 'Projeto sem título';
     final cidade = p['city']?.toString() ?? '';
     final estado = p['status']?.toString() ?? '';
-    final imagem = p['mainImageUrl']?.toString() ?? '';
+    final imagem = Portfolio.imagem(p);
 
     // Tag única por cartão, com o id do empreendimento atual pelo meio: o
     // mesmo projeto pode aparecer nesta secção em vários detalhes, e duas

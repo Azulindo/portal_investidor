@@ -5,7 +5,47 @@ import '../theme/co_tokens.dart';
 import '../widgets/co_card.dart';
 import '../widgets/co_drawer.dart';
 import '../services/api_service.dart';
+import '../utils/carteira.dart';
 import 'login_screen.dart';
+
+/// Um número com a sua etiqueta, nos dois cartões do topo do perfil.
+///
+/// Os dois textos encolhem em vez de mudarem de linha. Num cartão com metade
+/// da largura do ecrã, "Empreendimentos" partia o "s" para a linha de baixo e
+/// um total de sete dígitos ocupava três linhas — e os dois cartões, lado a
+/// lado, ficavam com alturas diferentes.
+class _Kpi extends StatelessWidget {
+  const _Kpi({required this.etiqueta, required this.valor});
+
+  final String etiqueta;
+  final String valor;
+
+  @override
+  Widget build(BuildContext context) {
+    return CoCard(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _numaLinha(Text(etiqueta, style: COText.small)),
+          const SizedBox(height: 2),
+          _numaLinha(Text(valor, style: COText.valor)),
+        ],
+      ),
+    );
+  }
+
+  /// Encolhe o texto até caber, em vez de o deixar partir.
+  Widget _numaLinha(Text texto) => SizedBox(
+        width: double.infinity,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: texto,
+        ),
+      );
+}
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -162,56 +202,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _mostrarBiometria() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: COColors.brand900,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(COTokens.radiusSm),
-            side: const BorderSide(color: COColors.brand700),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.fingerprint, color: COColors.brand300),
-              SizedBox(width: 10),
-              Text(
-                'Segurança',
-                style: TextStyle(
-                  color: COColors.white,
-                  fontSize: 16,
-                  fontWeight: COTokens.fwBold,
-                ),
-              ),
-            ],
-          ),
-          content: const Text(
-            'A autenticação biométrica (Face ID / Impressão Digital) está ativa para o teu dispositivo. Os teus dados estão protegidos.',
-            style: TextStyle(
-              color: COColors.neutral500,
-              fontSize: 14,
-              height: 1.5,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Fechar',
-                style: TextStyle(
-                  color: COColors.brand300,
-                  fontWeight: COTokens.fwBold,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap) {
     return Container(
       margin: const EdgeInsets.only(bottom: COTokens.space4),
@@ -312,33 +302,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
-                    child: CoCard(
-                      margin: EdgeInsets.zero,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const CoEtiqueta('Valor total'),
-                          Text(
-                            '${totalInvestido.toStringAsFixed(2)} €',
-                            style: COText.valor,
-                          ),
-                        ],
-                      ),
+                    child: _Kpi(
+                      etiqueta: 'Valor total',
+                      // Carteira.euros e nao toStringAsFixed: assim le-se
+                      // "3 374 950 €" e nao "3374950.00 €", que alem de feio
+                      // era tao comprido que partia em tres linhas.
+                      valor: Carteira.euros(totalInvestido),
                     ),
                   ),
                   const SizedBox(width: COTokens.space4),
                   Expanded(
-                    child: CoCard(
-                      margin: EdgeInsets.zero,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const CoEtiqueta('Empreendimentos'),
-                          Text('$nEmpreendimentos', style: COText.valor),
-                        ],
-                      ),
+                    child: _Kpi(
+                      etiqueta: 'Empreendimentos',
+                      valor: '$nEmpreendimentos',
                     ),
                   ),
                 ],
@@ -348,19 +324,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const CoTitulo('Opções'),
 
-            _buildMenuItem(Icons.person, 'Os Meus Dados', () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Edição de perfil disponível em breve!'),
-                  backgroundColor: COColors.brand500,
-                ),
-              );
-            }),
-            _buildMenuItem(
-              Icons.fingerprint,
-              'Segurança e Biometria',
-              _mostrarBiometria,
-            ),
+            // Havia mais duas opções aqui, e saíram as duas. "Os Meus Dados"
+            // só respondia "disponível em breve". "Segurança e Biometria"
+            // dizia que a autenticação biométrica estava ativa — e a
+            // biometria nunca foi feita, foi adiada. Uma afirmação falsa sobre
+            // segurança é pior do que não ter a opção, e as lojas recusam
+            // apps com funcionalidades que não fazem nada. Voltam quando
+            // existirem.
             _buildMenuItem(Icons.help_outline, 'Suporte', _mostrarSuporte),
 
             const SizedBox(height: COTokens.space8),
@@ -370,7 +340,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: OutlinedButton(
                 onPressed: _fazerLogout,
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: COColors.brand500, width: 1),
+                  // brand300 e não brand500: o brand500 é cor de bordas, e
+                  // como texto sobre o navy fica abaixo do contraste mínimo
+                  // (há um teste que o diz). O botão mal se via.
+                  side: const BorderSide(color: COColors.brand300, width: 1),
                   padding: const EdgeInsets.symmetric(
                     vertical: COTokens.space6,
                   ),
@@ -381,7 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: const Text(
                   'Terminar sessão',
                   style: TextStyle(
-                    color: COColors.brand500,
+                    color: COColors.brand300,
                     letterSpacing: 1.5,
                     fontWeight: COTokens.fwBold,
                     fontSize: 13,

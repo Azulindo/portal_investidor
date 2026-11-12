@@ -36,6 +36,27 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_native_splash: ^2.4.1   # 🔧 Splash screen (agora no local correto)
+  flutter_launcher_icons: ^0.14.4
+
+# Ícone da app: o símbolo do C, a branco sobre o navy. As imagens saem do
+# logótipo em vetor com `loja/gerar.ps1`, e os tamanhos todos da app com
+# `dart run flutter_launcher_icons`. Ver assets/icon/LEIA-ME.md.
+flutter_launcher_icons:
+  # Já com o navy de fundo: é o que o iOS usa (não aceita transparência) e o
+  # ícone dos Android anteriores ao 8.
+  image_path: "assets/icon/icone.png"
+  android: "ic_launcher"
+  # Android 8 em diante: fundo e frente separados, porque o sistema recorta o
+  # ícone numa forma diferente em cada telemóvel. A frente é só o símbolo, com
+  # folga, para não perder as pontas no recorte.
+  adaptive_icon_background: "#002847"
+  adaptive_icon_foreground: "assets/icon/icone_frente.png"
+  # Sem margem extra: a folga já vem desenhada na imagem. Por omissão o
+  # gerador acrescenta 16% de cada lado, e as duas juntas deixavam o C com um
+  # terço do ícone.
+  adaptive_icon_foreground_inset: 0
+  ios: true
+  remove_alpha_ios: true
 
 # ⬇️⬇️⬇️ SPLASH SCREEN (fora da secção "flutter", ao mesmo nível) ⬇️⬇️⬇️
 flutter_native_splash:

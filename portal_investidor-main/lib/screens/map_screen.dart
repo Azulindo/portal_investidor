@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../utils/mapa.dart';
+import '../utils/portfolio.dart';
 import '../utils/ui_helpers.dart';
 import '../widgets/co_drawer.dart';
 import 'project_details_screen.dart';
@@ -76,8 +77,10 @@ class _MapScreenState extends State<MapScreen> {
           child: GestureDetector(
             onTap: () {
               final city      = project['city']    as String?;
-              final forSale   = project['forSale'] as bool? ?? false;
-              final mainImage = project['mainImageUrl'] as String?;
+              // A venda como o site mostra: so quem tem pagina propria.
+              final forSale   = Portfolio.estaAVenda(project);
+              final temPagina = Portfolio.temPagina(project);
+              final mainImage = Portfolio.imagem(project);
 
               showModalBottomSheet(
                 context: context,
@@ -102,7 +105,7 @@ class _MapScreenState extends State<MapScreen> {
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(COTokens.radiusSm),
                         ),
-                        child: mainImage != null && mainImage.isNotEmpty
+                        child: mainImage.isNotEmpty
                             ? CoImagem(
                                 mainImage,
                                 altura: 160,
@@ -130,7 +133,9 @@ class _MapScreenState extends State<MapScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 city,
-                                style: const TextStyle(color: COColors.neutral500, fontSize: 13),
+                                // brand300 e nao neutral500: a folha e navy, e
+                                // o neutral500 so chega a 3,4:1 sobre ela.
+                                style: const TextStyle(color: COColors.brand300, fontSize: 13),
                               ),
                             ],
                             const SizedBox(height: 14),
@@ -138,11 +143,13 @@ class _MapScreenState extends State<MapScreen> {
                             // Info row
                             Row(
                               children: [
-                                _infoChip(color, status ?? 'Desconhecido'),
-                                const SizedBox(width: 8),
+                                _infoChip(status, status ?? 'Desconhecido'),
                                 if (forSale) ...[
                                   const SizedBox(width: 8),
-                                  _infoChip(const Color(0xFF5BBFBF), 'Frações à venda'),
+                                  // "Concluído" é o que dá o teal da marca, e
+                                  // este chip quer essa cor: é o único sobre o
+                                  // qual há alguma coisa a fazer.
+                                  _infoChip('Concluído', 'Frações à venda'),
                                 ],
                               ],
                             ),
@@ -154,8 +161,10 @@ class _MapScreenState extends State<MapScreen> {
                                 Expanded(
                                   child: OutlinedButton(
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: COColors.neutral500,
-                                      side: const BorderSide(color: COColors.neutral500),
+                                      // Era neutral500, que sobre o navy da
+                                      // folha dava 3,4:1 — abaixo do minimo.
+                                      foregroundColor: COColors.brand300,
+                                      side: const BorderSide(color: COColors.brand300),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -165,7 +174,9 @@ class _MapScreenState extends State<MapScreen> {
                                     child: const Text('Voltar'),
                                   ),
                                 ),
-                                if (projectId != null) ...[
+                                // Sem pagina nao se oferece o botao: a API
+                                // responde 404 aos detalhes desses.
+                                if (projectId != null && temPagina) ...[
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: ElevatedButton(
@@ -186,7 +197,7 @@ class _MapScreenState extends State<MapScreen> {
                                             builder: (_) => ProjectDetailsScreen(
                                               projectId: projectId,
                                               heroTag: 'map_project_$projectId',
-                                              initialImageUrl: mainImage ?? '',
+                                              initialImageUrl: mainImage,
                                             ),
                                           ),
                                         );
@@ -347,18 +358,30 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _infoChip(Color color, String label) {
+  /// Etiqueta de estado dentro da folha de informação.
+  ///
+  /// A cor vem da paleta de fundo ESCURO, e não da do mapa: a folha é navy, e
+  /// as cores do mapa são escolhidas para se verem sobre as telas claras — o
+  /// "Desenvolvimento" ficava navy sobre navy e não se lia.
+  ///
+  /// E mesmo com a paleta certa, o texto é branco: a 11px, o cinzento do
+  /// estado em desenvolvimento ficava em 3,4:1 sobre a folha, abaixo do
+  /// mínimo. A cor do estado continua a identificar-se, pelo fundo e pela
+  /// borda.
+  Widget _infoChip(String? status, String label) {
+    final cor = UIHelpers.corDoGrupo(status);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: cor.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: cor.withValues(alpha: 0.7)),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
+        style: const TextStyle(
+          color: COColors.white,
           fontSize: 11,
           fontWeight: COTokens.fwBold,
           letterSpacing: 0.4,
@@ -374,7 +397,9 @@ class _MapScreenState extends State<MapScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          for (final estado in ['Em desenvolvimento', 'Em construção', 'Concluído'])
+          // Sem o "Em": "Em desenvolvimento" não cabia num terço do ecrã e
+          // ficava cortado. São as palavras que a etiqueta dos cartões usa.
+          for (final estado in ['Desenvolvimento', 'Construção', 'Concluído'])
             Flexible(
               child: _legendaItem(
                 UIHelpers.corDoGrupo(estado, fundoClaro: true),
@@ -393,7 +418,13 @@ class _MapScreenState extends State<MapScreen> {
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(color: cor, shape: BoxShape.circle),
+          // A bolinha tem a cor exata do pino, e a dos projetos em construção
+          // é o navy da barra: sem a borda ficava invisível.
+          decoration: BoxDecoration(
+            color: cor,
+            shape: BoxShape.circle,
+            border: Border.all(color: COColors.brand300, width: 1.5),
+          ),
         ),
         const SizedBox(width: 5),
         Flexible(
@@ -429,7 +460,14 @@ class _LogoPin extends StatelessWidget {
             child: SizedBox(
               width: 24,
               height: 24,
-              child: Image.asset('assets/images/logo_simples_mapa.avif', fit: BoxFit.contain),
+              // Pintado de branco. O simbolo vem em navy, que e a cor dos
+              // pinos dos projetos em desenvolvimento: ficava escuro sobre
+              // escuro e nao se lia. A branco le-se nas tres cores de estado.
+              child: Image.asset(
+                'assets/images/logo_simples_mapa.avif',
+                fit: BoxFit.contain,
+                color: COColors.white,
+              ),
             ),
           ),
         ),

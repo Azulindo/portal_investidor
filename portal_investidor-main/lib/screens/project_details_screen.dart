@@ -341,7 +341,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             if (mostrarCategoria &&
                                 _paginaAtual < categorias.length)
                               Positioned(
-                                top: COTokens.space4,
+                                // Em baixo, e nao em cima: a imagem vai ate
+                                // ao topo do ecra, por baixo do relogio e dos
+                                // icones do telemovel, e a etiqueta ficava la
+                                // escondida. Os pontinhos das paginas estao
+                                // centrados, por isso o canto esquerdo esta
+                                // livre.
+                                bottom: COTokens.space4,
                                 left: COTokens.space4,
                                 child: IgnorePointer(
                                   child: Container(
@@ -458,6 +464,21 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             height: 1.2,
                           ),
                         ),
+
+                        // Linha da propria empresa, quando o empreendimento
+                        // tem uma: vem do backoffice e e o que o site mostra
+                        // por baixo do nome.
+                        if (info.subtitle != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            info.subtitle!,
+                            style: const TextStyle(
+                              color: COColors.brand300,
+                              fontSize: 15,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
 
                         if (info.city.isNotEmpty ||
                             info.address.isNotEmpty) ...[
@@ -811,28 +832,33 @@ class _PulsingForwardConnectorState extends State<_PulsingForwardConnector>
   }
 }
 
+/// Se ainda há frações para vender.
+///
+/// Estava escrito com seis cores à mão — um azul-arroxeado do Material e três
+/// cinzentos — que não são da marca nenhuma e ficavam a destoar sobre o navy.
+/// Passou a usar o teal, que é a cor do que a pessoa pode fazer alguma coisa,
+/// e o cinzento da casa quando já não há nada a fazer.
 class _ForSaleBadge extends StatelessWidget {
   final bool forSale;
   const _ForSaleBadge({required this.forSale});
 
   @override
   Widget build(BuildContext context) {
+    final cor = forSale ? COColors.accent : COColors.brand300;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: forSale ? const Color(0xFF1A237E) : const Color(0xFF4A4A4A),
+        color: cor.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: forSale ? const Color(0xFF7986CB) : const Color(0xFF9E9E9E),
-          width: 1.5,
-        ),
+        border: Border.all(color: cor.withValues(alpha: 0.7), width: 1.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             forSale ? Icons.apartment : Icons.lock_outline,
-            color: forSale ? const Color(0xFFB3BCEF) : const Color(0xFFBDBDBD),
+            color: cor,
             size: 20,
           ),
           const SizedBox(width: 5),
@@ -840,10 +866,9 @@ class _ForSaleBadge extends StatelessWidget {
             forSale
                 ? 'FRAÇÕES DISPONÍVEIS PARA VENDA'
                 : 'TODAS AS FRAÇÕES VENDIDAS',
-            style: TextStyle(
-              color: forSale
-                  ? const Color(0xFFB3BCEF)
-                  : const Color(0xFFBDBDBD),
+            style: const TextStyle(
+              // A 10px com espaçamento, o branco é o que se lê de relance.
+              color: COColors.white,
               fontWeight: COTokens.fwBold,
               fontSize: 10,
               letterSpacing: 1,

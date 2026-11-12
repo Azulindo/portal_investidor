@@ -132,6 +132,8 @@ os pedidos autenticados subsequentes.
   "code": "AUTH_LOGIN_SUCCESSFUL",
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "f3a9...",
+    "expiresIn": 900,
     "user": {
       "email": "guilherme@cleveroption.pt",
       "firstName": "Guilherme",
@@ -144,6 +146,10 @@ os pedidos autenticados subsequentes.
 O payload decodificado do `token` inclui: `id` (id numérico do utilizador,
 usado nos restantes endpoints), `partnerId`, `commercialPartnerId`, `email`,
 `role` (`"user"` ou `"admin"`).
+
+**O `token` dura 15 minutos** (`expiresIn`, em segundos). Quem mantém a sessão
+é o `refreshToken`, que se troca por um par novo em `POST /auth/refresh`. Uma
+app que guarde só o `token` perde a sessão a cada quarto de hora.
 
 **Response (401 Unauthorized) — credenciais inválidas:**
 ```json
@@ -165,6 +171,65 @@ usado nos restantes endpoints), `partnerId`, `commercialPartnerId`, `email`,
   ]
 }
 ```
+
+---
+
+### 2.1 POST /auth/refresh
+
+Troca o refresh token por um token de acesso novo. Não leva header
+`Authorization`.
+
+**Request:**
+```json
+{ "refreshToken": "f3a9..." }
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": 200,
+  "message": "Sessão renovada",
+  "code": "AUTH_SESSION_REFRESHED",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "b7c1...",
+    "expiresIn": 900
+  }
+}
+```
+
+Três coisas a saber:
+
+- **O refresh token é rodado a cada troca.** O que se enviou deixa de servir;
+  o novo vem na resposta e substitui o guardado.
+- **`refreshToken` pode vir `null`.** Quer dizer "mantém o que tens": houve
+  outro pedido a renovar ao mesmo tempo e foi esse que levou o novo. Apagar o
+  guardado por causa deste `null` deita a sessão fora.
+- **Nunca renovar em paralelo com o mesmo refresh token.** Um token já trocado
+  que volta a aparecer é tratado como cópia roubada, e a API revoga a família
+  toda — ou seja, termina a sessão.
+
+**Response (401 / 403) — a sessão acabou:**
+
+Os códigos são os mesmos dos pedidos autenticados (`AUTH_INVALID_TOKEN`,
+`AUTH_TOKEN_EXPIRED`, `AUTH_ACCOUNT_BLOCKED`), de propósito: um refresh
+recusado trata-se como um token de acesso recusado.
+
+---
+
+### 2.2 POST /auth/logout
+
+Revoga o refresh token e toda a família dele. Não leva header
+`Authorization`.
+
+**Request:**
+```json
+{ "refreshToken": "f3a9..." }
+```
+
+Responde sempre 200 (`AUTH_LOGGED_OUT`), mesmo com um token que já não
+exista. Deve ser chamado antes de apagar os tokens do dispositivo — depois já
+não há com que o fazer.
 
 ---
 
@@ -218,7 +283,8 @@ Authorization: Bearer <token>
 - `projects` é sempre um array (`[]` se o utilizador não tiver projetos associados).
 - Cada projeto em `projects.steps` usa a chave `id` (não `stepId`) para o id do passo.
 - `mainImageUrl` pode ser `null` se o projeto não tiver imagem principal marcada.
-- Este endpoint **não** devolve `totalInvested`, `roiEsperado`, `faturas` nem `createdAt` — esses campos não existem atualmente na base de dados e devem ser tratados como `0.0` / `[]` / ausentes no cliente.
+- Este endpoint **não** devolve `faturas` nem `createdAt` — esses campos não existem na base de dados e devem ser tratados como `[]` / ausentes no cliente. O `roiEsperado` também nunca existiu: a Cleveroption é uma construtora e não reporta valorizações, por isso o campo foi removido do cliente.
+- **`hasDetailPage: false`** marca um projeto "só de historial": aparece nas listas, mas não tem ecrã de detalhes — o `GET /project/details` responde-lhe 404. O cliente não deve deixar abri-lo, nem anunciá-lo como em comercialização. **Campo ausente conta como `true`.**
 
 **Response (401 Unauthorized) — token ausente/inválido:**
 ```json
@@ -395,6 +461,8 @@ Authorization: Bearer <token>        (opcional)
 - `projectSteps` usa `id` (igual a `/project/portfolio` e `/user/{id}`).
 - **`projectImages[].category`** separa as três galerias: `"exterior"`, `"interior"` e `"obra"`. A de obra é o acompanhamento da construção — antes vinha das fotos dos passos da timeline, agora tem categoria própria. Respeitar `active` (não mostrar as inativas) e `sortOrder` (ordem definida no backoffice).
 - **`projectFractions[].price` vem `null` num pedido sem token.** Não é um erro nem zero: é o preço escondido. Mostrar "Registe-se para ver".
+- **`projectInfo[].subtitle`** é uma linha curta para pôr por baixo do nome, escrita no backoffice. Opcional: vem `null` ou ausente na maioria dos projetos.
+- **Um projeto com `hasDetailPage: false` responde 404 `PROJECT_NOT_FOUND`.** Não é erro de rede nem id errado: aquele projeto não tem página. A flag vem no `/project/portfolio` e no `/user/{id}`, e é lá que se deve impedir a navegação.
 - `projectFractions[].floor` é **texto**, não número — há pisos como `"Vale"` ou `"R/C"`.
 - `projectFractions[].block` é `null` quando o empreendimento só tem um edifício.
 - `projectFinishes` já vem agrupado por categoria, com os itens em `details`.
@@ -505,10 +573,10 @@ Quando forem implementados, devem seguir o mesmo envelope `status` /
 
 1. **Envelope consistente**: toda a resposta (sucesso ou erro) inclui `status`, `message` e `code`; o corpo útil vem em `data`.
 2. **Arrays nunca null**: campos de array (`projects`, `projectSteps`, `projectImages`, `userData`, etc.) devem ser `[]` em vez de `null` quando vazios.
-3. **Autenticação**: `/user/*` e `/document/*` exigem `Authorization: Bearer <token>`, obtido em `/auth/login`. Tokens expiram (atualmente `1d`). **`/project/*` é público**: `/portfolio` não pede nada e `/details` tem autenticação opcional — o token só serve para revelar o preço das frações.
+3. **Autenticação**: `/user/*` e `/document/*` exigem `Authorization: Bearer <token>`, obtido em `/auth/login`. **O token de acesso dura 15 minutos** e renova-se em `/auth/refresh` com o refresh token (ver 2.1). **`/project/*` é público**: `/portfolio` não pede nada e `/details` tem autenticação opcional — o token só serve para revelar o preço das frações.
 4. **IDs consistentes entre endpoints**: o `id` devolvido em `/project/portfolio` é o mesmo a usar em `/project/details?projectId=<id>` e corresponde ao `id` de cada projeto em `/user/{id}` (`data.projects[].id`).
 5. **Chaves de "step" já uniformes**: `/project/portfolio`, `/user/{id}` e `/project/details` usam todos `id`. (O `stepId` de `/project/details` foi corrigido.)
-6. **Números com default**: campos numéricos como `totalInvested`, `roiEsperado`, `valor` (quando existirem) devem ter valor `0.0` se `null`.
+6. **Números com default**: campos numéricos como `totalInvested` ou `valor` (quando existirem) devem ter valor `0.0` se `null`.
 7. **Strings com default**: campos de texto devem ter valores padrão descritivos (ex: `"Título não informado"`) quando ausentes.
 8. **Datas**: usar formato ISO 8601 ou `YYYY-MM-DD` (campos `date` do Postgres, ex: `startDate`, `endDate`).
 9. **Timeout**: o cliente configura um timeout de 10 segundos para todos os requests (`ApiConfig.connectionTimeout`).

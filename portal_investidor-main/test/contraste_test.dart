@@ -36,6 +36,27 @@ void main() {
           greaterThanOrEqualTo(4.5));
     });
 
+    test('a folha do mapa e mais clara que o navy, e nem tudo la se le', () {
+      // A folha que abre ao tocar num pino tem fundo brand700 inteiro, e nao
+      // o brand700 a 28% dos cartoes. E mais clara, por isso aguenta menos:
+      // o neutral500 que serve nos cartoes fica aqui abaixo do minimo, e foi
+      // assim que o "Desenvolvimento" e o "Voltar" ficaram ilegiveis.
+      expect(contraste(COColors.neutral500, COColors.brand700), lessThan(4.5));
+
+      // O que se usa la: branco nas etiquetas de estado, brand300 no resto.
+      expect(contraste(COColors.white, COColors.brand700),
+          greaterThanOrEqualTo(4.5));
+      expect(contraste(COColors.brand300, COColors.brand700),
+          greaterThanOrEqualTo(4.5));
+    });
+
+    test('as cores do mapa nao servem para texto sobre a folha', () {
+      // Sao escolhidas para se verem sobre as telas claras do mapa, e e por
+      // isso que sao escuras. Usa-las na folha, que e navy, foi o erro.
+      expect(contraste(COColors.brand900, COColors.brand700), lessThan(4.5));
+      expect(contraste(COColors.brand500, COColors.brand700), lessThan(4.5));
+    });
+
     test('o brand500 continua a nao servir para texto sobre o navy', () {
       // Nao e um erro: o brand500 e cor de bordas e de fundos, nao de letras.
       // O teste guarda essa decisao, para nao voltar a ser usado em texto.

@@ -23,9 +23,9 @@ class PrivacidadeScreen extends StatelessWidget {
       titulo: '1. Responsável pelo tratamento',
       paragrafos: [
         'A Cleveroption — Investimentos Imobiliários é responsável pelo '
-            'tratamento dos dados pessoais recolhidos através deste website. '
-            'Para qualquer questão relativa a proteção de dados, contacte '
-            '$_email.',
+            'tratamento dos dados pessoais recolhidos através deste website '
+            'e da aplicação móvel Cleveroption. Para qualquer questão '
+            'relativa a proteção de dados, contacte $_email.',
       ],
       alineas: [],
     ),
@@ -36,6 +36,10 @@ class PrivacidadeScreen extends StatelessWidget {
             'formulários de contacto (nome, email, telefone e mensagem), bem '
             'como dados técnicos de navegação estritamente necessários ao '
             'funcionamento do site.',
+        'Se criar conta na Área Reservada — no site ou na aplicação móvel —, '
+            'tratamos também o seu nome, email, telefone e palavra-passe, e '
+            'mostramos-lhe a informação das suas encomendas, frações e '
+            'faturas, que provém do nosso sistema de gestão.',
       ],
       alineas: [],
     ),
@@ -80,12 +84,47 @@ class PrivacidadeScreen extends StatelessWidget {
       ],
       alineas: [],
     ),
+    // A secção 7 estava numa versão antiga, que dizia que podia haver
+    // cookies de análise — o site diz há meses que não há. Fica o texto que
+    // vai para o ar (o do ramo main), menos a última frase, que é um link
+    // para as definições de cookies do site e aqui não tem para onde ir.
     (
-      titulo: '7. Cookies',
+      titulo: '7. Cookies e conteúdos de terceiros',
       paragrafos: [
-        'Este website pode utilizar cookies necessários ao seu funcionamento '
-            'e, mediante consentimento, cookies de análise. Pode gerir as '
-            'preferências de cookies no seu navegador.',
+        'Este website utiliza apenas dois cookies, ambos necessários ao seu '
+            'funcionamento e que só existem depois de iniciar sessão na Área '
+            'Reservada: um de curta duração, que identifica a sessão em cada '
+            'pedido, e outro que a mantém iniciada durante até 30 dias sem '
+            'utilização (o prazo recomeça sempre que volta a usar o site). '
+            'Ambos são apagados quando termina a sessão. Não há cookies de '
+            'análise, publicidade ou seguimento.',
+        'A página de Contactos inclui um formulário fornecido por um serviço '
+            'externo (Odoo). Esse formulário só é carregado depois de o '
+            'autorizar: até lá, nenhum pedido é feito a esse serviço. Ao '
+            'autorizá-lo, o seu endereço IP é-lhe comunicado e esse serviço '
+            'pode guardar cookies no seu navegador. Pode mudar de ideias a '
+            'qualquer momento em "Definições de cookies", no fundo de qualquer '
+            'página.',
+        'As páginas com mapa carregam a cartografia a partir dos servidores '
+            'do CARTO e do OpenStreetMap, o que comunica o seu endereço IP a '
+            'esses serviços. Sem isso não há mapa — por isso é tratado como '
+            'parte da funcionalidade que pediu ao abrir a página, e não '
+            'depende de consentimento.',
+      ],
+      alineas: [],
+    ),
+    (
+      titulo: '8. Como apagar a sua conta',
+      paragrafos: [
+        'Pode pedir a qualquer momento que a sua conta da Área Reservada seja '
+            'apagada, quer a tenha criado no site quer na aplicação móvel. '
+            'Para isso, envie um email para $_email a partir do endereço '
+            'associado à conta, com o assunto "Apagar conta".',
+        'Ao apagar a conta, deixa de ter acesso à Área Reservada e são '
+            'eliminados os dados da conta: nome, email, telefone e '
+            'palavra-passe. Os documentos associados às suas encomendas, como '
+            'faturas e contratos, são conservados pelos prazos que a lei '
+            'impõe.',
       ],
       alineas: [],
     ),
@@ -142,7 +181,7 @@ class PrivacidadeScreen extends StatelessWidget {
           const CoTitulo('Informação legal'),
           Text('Política de Privacidade', style: COText.h1),
           const SizedBox(height: COTokens.space2),
-          Text('Última atualização: junho de 2026', style: COText.caption),
+          Text('Última atualização: novembro de 2026', style: COText.caption),
 
           const SizedBox(height: COTokens.space8),
 

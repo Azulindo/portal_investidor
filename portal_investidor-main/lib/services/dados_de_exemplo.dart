@@ -121,6 +121,11 @@ class DadosDeExemplo {
         {
           // Sem morada marcada: a API manda 0/0 e isto não deve aparecer no
           // mapa nem rebentar nada.
+          //
+          // E só de historial (hasDetailPage false): entra na lista, mas não
+          // abre — a API responde 404 aos detalhes destes. Serve para o modo
+          // de exemplo exercer esse caso, que de outra forma só se via contra
+          // o servidor a sério.
           'id': 5,
           'name': bonjardim,
           'address': '',
@@ -132,6 +137,7 @@ class DadosDeExemplo {
           'currentStep': 5,
           'mainImageUrl': null,
           'forSale': false,
+          'hasDetailPage': false,
           'nFractions': 6,
           'steps': _passos(5),
         },
@@ -313,6 +319,10 @@ class DadosDeExemplo {
           {
             'projectId': doPortfolio['id'],
             'name': doPortfolio['name'],
+            // Linha curta por baixo do nome. É opcional na API, e aqui só o
+            // empreendimento completo a tem, para se ver a página nos dois
+            // casos.
+            if (completo) 'subtitle': 'T1 a T3 com varanda, no coração do Porto',
             'address': doPortfolio['address'],
             'city': doPortfolio['city'],
             'status': doPortfolio['status'],

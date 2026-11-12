@@ -39,11 +39,10 @@ class _ContactosScreenState extends State<ContactosScreen> {
 
   /// Link para a Política de Privacidade do site.
   ///
-  /// Está vazio porque o domínio público do site ainda não está em lado
-  /// nenhum do repositório (não há metadataBase nem SITE_URL), e um link
-  /// inventado era pior do que não haver link. Quando se souber o domínio, é
-  /// só pôr aqui o URL de /privacidade e o link aparece.
-  static const String _privacidade = '';
+  /// O site novo substitui o que está em cleveroption.pt, e vai para o ar
+  /// antes da app. Até lá este endereço dá 404 — no site antigo não há página
+  /// de privacidade —, mas nenhum cliente o vê antes disso.
+  static const String _privacidade = 'https://cleveroption.pt/privacidade';
 
   static const List<({String nome, String url})> _redes = [
     (nome: 'Instagram', url: 'https://www.instagram.com/cleveroption.pt/'),
