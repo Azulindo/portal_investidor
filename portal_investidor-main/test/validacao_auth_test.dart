@@ -44,20 +44,29 @@ void main() {
       expect(ValidacaoAuth.password('ABCDEF1!'), contains('minúscula'));
       expect(ValidacaoAuth.password('abcdef1!'), contains('maiúscula'));
       expect(ValidacaoAuth.password('Abcdefg!'), contains('número'));
-      expect(ValidacaoAuth.password('Abcdefg1'), contains('especial'));
+      expect(ValidacaoAuth.password('Abcdefg1'), contains('símbolo'));
     });
 
-    test('os cinco símbolos que a API aceita passam', () {
-      for (final s in ['@', r'$', '!', '%', '*', '?', '&', '#']) {
+    test('qualquer símbolo conta, como na API e no site', () {
+      for (final s in ['@', r'$', '!', '#', '_', '-', '.', '€', '/']) {
         expect(ValidacaoAuth.password('Abcdefg1$s'), isNull,
             reason: 'devia aceitar o símbolo "$s"');
       }
     });
 
-    test('um símbolo fora da lista da API não conta', () {
-      // A API só aceita @$!%*?&# — se a app deixasse passar outro, o registo
-      // era recusado no servidor com uma mensagem pior.
-      expect(ValidacaoAuth.password('Abcdefg1-'), contains('especial'));
+    test('espaços e letras acentuadas não são símbolos', () {
+      expect(ValidacaoAuth.password('Abcdefg1 '), contains('símbolo'));
+      expect(ValidacaoAuth.password('Abcdefg1é'), contains('símbolo'));
+    });
+  });
+
+  group('alterar palavra-passe', () {
+    test('a nova tem de ser diferente da atual', () {
+      expect(ValidacaoAuth.novaDiferente('Abcdef1!', 'Abcdef1!'),
+          contains('diferente'));
+      expect(ValidacaoAuth.novaDiferente('Outra1!x', 'Abcdef1!'), isNull);
+      // Vazia é o validador da força que se queixa, não este.
+      expect(ValidacaoAuth.novaDiferente('', ''), isNull);
     });
   });
 

@@ -52,11 +52,17 @@ class ValidacaoAuth {
     if (!RegExp(r'[0-9]').hasMatch(p)) {
       return 'Deve conter pelo menos um número.';
     }
-    if (!RegExp(r'[@$!%*?&#]').hasMatch(p)) {
-      return 'Deve conter pelo menos um caracter especial (@\$!%*?&#).';
+    // Símbolo = qualquer caracter que não seja letra, algarismo nem espaço,
+    // como no passwordSchema da API e no lib/password.ts do site. Antes era a
+    // lista fechada @$!%*?&#, que a API entretanto largou: "Teste_123" era
+    // recusada aqui e aceite no site.
+    if (!_simbolo.hasMatch(p)) {
+      return 'Deve conter pelo menos um símbolo (ex.: _ - . @ #).';
     }
     return null;
   }
+
+  static final RegExp _simbolo = RegExp(r'[^\p{L}\p{N}\s]', unicode: true);
 
   static String? confirmacao(String? valor, String password) {
     if ((valor ?? '').isEmpty) return 'Confirme a sua palavra-passe.';
@@ -64,10 +70,19 @@ class ValidacaoAuth {
     return null;
   }
 
+  /// Ao alterar: a nova não pode ser igual à atual. A API aceitava, mas era
+  /// uma "alteração" que não mudava nada e terminava as outras sessões.
+  static String? novaDiferente(String? nova, String atual) {
+    if ((nova ?? '').isNotEmpty && nova == atual) {
+      return 'A nova palavra-passe tem de ser diferente da atual.';
+    }
+    return null;
+  }
+
   /// Texto da dica que acompanha o campo da palavra-passe.
   static const String dicaPassword =
-      'Mín. 8 caracteres, com maiúscula, minúscula, número e caracter '
-      'especial (@\$!%*?&#).';
+      'Mín. 8 caracteres, com maiúscula, minúscula, número e um símbolo '
+      '(ex.: _ - . @ #).';
 
   /// Campo obrigatório simples, para o login (que não valida força nenhuma —
   /// a palavra-passe já existe, as regras aplicam-se a quem a cria).

@@ -6,6 +6,7 @@ import '../widgets/co_card.dart';
 import '../widgets/co_drawer.dart';
 import '../services/api_service.dart';
 import '../utils/carteira.dart';
+import 'alterar_password_screen.dart';
 import 'login_screen.dart';
 
 /// Um número com a sua etiqueta, nos dois cartões do topo do perfil.
@@ -331,6 +332,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // segurança é pior do que não ter a opção, e as lojas recusam
             // apps com funcionalidades que não fazem nada. Voltam quando
             // existirem.
+            _buildMenuItem(
+              Icons.lock_outline,
+              'Alterar palavra-passe',
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AlterarPasswordScreen(),
+                ),
+              ),
+            ),
             _buildMenuItem(Icons.help_outline, 'Suporte', _mostrarSuporte),
 
             const SizedBox(height: COTokens.space8),

@@ -87,6 +87,9 @@ class ApiConfig {
   static const String registerEndpoint = '/auth/register';
   static const String forgotPasswordEndpoint = '/auth/forgot-password';
   static const String resetPasswordEndpoint = '/auth/reset-password';
+  // Com sessão: pede a atual e a nova. A API termina as outras sessões da
+  // pessoa e mantém esta.
+  static const String changePasswordEndpoint = '/auth/change-password';
   static const String resendConfirmationEndpoint = '/auth/resend-confirmation';
   static String confirmEmailEndpoint(String token) =>
       '/auth/confirm-email?token=${Uri.encodeQueryComponent(token)}';

@@ -132,6 +132,44 @@ extension ApiAutenticacao on ApiService {
     );
   }
 
+  /// POST /auth/change-password, com sessão iniciada.
+  ///
+  /// A API termina as sessões noutros aparelhos e mantém esta, por isso não
+  /// é preciso voltar a entrar. Um 401 aqui é a palavra-passe atual errada
+  /// (o token já foi renovado pelo _authHeaders), e não sessão expirada.
+  Future<(bool, String)> alterarPassword(String atual, String nova) async {
+    if (ApiConfig.useMock) {
+      await Future.delayed(const Duration(milliseconds: 600));
+      return (true, 'Palavra-passe alterada.');
+    }
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.changePasswordEndpoint}',
+    );
+    try {
+      final response = await http
+          .post(
+            url,
+            headers: await _authHeaders(),
+            body: jsonEncode({'currentPassword': atual, 'newPassword': nova}),
+          )
+          .timeout(ApiConfig.connectionTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return (true, 'Palavra-passe alterada.');
+      }
+      if (response.statusCode == 401) {
+        return (false, 'A palavra-passe atual não está correta.');
+      }
+      // 400 (regras da nova) e 429 (demasiadas tentativas) trazem uma
+      // mensagem da API que serve tal como vem.
+      return (false, _mensagemPara(response));
+    } on TimeoutException catch (_) {
+      return (false, 'O servidor demorou muito tempo a responder.');
+    } catch (_) {
+      return (false, 'Erro de ligação à rede.');
+    }
+  }
+
   /// Reenvia o email de confirmação de conta.
   Future<(bool, String)> reenviarConfirmacao(String email) {
     return _pedidoAuth(
