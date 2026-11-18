@@ -1,10 +1,13 @@
 import java.io.FileInputStream
 import java.util.Properties
 
+// Sem o "kotlin-android": a app não tem código Kotlin (o MainActivity é em
+// Java), e o Flutter avisava que aplicar o Kotlin Gradle Plugin na app vai
+// deixar de funcionar. Os plugins que usam Kotlin tratam disso nos módulos
+// deles.
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // The Flutter Gradle Plugin must be applied after the Android Gradle plugin.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -39,10 +42,6 @@ android {
         // Exigido pelo flutter_local_notifications (o aviso com som e cartão
         // quando a app está aberta).
         isCoreLibraryDesugaringEnabled = true
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {

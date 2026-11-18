@@ -157,6 +157,42 @@ class Portfolio {
   static int totalFracoes(List<Map> lista) =>
       lista.fold(0, (soma, p) => soma + (inteiro(p, 'nFractions') ?? 0));
 
+  // ── Comercialização (o mesmo da página Em Comercialização do site) ──
+
+  /// Quantas frações estão livres. null quando o empreendimento ainda não tem
+  /// frações carregadas: aí a API não sabe, e não se inventa um "0
+  /// disponíveis" que não é verdade.
+  static int? disponiveis(Map p) => inteiro(p, 'availableFractions');
+
+  /// As tipologias com frações livres e quantas de cada, pela ordem da API
+  /// ("T1", "T1 Smart", "T2", …). Só vem quem tem alguma livre.
+  static List<({String tipologia, int quantas})> disponiveisPorTipologia(
+    Map p,
+  ) {
+    return [
+      for (final t in (p['availableByType'] as List? ?? []).whereType<Map>())
+        if (texto(t, 'type').isNotEmpty && (inteiro(t, 'count') ?? 0) > 0)
+          (tipologia: texto(t, 'type'), quantas: inteiro(t, 'count')!),
+    ];
+  }
+
+  /// A linha do cabeçalho de "Em comercialização", como no site: "6 frações
+  /// disponíveis em 2 empreendimentos · Canedo · Porto". Sem nenhum com
+  /// frações carregadas, conta só os empreendimentos.
+  static String resumoEmComercializacao(List<Map> aVenda) {
+    if (aVenda.isEmpty) {
+      return 'De momento não há empreendimentos em comercialização.';
+    }
+    final n = aVenda.length;
+    final empreendimentos = '$n ${n == 1 ? 'empreendimento' : 'empreendimentos'}';
+    final algumComFracoes = aVenda.any((p) => disponiveis(p) != null);
+    final livres = aVenda.fold(0, (soma, p) => soma + (disponiveis(p) ?? 0));
+    final primeira = algumComFracoes
+        ? '$livres ${livres == 1 ? 'fração disponível' : 'frações disponíveis'} em $empreendimentos'
+        : empreendimentos;
+    return [primeira, ...cidades(aVenda)].join(' · ');
+  }
+
   // ── Progresso da obra ─────────────────────────────────────
 
   /// Em que fase da obra está o empreendimento.

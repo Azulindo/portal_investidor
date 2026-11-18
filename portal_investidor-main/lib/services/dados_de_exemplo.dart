@@ -71,6 +71,13 @@ class DadosDeExemplo {
           'mainImageUrl': _foto1,
           'forSale': true,
           'nFractions': 24,
+          // Como a API: as livres e de que tipologias (página Em
+          // comercialização).
+          'availableFractions': 4,
+          'availableByType': [
+            {'type': 'T2', 'count': 3},
+            {'type': 'T3', 'count': 1},
+          ],
           'steps': _passos(5),
         },
         {
@@ -101,6 +108,11 @@ class DadosDeExemplo {
           'mainImageUrl': _foto3,
           'forSale': true,
           'nFractions': 184,
+          'availableFractions': 2,
+          'availableByType': [
+            {'type': 'T1', 'count': 1},
+            {'type': 'T2', 'count': 1},
+          ],
           'steps': _passos(5),
         },
         {

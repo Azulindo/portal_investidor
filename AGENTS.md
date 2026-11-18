@@ -91,6 +91,15 @@ opcional em produção: sem ela o mapa cai no OpenStreetMap.
   obsoleto no firebase_messaging 17) porque a API envia com
   `sendEachForMulticast`, que quer o token clássico e não o Installation ID
   do `onRegistered`.
+- **O `ApiService` está dividido em extensões**, em `lib/services/api/`
+  (`autenticacao`, `projetos`, `documentos`, `notificacoes`), como `part` de
+  `api_service.dart`. No ficheiro principal fica só a sessão, a cache, os
+  cabeçalhos e os erros. Quem chama não muda (`ApiService().metodo()`); dentro
+  das extensões os membros estáticos levam o prefixo (`ApiService.idLogado`).
+- **O `MainActivity` é em Java**, e a app não aplica o Kotlin Gradle Plugin: o
+  Flutter avisava que aplicá-lo na app vai deixar de funcionar. A migração
+  "a sério" (Kotlin integrado) exige AGP 9 e Flutter 3.47+; com a app sem
+  código Kotlin, não há nada a migrar nela quando lá chegarem.
 - **O `targetSdk` está fixo em 36**, e não herdado do Flutter instalado: é o
   que a Google exige, e uma atualização do Flutter não deve poder baixá-lo sem
   ninguém dar por isso.

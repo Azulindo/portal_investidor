@@ -24,9 +24,18 @@ import 'co_card.dart';
 /// O preço aparece sempre: na app há sempre sessão, e a API só esconde o
 /// preço a pedidos anónimos.
 class SecaoFracoes extends StatefulWidget {
-  const SecaoFracoes({super.key, required this.fracoes});
+  const SecaoFracoes({
+    super.key,
+    required this.fracoes,
+    this.soDisponiveis = false,
+  });
 
   final List<ProjectFraction> fracoes;
+
+  /// Vindo do "ver frações disponíveis" de Em comercialização: a lista abre
+  /// já filtrada pelas disponíveis, como o ?fracoes=disponiveis do site. Sem
+  /// nenhuma disponível não se filtra — uma lista vazia não ajudava ninguém.
+  final bool soDisponiveis;
 
   @override
   State<SecaoFracoes> createState() => _SecaoFracoesState();
@@ -34,6 +43,19 @@ class SecaoFracoes extends StatefulWidget {
 
 class _SecaoFracoesState extends State<SecaoFracoes> {
   bool _aberta = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.soDisponiveis) return;
+    for (final f in widget.fracoes) {
+      if (f.disponivel) {
+        _estado = f.status;
+        _aberta = true;
+        break;
+      }
+    }
+  }
 
   /// Quantas frações se mostram de cada vez.
   ///

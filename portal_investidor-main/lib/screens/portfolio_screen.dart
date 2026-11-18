@@ -72,14 +72,13 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     await _portfolioFuture.catchError((_) => <dynamic>[]);
   }
 
-  bool get _temFiltro =>
-      _grupo != null || _cidade != null || _apenasAVenda;
+  bool get _temFiltro => _grupo != null || _cidade != null || _apenasAVenda;
 
   void _limparFiltros() => setState(() {
-        _grupo = null;
-        _cidade = null;
-        _apenasAVenda = false;
-      });
+    _grupo = null;
+    _cidade = null;
+    _apenasAVenda = false;
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -87,9 +86,11 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
       backgroundColor: COColors.brand900,
       drawer: const CoDrawer(),
       appBar: AppBar(
-        title: const Text(
-          'O nosso portfólio',
-          style: TextStyle(
+        title: Text(
+          widget.apenasAVendaInicial
+              ? 'Em comercialização'
+              : 'O nosso portfólio',
+          style: const TextStyle(
             fontSize: 13,
             fontWeight: COTokens.fwBold,
             color: COColors.white,
@@ -126,8 +127,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
               );
             }
 
-            final todos =
-                (snapshot.data ?? []).whereType<Map>().toList();
+            final todos = (snapshot.data ?? []).whereType<Map>().toList();
             if (todos.isEmpty) {
               return const Center(
                 child: Text(
@@ -154,7 +154,13 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 COTokens.space12,
               ),
               children: [
-                _contadores(todos),
+                // Com o filtro de comercialização, o cabeçalho fala de
+                // venda, como a página Em Comercialização do site: as
+                // frações livres e não o total.
+                if (_apenasAVenda)
+                  _cabecalhoVenda(todos.where(Portfolio.estaAVenda).toList())
+                else
+                  _contadores(todos),
                 const SizedBox(height: COTokens.space6),
                 _filtros(todos),
                 const SizedBox(height: COTokens.space6),
@@ -190,8 +196,10 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
 
     for (final grupo in ['ativo', 'desenvolvimento', 'concluido']) {
       final doGrupo = visiveis
-          .where((p) =>
-              Portfolio.grupoDeEstado(Portfolio.texto(p, 'status')) == grupo)
+          .where(
+            (p) =>
+                Portfolio.grupoDeEstado(Portfolio.texto(p, 'status')) == grupo,
+          )
           .toList();
       if (doGrupo.isEmpty) continue;
 
@@ -228,6 +236,104 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
           Text(partes.join('  ·  '), style: COText.small),
         ],
       ],
+    );
+  }
+
+  Widget _cabecalhoVenda(List<Map> aVenda) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const CoEtiqueta('Disponível agora'),
+        Text('Em Comercialização', style: COText.h1),
+        const SizedBox(height: 6),
+        Text(Portfolio.resumoEmComercializacao(aVenda), style: COText.small),
+      ],
+    );
+  }
+
+  /// Quantas frações estão livres e de que tipologias — o que a página Em
+  /// Comercialização do site mostra em cada cartão, em vez do total.
+  Widget _disponibilidade(Map project) {
+    final livres = Portfolio.disponiveis(project);
+    final total = Portfolio.inteiro(project, 'nFractions');
+    final tipos = Portfolio.disponiveisPorTipologia(project);
+
+    // Sem frações carregadas a API não sabe quantas há livres: fica o total,
+    // para não dizer "0 disponíveis" sem ser verdade.
+    if (livres == null) {
+      if (total == null) return const SizedBox.shrink();
+      return CoLinhaInfo(
+        icone: Icons.home_work_outlined,
+        texto: '$total ${total == 1 ? 'fração' : 'frações'}',
+      );
+    }
+    if (livres == 0) {
+      return const CoLinhaInfo(
+        icone: Icons.home_work_outlined,
+        texto: 'Sem frações disponíveis de momento',
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: COTokens.space2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text.rich(
+            TextSpan(
+              style: COText.small,
+              children: [
+                TextSpan(
+                  text: '$livres',
+                  style: const TextStyle(
+                    color: COColors.white,
+                    fontWeight: COTokens.fwBold,
+                  ),
+                ),
+                TextSpan(
+                  text: livres == 1
+                      ? ' fração disponível'
+                      : ' frações disponíveis',
+                ),
+                if (total != null) TextSpan(text: ' de $total'),
+              ],
+            ),
+          ),
+          if (tipos.isNotEmpty) ...[
+            const SizedBox(height: COTokens.space2),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final t in tipos) _tipologia(t.quantas, t.tipologia),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _tipologia(int quantas, String tipologia) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: COColors.brand700.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(COTokens.radiusSm),
+        border: Border.all(color: COColors.brand500),
+      ),
+      child: Text.rich(
+        TextSpan(
+          style: COText.caption.copyWith(color: COColors.white),
+          children: [
+            TextSpan(
+              text: '$quantas ',
+              style: const TextStyle(fontWeight: COTokens.fwBold),
+            ),
+            TextSpan(text: tipologia),
+          ],
+        ),
+      ),
     );
   }
 
@@ -315,8 +421,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
         isDense: true,
         filled: true,
         fillColor: COColors.brand700.withValues(alpha: 0.4),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(COTokens.radiusSm),
           borderSide: const BorderSide(color: COColors.brand700),
@@ -397,21 +502,27 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     // índice do mesmo projeto mudava e a animação saltava para outro cartão.
     final heroTag = 'hero-portfolio-$id';
 
+    // Em comercialização, com frações livres, o cartão leva direto à lista
+    // delas já filtrada, como o "ver frações disponíveis" do site.
+    final modoVenda = _apenasAVenda;
+    final comLivres = modoVenda && (Portfolio.disponiveis(project) ?? 0) > 0;
+
     return CoCard(
       semPadding: true,
       // Os empreendimentos so de historial entram na lista mas nao abrem: a
       // API responde 404 aos detalhes deles, como o site tambem faz.
       onTap: Portfolio.temPagina(project)
           ? () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProjectDetailsScreen(
-                    projectId: id,
-                    heroTag: heroTag,
-                    initialImageUrl: imageUrl,
-                  ),
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProjectDetailsScreen(
+                  projectId: id,
+                  heroTag: heroTag,
+                  initialImageUrl: imageUrl,
+                  abrirFracoesDisponiveis: comLivres,
                 ),
-              )
+              ),
+            )
           : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,25 +571,31 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 ),
                 const SizedBox(height: 2),
                 if (cidade.isNotEmpty)
-                  CoLinhaInfo(
-                    icone: Icons.location_on_outlined,
-                    texto: cidade,
-                  ),
+                  CoLinhaInfo(icone: Icons.location_on_outlined, texto: cidade),
                 if (anoFim != null)
                   CoLinhaInfo(
                     icone: Icons.calendar_today_outlined,
                     texto: Portfolio.conclusao(estado, anoFim),
                   ),
-                if (fracoes != null)
+                if (modoVenda)
+                  _disponibilidade(project)
+                else if (fracoes != null)
                   CoLinhaInfo(
                     icone: Icons.home_work_outlined,
                     texto: '$fracoes ${fracoes == 1 ? 'fração' : 'frações'}',
                   ),
                 // Nos concluídos a barra toda cheia não acrescenta nada.
-                BarraProgressoObra(
-                  projeto: project,
-                  ocultarConcluida: true,
-                ),
+                BarraProgressoObra(projeto: project, ocultarConcluida: true),
+                if (comLivres) ...[
+                  const SizedBox(height: COTokens.space4),
+                  Text(
+                    'Ver frações disponíveis →',
+                    style: COText.small.copyWith(
+                      color: COColors.white,
+                      fontWeight: COTokens.fwBold,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -510,9 +627,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   Widget _semImagem(IconData icone) {
     return ColoredBox(
       color: COColors.brand700,
-      child: Center(
-        child: Icon(icone, color: COColors.neutral500, size: 44),
-      ),
+      child: Center(child: Icon(icone, color: COColors.neutral500, size: 44)),
     );
   }
 

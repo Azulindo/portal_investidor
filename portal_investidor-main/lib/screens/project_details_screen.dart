@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../theme/co_colors.dart';
@@ -20,17 +22,25 @@ import '../widgets/secao_outros_empreendimentos.dart';
 import '../widgets/secao_video.dart';
 import '../widgets/visualizador_imagens.dart';
 import '../widgets/co_imagem.dart';
+import '../widgets/selo_venda.dart';
+import '../widgets/seta_galeria.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
   final int projectId;
   final String heroTag;
   final String initialImageUrl;
 
+  /// Vindo do "ver frações disponíveis" de Em comercialização: desce até às
+  /// frações e abre a lista já filtrada pelas disponíveis, como o site faz
+  /// com ?fracoes=disponiveis#lista-fracoes.
+  final bool abrirFracoesDisponiveis;
+
   const ProjectDetailsScreen({
     super.key,
     required this.projectId,
     required this.heroTag,
     required this.initialImageUrl,
+    this.abrirFracoesDisponiveis = false,
   });
 
   @override
@@ -100,6 +110,43 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
     _scrollController.dispose();
     _opacidadeImagem.dispose();
     super.dispose();
+  }
+
+  final GlobalKey _chaveFracoes = GlobalKey();
+  bool _jaSaltouParaFracoes = false;
+
+  /// Uma vez só, depois de o ecrã estar desenhado: se a pessoa entretanto
+  /// mexer no ecrã, não se lhe rouba o scroll nas reconstruções seguintes.
+  ///
+  /// O conteúdo está numa SliverList, que só constrói o que está perto do
+  /// ecrã: as frações, lá em baixo, ainda não existem quando o ecrã abre.
+  /// Por isso desce-se um ecrã de cada vez até elas aparecerem, e só então
+  /// se alinha com elas.
+  Future<void> _saltarParaFracoes() async {
+    if (_jaSaltouParaFracoes) return;
+    _jaSaltouParaFracoes = true;
+    for (var tentativa = 0; tentativa < 30 && mounted; tentativa++) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      final alvo = _chaveFracoes.currentContext;
+      if (alvo != null && alvo.mounted) {
+        await Scrollable.ensureVisible(
+          alvo,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          // Abaixo do topo, para o título da secção não ficar escondido
+          // debaixo da barra fixa (com 0,05 ficava cortado no telemóvel).
+          alignment: 0.12,
+        );
+        return;
+      }
+      if (!_scrollController.hasClients) continue;
+      final p = _scrollController.position;
+      if (p.pixels >= p.maxScrollExtent) return;
+      _scrollController.jumpTo(
+        math.min(p.pixels + p.viewportDimension, p.maxScrollExtent),
+      );
+    }
   }
 
   void _tentarNovamente() {
@@ -211,6 +258,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
           final titulo = info.name;
           final descricao = info.description;
           final status = info.status;
+
+          if (widget.abrirFracoesDisponiveis && project.fractions.isNotEmpty) {
+            _saltarParaFracoes();
+          }
 
           return Stack(
             children: [
@@ -378,7 +429,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 top: 0,
                                 bottom: 0,
                                 child: Center(
-                                  child: _GalleryArrowButton(
+                                  child: SetaGaleria(
                                     icon: Icons.chevron_left,
                                     visible: _paginaAtual > 0,
                                     onPressed: () => _irParaImagem(
@@ -393,7 +444,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                                 top: 0,
                                 bottom: 0,
                                 child: Center(
-                                  child: _GalleryArrowButton(
+                                  child: SetaGaleria(
                                     icon: Icons.chevron_right,
                                     visible: _paginaAtual < galeria.length - 1,
                                     onPressed: () => _irParaImagem(
@@ -523,7 +574,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                           children: [
                             UIHelpers.buildStatusBadge(status),
                             if (status != 'Desenvolvimento')
-                              _ForSaleBadge(forSale: info.forSale),
+                              SeloVenda(forSale: info.forSale),
                           ],
                         ),
 
@@ -641,7 +692,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                         // sem dados na API não aparece, como no site.
                         if (project.fractions.isNotEmpty) ...[
                           const SizedBox(height: COTokens.space9),
-                          SecaoFracoes(fracoes: project.fractions),
+                          KeyedSubtree(
+                            key: _chaveFracoes,
+                            child: SecaoFracoes(
+                              fracoes: project.fractions,
+                              soDisponiveis: widget.abrirFracoesDisponiveis,
+                            ),
+                          ),
                         ],
 
                         if (project.finishes.isNotEmpty) ...[
@@ -721,172 +778,5 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
         ),
       ],
     );
-  }
-}
-
-// =========================================================
-// BOTÃO DE SETA PARA NAVEGAR NA GALERIA DE IMAGENS
-// =========================================================
-class _GalleryArrowButton extends StatelessWidget {
-  final IconData icon;
-  final bool visible;
-  final VoidCallback onPressed;
-
-  const _GalleryArrowButton({
-    required this.icon,
-    required this.visible,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 200),
-      opacity: visible ? 1.0 : 0.0,
-      child: IgnorePointer(
-        ignoring: !visible,
-        child: Material(
-          color: Colors.black.withValues(alpha: 0.35),
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onPressed,
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Icon(icon, color: Colors.white, size: 28),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// =========================================================
-// LIGAÇÃO "A AVANÇAR" — efeito de "loading" com um brilho que
-// desliza de cima para baixo ao longo da linha, em loop.
-// =========================================================
-class _PulsingForwardConnector extends StatefulWidget {
-  final Color color;
-
-  const _PulsingForwardConnector({required this.color});
-
-  @override
-  State<_PulsingForwardConnector> createState() =>
-      _PulsingForwardConnectorState();
-}
-
-class _PulsingForwardConnectorState extends State<_PulsingForwardConnector>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        // Vai de -1 a 1: o brilho começa totalmente acima da linha
-        // (invisível) e termina totalmente abaixo (invisível), por
-        // isso o "salto" do loop nunca se nota.
-        final slide = -1.0 + (2 * _controller.value);
-        return Center(
-          child: SizedBox(
-            width: 2,
-            height: double.infinity,
-            child: ShaderMask(
-              blendMode: BlendMode.dstIn,
-              shaderCallback: (bounds) {
-                return LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    widget.color.withValues(alpha: 0.12),
-                    widget.color,
-                    widget.color.withValues(alpha: 0.12),
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                  transform: _SlidingGradientTransform(slide),
-                ).createShader(bounds);
-              },
-              child: ColoredBox(color: widget.color),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Se ainda há frações para vender.
-///
-/// Estava escrito com seis cores à mão — um azul-arroxeado do Material e três
-/// cinzentos — que não são da marca nenhuma e ficavam a destoar sobre o navy.
-/// Passou a usar o teal, que é a cor do que a pessoa pode fazer alguma coisa,
-/// e o cinzento da casa quando já não há nada a fazer.
-class _ForSaleBadge extends StatelessWidget {
-  final bool forSale;
-  const _ForSaleBadge({required this.forSale});
-
-  @override
-  Widget build(BuildContext context) {
-    final cor = forSale ? COColors.accent : COColors.brand300;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: cor.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cor.withValues(alpha: 0.7), width: 1.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            forSale ? Icons.apartment : Icons.lock_outline,
-            color: cor,
-            size: 20,
-          ),
-          const SizedBox(width: 5),
-          Text(
-            forSale
-                ? 'FRAÇÕES DISPONÍVEIS PARA VENDA'
-                : 'TODAS AS FRAÇÕES VENDIDAS',
-            style: const TextStyle(
-              // A 10px com espaçamento, o branco é o que se lê de relance.
-              color: COColors.white,
-              fontWeight: COTokens.fwBold,
-              fontSize: 10,
-              letterSpacing: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SlidingGradientTransform extends GradientTransform {
-  final double slidePercent;
-
-  const _SlidingGradientTransform(this.slidePercent);
-
-  @override
-  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
-    return Matrix4.translationValues(0.0, bounds.height * slidePercent, 0.0);
   }
 }
