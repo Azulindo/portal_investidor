@@ -21,11 +21,16 @@ class ConstructionStep {
   final String name;
   final String description;
 
+  /// A fotografia da fase, para a régua do painel. Vem no /user/:id, como no
+  /// site; null quando a fase ainda não tem foto.
+  final String? imageUrl;
+
   ConstructionStep({
     required this.id,
     required this.stepOrder,
     required this.name,
     required this.description,
+    this.imageUrl,
   });
 
   factory ConstructionStep.fromJson(Map<String, dynamic> json) {
@@ -34,6 +39,7 @@ class ConstructionStep {
       stepOrder: json['stepOrder'] ?? 0,
       name: json['name'] ?? '',
       description: json['description'] ?? '',
+      imageUrl: _ficheiro(json['imageUrl']),
     );
   }
 }

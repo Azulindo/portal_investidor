@@ -4,10 +4,10 @@ import '../theme/co_tokens.dart';
 import '../services/api_service.dart';
 import '../services/aviso_versao.dart';
 import '../services/notificacoes_push.dart';
-import '../widgets/co_card.dart';
 import '../widgets/co_drawer.dart';
 import '../models/investidor_model.dart';
 import '../models/sale_order.dart';
+import '../models/user_model.dart';
 import '../utils/carteira.dart';
 import '../utils/ui_helpers.dart';
 import 'documents_screen.dart';
@@ -119,135 +119,151 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final user = snapshot.data!;
             final obras = user.obras;
 
-            return CustomScrollView(
-              slivers: [
-                // O logótipo saiu daqui. Já está no menu lateral e na página
-                // de entrada; repeti-lo em cima de cada ecrã interno gastava
-                // 100px de altura sem dizer nada de novo. O que fica é o
-                // botão do menu — o título do ecrã é o "Olá, ..." em baixo.
-                SliverAppBar(
-                  floating: true,
-                  pinned: true,
-                  backgroundColor: COColors.brand900,
-                  elevation: 0,
-                  scrolledUnderElevation: 0,
-                  leading: Builder(
-                    builder: (context) => IconButton(
-                      icon: const Icon(Icons.menu, color: COColors.white),
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                    ),
-                  ),
-                  actions: [
-                    const SinoNotificacoes(),
-                    // As faturas estavam a dois toques, dentro do menu
-                    // lateral. Para quem abre a app por causa do que deve,
-                    // sao o destino mais provavel.
-                    TextButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const DocumentsScreen(),
+            // Como o portal do site: a faixa navy em cima com os totais e,
+            // por baixo, o fundo claro com um cartão branco por
+            // empreendimento.
+            return FutureBuilder<List<SaleOrder>>(
+              future: _encomendasFuture,
+              builder: (context, snap) {
+                // Encomendas em falta ou falhadas não escondem as obras: os
+                // cartões aparecem na mesma, sem a parte do dinheiro.
+                final encomendas = snap.data ?? const <SaleOrder>[];
+                final aCarregar =
+                    snap.connectionState == ConnectionState.waiting;
+
+                return CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+                      floating: true,
+                      pinned: true,
+                      backgroundColor: COColors.brand900,
+                      elevation: 0,
+                      scrolledUnderElevation: 0,
+                      leading: Builder(
+                        builder: (context) => IconButton(
+                          icon: const Icon(Icons.menu, color: COColors.white),
+                          onPressed: () => Scaffold.of(context).openDrawer(),
                         ),
                       ),
-                      icon: const Icon(
-                        Icons.receipt_long_outlined,
-                        size: 18,
-                        color: COColors.brand300,
-                      ),
-                      label: const Text(
-                        'Faturas',
-                        style: TextStyle(
-                          color: COColors.brand300,
-                          fontSize: 13,
+                      actions: [
+                        const SinoNotificacoes(),
+                        // As faturas estavam a dois toques, dentro do menu
+                        // lateral. Para quem abre a app por causa do que
+                        // deve, são o destino mais provável.
+                        TextButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const DocumentsScreen(),
+                            ),
+                          ),
+                          icon: const Icon(
+                            Icons.receipt_long_outlined,
+                            size: 18,
+                            color: COColors.brand300,
+                          ),
+                          label: const Text(
+                            'Faturas',
+                            style: TextStyle(
+                              color: COColors.brand300,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: COTokens.space2),
+                      ],
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          COTokens.space4,
+                          COTokens.space2,
+                          COTokens.space4,
+                          COTokens.space8,
+                        ),
+                        child: CabecalhoPainel(
+                          nome: user.name,
+                          email: user.email,
+                          obras: obras,
+                          encomendas: encomendas,
+                          aCarregar: aCarregar,
+                          aoTocarEmpreendimento: _irParaEmpreendimento,
                         ),
                       ),
                     ),
-                    const SizedBox(width: COTokens.space2),
-                  ],
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.all(COTokens.space6),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      // O painel dizia duas vezes a mesma coisa: listava os
-                      // empreendimentos em "As suas aquisicoes" e outra vez
-                      // em "Estado das obras". Sem fazer scroll via-se os
-                      // totais e meia lista de encomendas — obra nenhuma,
-                      // que e o que a pessoa vem ca ver.
-                      //
-                      // Agora e um cartao por empreendimento com as duas
-                      // coisas juntas, e os dois cabem no ecra.
-                      FutureBuilder<List<SaleOrder>>(
-                        future: _encomendasFuture,
-                        builder: (context, snap) {
-                          // Encomendas em falta ou falhadas nao escondem as
-                          // obras: o cartao aparece na mesma, sem a parte
-                          // do dinheiro.
-                          final encomendas = snap.data ?? const <SaleOrder>[];
-                          final aCarregar =
-                              snap.connectionState == ConnectionState.waiting;
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CabecalhoPainel(
-                                nome: user.name,
-                                encomendas: encomendas,
-                                aCarregar: aCarregar,
-                              ),
-                              const SizedBox(height: COTokens.space8),
-                              const CoTitulo('Os seus empreendimentos'),
-
-                              if (obras.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: COTokens.space8,
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Opacity(
-                                        opacity: 0.2,
-                                        child: Image.asset(
-                                          'assets/images/logo.png',
-                                          height: 80,
-                                        ),
-                                      ),
-                                      const SizedBox(height: COTokens.space6),
-                                      const Text(
-                                        'Ainda não existem registos associados ao seu perfil.',
-                                        style: COText.caption,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              else
-                                ...List.generate(
-                                  obras.length,
-                                  (index) => ObraCardWidget(
-                                    obra: obras[index],
-                                    heroTag:
-                                        'hero-dashboard-${obras[index].id}-$index',
-                                    encomendas: Carteira.doEmpreendimento(
-                                      obras[index].title,
-                                      encomendas,
-                                    ),
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Container(
+                        color: COColors.fundoClaro,
+                        padding: const EdgeInsets.fromLTRB(
+                          COTokens.space4,
+                          COTokens.space6,
+                          COTokens.space4,
+                          40,
+                        ),
+                        child: obras.isEmpty
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: COTokens.space8,
+                                ),
+                                child: Text(
+                                  'Ainda não tem empreendimentos associados à '
+                                  'sua conta. Assim que tiver, aparecerão aqui.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: COColors.brand500,
+                                    fontSize: 14,
                                   ),
                                 ),
-                            ],
-                          );
-                        },
+                              )
+                            : Column(
+                                children: [
+                                  for (var i = 0; i < obras.length; i++)
+                                    ObraCardWidget(
+                                      marcador: SizedBox(
+                                        key: _chaveDe(obras[i]),
+                                        height: 1,
+                                      ),
+                                      obra: obras[i],
+                                      heroTag:
+                                          'hero-dashboard-${obras[i].id}-$i',
+                                      encomendas: Carteira.doEmpreendimento(
+                                        obras[i].title,
+                                        encomendas,
+                                      ),
+                                      aCarregarEncomendas: aCarregar,
+                                    ),
+                                ],
+                              ),
                       ),
-
-                      const SizedBox(height: 40),
-                    ]),
-                  ),
-                ),
-              ],
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),
       ),
+    );
+  }
+
+  /// Uma chave por empreendimento, para a carteira lá de cima poder descer
+  /// até ao cartão certo.
+  final Map<int, GlobalKey> _chaves = {};
+  GlobalKey _chaveDe(ConstructionItem obra) =>
+      _chaves.putIfAbsent(obra.id, () => GlobalKey());
+
+  void _irParaEmpreendimento(ConstructionItem obra) {
+    final contexto = _chaves[obra.id]?.currentContext;
+    if (contexto == null) return;
+    // A chave está num marcador de 1px acima do cartão (ver
+    // ObraCardWidget.marcador), e não no cartão: um cartão mais alto do que
+    // o ecrã, com alinhamento ao topo, ficava a meio; e o topo exato ficava
+    // por baixo da barra de cima.
+    Scrollable.ensureVisible(
+      contexto,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
     );
   }
 }

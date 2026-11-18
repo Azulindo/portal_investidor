@@ -59,7 +59,15 @@ class CoDrawer extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Image.asset('assets/images/logo.png', height: 55),
+                // Era 55 de altura e quase não se dava por ele. 84 é o que
+                // cabe no cabeçalho do menu com a legenda por baixo; se o
+                // logótipo for mais largo do que o menu, encolhe para caber.
+                Image.asset(
+                  'assets/images/logo.png',
+                  height: 84,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.centerLeft,
+                ),
                 const SizedBox(height: COTokens.space2),
                 // Por baixo do logótipo, o mesmo que no login.
                 const Text('Área Reservada',

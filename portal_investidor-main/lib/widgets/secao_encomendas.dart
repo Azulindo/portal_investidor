@@ -205,7 +205,7 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
                   // empreendimento, por isso o pedido sai mais completo do
                   // que o do ecra das faturas.
                   if (f.attachments.isEmpty)
-                    _PedirFatura(fatura: f, empreendimento: o.projectName),
+                    PedirFatura(fatura: f, empreendimento: o.projectName),
                 ],
               ),
             ),
@@ -220,11 +220,19 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
 /// Abre o formulário de contacto do Odoo já com o assunto e a mensagem
 /// escritos, como o site faz no DescarregarFatura. Um ícone só, para não
 /// competir com o valor da fatura ao lado.
-class _PedirFatura extends StatelessWidget {
-  const _PedirFatura({required this.fatura, required this.empreendimento});
+class PedirFatura extends StatelessWidget {
+  const PedirFatura({
+    super.key,
+    required this.fatura,
+    required this.empreendimento,
+    this.cor = COColors.brand300,
+  });
 
   final Invoice fatura;
   final String empreendimento;
+
+  /// brand300 sobre o navy; nos cartões claros do painel, um mais escuro.
+  final Color cor;
 
   Future<void> _abrir(BuildContext context) async {
     final investidor = ApiService.dadosLogado;
@@ -252,11 +260,7 @@ class _PedirFatura extends StatelessWidget {
       onPressed: () => _abrir(context),
       tooltip: 'Pedir esta fatura',
       visualDensity: VisualDensity.compact,
-      icon: const Icon(
-        Icons.mail_outline,
-        size: 16,
-        color: COColors.brand300,
-      ),
+      icon: Icon(Icons.mail_outline, size: 16, color: cor),
     );
   }
 }

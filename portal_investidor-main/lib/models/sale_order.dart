@@ -84,6 +84,15 @@ class Invoice {
   /// As linhas de artigo numa linha só, ou vazio se a fatura não trouxer nenhuma.
   String get descricao => description.join('  ·  ');
 
+  /// As linhas prontas a mostrar, sem o código de conta com que o Odoo as
+  /// começa: o "[721]" de "[721] Contratos de empreitada" é contabilidade
+  /// interna e, para quem comprou uma casa, parece um erro. Como o
+  /// linhasFatura do site.
+  List<String> get linhas => description
+      .map((l) => l.replaceFirst(RegExp(r'^\s*\[\d+\]\s*'), '').trim())
+      .where((l) => l.isNotEmpty)
+      .toList();
+
   /// Etiqueta em português do estado de pagamento.
   String get estado {
     switch (paymentState) {
@@ -172,6 +181,41 @@ class SaleOrder {
   /// O resto: o que ainda nem sequer foi faturado.
   double get porFaturar =>
       math.max(amountTotal - pago - faturadoPorPagar, 0);
+
+  /// Percentagem paga (0–100), onde cai o primeiro marcador da barra.
+  int get percentagemPaga =>
+      amountTotal > 0 ? (pago / amountTotal * 100).round() : 0;
+
+  /// Onde acaba a fatia do faturado por pagar: o segundo marcador.
+  ///
+  /// Soma-se às percentagens já arredondadas, e não aos valores, para o traço
+  /// cair exatamente no limite entre as duas fatias — como no site.
+  int get percentagemFaturada => percentagemPaga +
+      (amountTotal > 0 ? (faturadoPorPagar / amountTotal * 100).round() : 0);
+
+  /// As frações por ordem natural ("5.2" antes de "5.10").
+  List<String> get fracoesOrdenadas => ordenarFracoes(fractions);
+
+  /// Ordem natural, como o localeCompare(..., {numeric: true}) do site:
+  /// os números dentro do texto comparam-se como números.
+  static List<String> ordenarFracoes(Iterable<String> fracoes) {
+    final partes = RegExp(r'\d+|\D+');
+    int comparar(String a, String b) {
+      final pa = partes.allMatches(a.toLowerCase()).map((m) => m[0]!).toList();
+      final pb = partes.allMatches(b.toLowerCase()).map((m) => m[0]!).toList();
+      for (var i = 0; i < math.min(pa.length, pb.length); i++) {
+        final na = int.tryParse(pa[i]);
+        final nb = int.tryParse(pb[i]);
+        final c = (na != null && nb != null)
+            ? na.compareTo(nb)
+            : pa[i].compareTo(pb[i]);
+        if (c != 0) return c;
+      }
+      return pa.length.compareTo(pb.length);
+    }
+
+    return fracoes.toSet().toList()..sort(comparar);
+  }
 
   factory SaleOrder.fromJson(Map<String, dynamic> json) {
     return SaleOrder(

@@ -19,4 +19,10 @@ class COColors {
   /// 4.65:1 no cartao e 5.16:1 sobre o navy.
   static const Color neutral500 = Color(0xFF849AAC);
   static const Color neutral900 = Color(0xFF0F1B26);
+
+  // As zonas claras do painel, como no portal do site (globals.css:
+  // --co-bg-light, --co-neutral-100, --co-border-std).
+  static const Color fundoClaro = Color(0xFFF5F8FB);
+  static const Color neutral100 = Color(0xFFE8EDF1);
+  static const Color bordaClara = Color(0xFFCCD5DD);
 }

@@ -1,392 +1,448 @@
 import 'package:flutter/material.dart';
-import '../theme/co_colors.dart';
-import '../theme/co_tokens.dart';
-import 'co_card.dart';
+
 import '../models/sale_order.dart';
 import '../models/user_model.dart';
-import '../utils/carteira.dart';
-import '../utils/portfolio.dart';
-import '../utils/ui_helpers.dart';
 import '../screens/project_details_screen.dart';
+import '../theme/co_colors.dart';
+import '../theme/co_tokens.dart';
 import 'co_imagem.dart';
-import 'detalhe_de_valores.dart';
+import 'painel_aquisicao.dart';
 import 'visualizador_imagens.dart';
 
-
-// =========================================================
-// CARD DE OBRA (SIMPLIFICADO)
-// Mostra imagem, nome, cidade, data prevista de conclusão e
-// uma timeline horizontal numerada com destaque até currentStep.
-// Ao tocar, abre o ProjectDetailsScreen (que busca os detalhes
-// completos via GET /api/project/details?projectId=id).
-// =========================================================
+/// Um empreendimento no painel, como o cartão do portal do site
+/// (PortalDashboard.tsx, project-card): a fotografia com o estado, o nome e a
+/// morada, as frações da pessoa e o ano previsto, a régua da obra com as
+/// fotografias de cada fase e, por baixo, as aquisições.
+///
+/// Branco, sobre o fundo claro do painel, como no site.
 class ObraCardWidget extends StatelessWidget {
-  final ConstructionItem obra;
-  final String heroTag;
-
-  /// As encomendas deste empreendimento, para o cartao poder dizer quanto
-  /// esta investido e quanto falta pagar. Vazia enquanto o pedido das
-  /// encomendas nao chega, ou se falhar: nesse caso o cartao mostra o
-  /// resto na mesma.
-  final List<SaleOrder> encomendas;
-
   const ObraCardWidget({
     super.key,
     required this.obra,
     required this.heroTag,
     this.encomendas = const [],
+    this.aCarregarEncomendas = false,
+    this.marcador,
   });
+
+  /// Um widget invisível posto acima do cartão, para quem quiser descer
+  /// até ele (a carteira do painel) o deixar logo abaixo da barra de cima.
+  final Widget? marcador;
+
+  final ConstructionItem obra;
+  final String heroTag;
+
+  /// As encomendas deste empreendimento. Vazia enquanto o pedido não chega
+  /// ou se falhar: o cartão mostra o resto na mesma.
+  final List<SaleOrder> encomendas;
+  final bool aCarregarEncomendas;
+
+  void _abrirEmpreendimento(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProjectDetailsScreen(
+          projectId: obra.id,
+          heroTag: obra.imageUrl,
+          initialImageUrl: obra.imageUrl,
+        ),
+      ),
+    );
+  }
+
+  /// Rua e cidade, como o "Prelada, Porto" do site.
+  String get _morada => [
+        if ((obra.address ?? '').trim().isNotEmpty) obra.address!.trim(),
+        if (obra.location.isNotEmpty && obra.location != obra.address)
+          obra.location,
+      ].join(', ');
 
   @override
   Widget build(BuildContext context) {
-    final urlImagem = obra.imageUrl;
-
-    return CoCard(
-      semPadding: true,
-      // Sem pagina nao ha para onde ir: a API responde 404 aos detalhes de um
-      // empreendimento so de historial. O cartao fica sem toque, em vez de
-      // levar a pessoa a um ecra de erro.
-      onTap: obra.temPagina
-          ? () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProjectDetailsScreen(
-                    projectId: obra.id,
-                    heroTag: obra.imageUrl,
-                    initialImageUrl: obra.imageUrl,
-                  ),
-                ),
-              );
-            }
-          : null,
-      child: SizedBox(
-        width: double.infinity,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // IMAGEM PRINCIPAL DO PROJETO (com Hero para a transição)
-            Stack(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: Hero(
-                    tag: heroTag,
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: urlImagem.isNotEmpty
-                          // Tocar na fotografia abre-a em grande, em vez de
-                          // abrir o empreendimento: e o gesto que se espera
-                          // de uma imagem, e o resto do cartao continua a
-                          // levar aos detalhes.
-                          ? GestureDetector(
-                              onTap: () => VisualizadorImagens.abrir(
-                                context,
-                                imagens: [urlImagem],
-                                legendas: [obra.title],
-                              ),
-                              child: CoImagem(
-                                urlImagem,
-                                altura: 190,
-                                largura: double.infinity,
-                                erro: _imagePlaceholder(broken: true),
-                              ),
-                            )
-                          : _imagePlaceholder(broken: false),
-                    ),
-                  ),
-                ),
-                if (obra.status.isNotEmpty)
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: UIHelpers.buildStatusBadge(obra.status),
-                  ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(COTokens.cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // NOME DO PROJETO
-                  Text(
-                    obra.title,
-                    style: COText.h2.copyWith(fontWeight: COTokens.fwBold),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 3),
-
-                  // Eram tres linhas com icone, uma por cima da outra.
-                  // Numa so poupa-se altura e le-se de uma vez.
-                  Text(
-                    [
-                      if (obra.location.isNotEmpty) obra.location,
-                      if (_fracoes > 0)
-                        Carteira.contagem(_fracoes, 'fração', 'frações'),
-                      if (obra.anoFim != null)
-                        // Em minúsculas porque vem a meio da linha.
-                        Portfolio.conclusao(obra.status, obra.anoFim!)
-                            .toLowerCase(),
-                    ].join('  ·  '),
-                    style: COText.caption,
-                  ),
-
-                  const SizedBox(height: COTokens.space4),
-
-                  // TIMELINE HORIZONTAL DAS FASES
-                  if (obra.status == 'Desenvolvimento')
-                    const Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Projeto em desenvolvimento.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: COColors.brand300,
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            'Timeline disponível em breve!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: COColors.brand300,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (obra.steps.isNotEmpty)
-                    _Timeline(obra: obra),
-
-                  if (encomendas.isNotEmpty) _dinheiro(context),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    final fracoes = SaleOrder.ordenarFracoes(
+      encomendas.expand((o) => o.fractions),
     );
-  }
 
-  /// Quantas fracoes a pessoa tem aqui, sem repeticoes — a mesma fracao
-  /// pode vir em mais do que uma encomenda (um reforco, uma alteracao).
-  int get _fracoes => encomendas.expand((o) => o.fractions).toSet().length;
-
-  /// O pago e o por pagar deste empreendimento.
-  ///
-  /// Saem das encomendas, as mesmas contas da carteira, para o cartao e o
-  /// total la de cima nunca discordarem.
-  ///
-  /// O par e "pago" e "por pagar", e nao o total e o que falta: os dois
-  /// somam o valor da encomenda, por isso o total continua a ler-se sem
-  /// precisar de uma terceira coluna num cartao de telemovel.
-  Widget _dinheiro(BuildContext context) {
-    final pago = Carteira.totalPago(encomendas);
-    final porPagar = Carteira.totalPorPagar(encomendas);
-
-    return Padding(
-      padding: const EdgeInsets.only(top: COTokens.space4),
-      child: GestureDetector(
-        // Toque proprio, separado do resto do cartao: "por pagar" junta o que
-        // ja foi faturado com o que ainda nem foi, e essa diferenca nao cabe
-        // aqui. Quem quiser saber, toca.
-        onTap: encomendas.isEmpty
-            ? null
-            : () => DetalheDeValores.abrir(
-                  context,
-                  empreendimento: obra.title,
-                  encomendas: encomendas,
-                ),
-        // Sem isto o toque so conta em cima dos numeros, e falha no espaco
-        // entre eles.
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          padding: const EdgeInsets.only(top: COTokens.space4),
-          decoration: const BoxDecoration(
-            border: Border(top: BorderSide(color: COColors.brand700)),
-          ),
-          child: Row(
-            children: [
-              Expanded(child: _valor('Pago', Carteira.euros(pago))),
-              Expanded(
-                child: _valor(
-                  'Por pagar',
-                  Carteira.euros(porPagar),
-                  // O que falta pagar e a unica coisa aqui sobre a qual a
-                  // pessoa tem de agir, por isso e a unica com cor.
-                  cor: porPagar > 0 ? COColors.accent : COColors.white,
-                ),
-              ),
-              // A pista de que isto se toca. Sem encomendas nao ha o que
-              // mostrar, e entao tambem nao aparece.
-              if (encomendas.isNotEmpty)
-                const Icon(
-                  Icons.chevron_right,
-                  color: COColors.brand300,
-                  size: 20,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _valor(String etiqueta, String valor, {Color cor = COColors.white}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final cartao = _cartao(context, fracoes);
+    if (marcador == null) return cartao;
+    return Stack(
+      clipBehavior: Clip.none,
       children: [
-        Text(etiqueta, style: COText.caption),
-        const SizedBox(height: 2),
-        Text(
-          valor,
-          style: TextStyle(
-            color: cor,
-            fontSize: 15,
-            fontWeight: COTokens.fwBold,
-          ),
-        ),
+        cartao,
+        // A barra de cima (com a da hora) tem à volta de 90px.
+        Positioned(top: -104, left: 0, right: 0, child: marcador!),
       ],
     );
   }
 
-  Widget _imagePlaceholder({required bool broken}) {
+  Widget _cartao(BuildContext context, List<String> fracoes) {
     return Container(
-      height: 190,
-      color: COColors.brand700,
-      child: Center(
-        child: broken
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.broken_image_outlined,
-                    color: COColors.brand300,
-                    size: 40,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Imagem indisponível',
-                    style: TextStyle(color: COColors.neutral500, fontSize: 12),
-                  ),
-                ],
-              )
-            : const Icon(
-                Icons.image_outlined,
-                color: COColors.brand500,
-                size: 40,
-              ),
+      margin: const EdgeInsets.only(bottom: COTokens.space6),
+      padding: const EdgeInsets.all(COTokens.space4),
+      decoration: BoxDecoration(
+        color: COColors.white,
+        borderRadius: BorderRadius.circular(4),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F002847),
+            blurRadius: 20,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _imagem(context),
+          const SizedBox(height: COTokens.space4),
+          // O nome leva aos detalhes (quando há página); o resto do cartão
+          // tem os seus próprios toques.
+          InkWell(
+            onTap: obra.temPagina ? () => _abrirEmpreendimento(context) : null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        obra.title,
+                        style: Claro.titulo.copyWith(fontSize: 20),
+                      ),
+                    ),
+                    if (obra.temPagina)
+                      const Icon(Icons.chevron_right,
+                          color: COColors.brand500, size: 22),
+                  ],
+                ),
+                if (_morada.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(_morada,
+                      style: Claro.etiqueta.copyWith(fontSize: 14)),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: COTokens.space4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('As suas frações', style: Claro.etiqueta),
+                    const SizedBox(height: 6),
+                    if (fracoes.isNotEmpty)
+                      ChipsFracoes(fracoes)
+                    else
+                      Text(aCarregarEncomendas ? '…' : '—',
+                          style: Claro.valor),
+                  ],
+                ),
+              ),
+              const SizedBox(width: COTokens.space4),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Final previsto', style: Claro.etiqueta),
+                  const SizedBox(height: 6),
+                  Text(obra.anoFim ?? 'A confirmar', style: Claro.valor),
+                ],
+              ),
+            ],
+          ),
+          if (obra.steps.isNotEmpty) ...[
+            const SizedBox(height: COTokens.space6),
+            Text('ESTADO DA OBRA', style: Claro.seccao),
+            const SizedBox(height: COTokens.space4),
+            ReguaObra(obra: obra),
+          ],
+          const SizedBox(height: COTokens.space6),
+          const Divider(height: 1, color: COColors.bordaClara),
+          const SizedBox(height: COTokens.space4),
+          Text('AQUISIÇÕES', style: Claro.seccao),
+          const SizedBox(height: COTokens.space4),
+          if (encomendas.isEmpty)
+            Text(
+              aCarregarEncomendas
+                  ? 'A carregar…'
+                  : 'Sem aquisições associadas a este empreendimento.',
+              style: Claro.etiqueta.copyWith(fontSize: 13),
+            )
+          else
+            for (final o in encomendas)
+              CartaoAquisicao(encomenda: o, empreendimento: obra.title),
+        ],
+      ),
+    );
+  }
+
+  Widget _imagem(BuildContext context) {
+    final url = obra.imageUrl;
+    final selos = [
+      if (obra.status.isNotEmpty) obra.status,
+      if (obra.estaAVenda) 'Em comercialização',
+    ];
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: Stack(
+        children: [
+          Hero(
+            tag: heroTag,
+            child: Material(
+              type: MaterialType.transparency,
+              child: url.isEmpty
+                  ? _semImagem(Icons.image_outlined)
+                  : GestureDetector(
+                      // Tocar na fotografia abre-a em grande.
+                      onTap: () => VisualizadorImagens.abrir(
+                        context,
+                        imagens: [url],
+                        legendas: [obra.title],
+                      ),
+                      child: CoImagem(
+                        url,
+                        altura: 200,
+                        largura: double.infinity,
+                        erro: _semImagem(Icons.broken_image_outlined),
+                      ),
+                    ),
+            ),
+          ),
+          if (selos.isNotEmpty)
+            Positioned(
+              top: 10,
+              left: 10,
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [for (final s in selos) _selo(s)],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _selo(String texto) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: COColors.white,
+        borderRadius: BorderRadius.circular(2),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x2E002847), blurRadius: 4, offset: Offset(0, 1)),
+        ],
+      ),
+      child: Text(
+        texto.toUpperCase(),
+        style: const TextStyle(
+          color: COColors.brand900,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.6,
+        ),
+      ),
+    );
+  }
+
+  Widget _semImagem(IconData icone) {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      color: COColors.neutral100,
+      child: Icon(icone, color: COColors.brand300, size: 40),
     );
   }
 }
 
-// =========================================================
-// TIMELINE HORIZONTAL (interna ao card)
-// Uma bolinha por fase, acesas até à fase atual, e por baixo uma linha a
-// dizer em que fase vai a obra.
-// =========================================================
-class _Timeline extends StatelessWidget {
+/// As fases da obra lado a lado, cada uma com a sua fotografia, o número numa
+/// bolinha e o nome — a card-timeline do site. Desliza para o lado e abre
+/// centrada na fase em curso.
+class ReguaObra extends StatefulWidget {
+  const ReguaObra({super.key, required this.obra});
+
   final ConstructionItem obra;
 
-  const _Timeline({required this.obra});
+  @override
+  State<ReguaObra> createState() => _ReguaObraState();
+}
+
+class _ReguaObraState extends State<ReguaObra> {
+  static const double _largura = 132;
+  final _scroll = ScrollController();
+
+  List<ConstructionStep> get _fases => widget.obra.steps;
+
+  /// Quando a fase atual é a última, a obra está concluída: ficam todas
+  /// feitas e nenhuma "em curso", como no site.
+  bool get _concluida {
+    if (_fases.isEmpty) return false;
+    final ultima =
+        _fases.map((s) => s.stepOrder).reduce((a, b) => a > b ? a : b);
+    return widget.obra.currentStep >= ultima;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      final i =
+          _fases.indexWhere((s) => s.stepOrder == widget.obra.currentStep);
+      if (i <= 0) return;
+      final vista = _scroll.position.viewportDimension;
+      final alvo = i * _largura - (vista - _largura) / 2;
+      _scroll.jumpTo(alvo.clamp(0, _scroll.position.maxScrollExtent));
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final steps = obra.steps;
-    final currentIndex = steps.indexWhere(
-      (s) => s.stepOrder == obra.currentStep,
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _regua(steps, currentIndex),
-        if (currentIndex != -1) ...[
-          const SizedBox(height: 8),
-          Text(
-            'Fase ${currentIndex + 1} de ${steps.length} · '
-            '${steps[currentIndex].name}',
-            style: COText.caption.copyWith(color: COColors.brand300),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ],
+    final atual = widget.obra.currentStep;
+    return SizedBox(
+      height: 178,
+      child: ListView.builder(
+        controller: _scroll,
+        scrollDirection: Axis.horizontal,
+        itemCount: _fases.length,
+        itemBuilder: (context, i) {
+          final f = _fases[i];
+          final feita = _concluida || f.stepOrder < atual;
+          final emCurso = !_concluida && f.stepOrder == atual;
+          // A linha à esquerda acende quando esta fase já começou; à
+          // direita, quando a seguinte já começou.
+          final esquerdaAcesa = feita || emCurso;
+          final direitaAcesa = feita;
+          return SizedBox(
+            width: _largura,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: _foto(f),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 26,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: i == 0
+                            ? const SizedBox()
+                            : _linha(esquerdaAcesa),
+                      ),
+                      _bolinha(f.stepOrder, feita, emCurso),
+                      Expanded(
+                        child: i == _fases.length - 1
+                            ? const SizedBox()
+                            : _linha(direitaAcesa),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    f.name.toUpperCase(),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      height: 1.35,
+                      letterSpacing: 0.5,
+                      fontWeight: feita || emCurso
+                          ? FontWeight.w600
+                          : COTokens.fwRegular,
+                      color: feita || emCurso
+                          ? COColors.brand900
+                          : COColors.brand500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
-  Widget _regua(List<ConstructionStep> steps, int currentIndex) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: List.generate(steps.length, (index) {
-        final isCurrent = index == currentIndex;
-        final isDone = currentIndex != -1 && index <= currentIndex;
-        final showLeftLine = index > 0;
-        final showRightLine = index < steps.length - 1;
-        final leftLineDone = currentIndex != -1 && index <= currentIndex;
-        final rightLineDone = currentIndex != -1 && index < currentIndex;
-
-        // Os verdes do Material (greenAccent/green) saiam fora da marca:
-        // a Cleveroption nao tem verde em sitio nenhum. A regua passa a ser
-        // monocromatica sobre o navy — por fazer e escuro, feito e cinza
-        // claro, a fase atual e branca. Le-se melhor e e da casa.
-        final Color dotColor = isCurrent
-            ? COColors.white
-            : (isDone ? COColors.brand300 : COColors.brand700);
-
-        return Expanded(
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: showLeftLine
-                        ? Container(
-                            height: 1,
-                            color: leftLineDone
-                                ? COColors.brand300
-                                : COColors.brand700,
-                          )
-                        : const SizedBox(),
-                  ),
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: dotColor,
-                    ),
-                  ),
-                  Expanded(
-                    child: showRightLine
-                        ? Container(
-                            height: 1,
-                            color: rightLineDone
-                                ? COColors.brand300
-                                : COColors.brand700,
-                          )
-                        : const SizedBox(),
-                  ),
-                ],
+  Widget _foto(ConstructionStep f) {
+    final url = f.imageUrl;
+    final semFoto = Container(
+      height: 88,
+      width: double.infinity,
+      color: COColors.neutral100,
+      alignment: Alignment.center,
+      child: Opacity(
+        opacity: 0.45,
+        child: Image.asset(
+          'assets/images/logo.png',
+          width: 70,
+          color: COColors.brand500,
+          colorBlendMode: BlendMode.srcIn,
+        ),
+      ),
+    );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: url == null || url.isEmpty
+          ? semFoto
+          : GestureDetector(
+              onTap: () => VisualizadorImagens.abrir(
+                context,
+                imagens: [url],
+                legendas: [f.name],
               ),
-              // Aqui estava o nome da fase debaixo de cada bolinha. Com cinco
-              // fases num telemóvel cada coluna fica com ~60px, e nomes como
-              // "Fundações" ou "Acabamentos" partiam-se a meio da palavra
-              // ("Fundaçõ / es"). O nome da fase passou para uma linha só,
-              // debaixo da régua — é também como o cartão do portfólio o
-              // mostra, por isso os dois ecrãs passam a ler-se igual.
-            ],
-          ),
-        );
-      }),
+              child: CoImagem(url,
+                  altura: 88, largura: double.infinity, erro: semFoto),
+            ),
+    );
+  }
+
+  Widget _linha(bool acesa) => Container(
+        height: 1.5,
+        color: acesa ? COColors.brand900 : COColors.bordaClara,
+      );
+
+  Widget _bolinha(int numero, bool feita, bool emCurso) {
+    final Color fundo = feita
+        ? COColors.brand900
+        : (emCurso ? COColors.white : const Color(0xFFD8E1E9));
+    final Color texto = feita
+        ? COColors.white
+        : (emCurso ? COColors.brand900 : const Color(0xFF7F94A7));
+    return Container(
+      width: 26,
+      height: 26,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: fundo,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: feita || emCurso ? COColors.brand900 : COColors.bordaClara,
+          width: emCurso ? 2 : 1,
+        ),
+      ),
+      child: Text(
+        '$numero',
+        style: TextStyle(
+          color: texto,
+          fontSize: 10,
+          fontWeight: emCurso ? COTokens.fwBold : FontWeight.w600,
+        ),
+      ),
     );
   }
 }
