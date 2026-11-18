@@ -338,9 +338,16 @@ class _MapScreenState extends State<MapScreen> {
                               initialZoom: 12.5,
                               minZoom: Mapa.zoomMinimo,
                               maxZoom: Mapa.zoomMaximo,
+                              // Sem rodar: com dois dedos o mapa rodava sem
+                              // querer ao fazer zoom, e não há bússola para o
+                              // pôr outra vez a norte.
+                              interactionOptions: const InteractionOptions(
+                                flags: InteractiveFlag.all &
+                                    ~InteractiveFlag.rotate,
+                              ),
                               onMapReady: () => setState(() => _mapReady = true),
                               // Recalcula os indicadores de borda sempre que o mapa
-                              // se move, faz zoom ou roda.
+                              // se move ou faz zoom.
                               onPositionChanged: (_, _) => setState(() {}),
                             ),
                             children: [
