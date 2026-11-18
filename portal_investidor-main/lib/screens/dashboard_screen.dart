@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../services/api_service.dart';
+import '../services/aviso_versao.dart';
 import '../services/notificacoes_push.dart';
 import '../widgets/co_card.dart';
 import '../widgets/co_drawer.dart';
@@ -39,6 +40,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // O painel é onde se chega depois do login e ao arrancar com sessão:
     // é aqui que se pede autorização e se regista o telemóvel para push.
     NotificacoesPush.ativarParaSessao();
+    // Depois do primeiro frame, para o SnackBar ter onde aparecer.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AvisoVersao.verificar(context);
+    });
   }
 
   void _carregar() {
