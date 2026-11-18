@@ -3,6 +3,9 @@
      (a debug tem, porque o manifest de debug a acrescenta). -->
 <uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+<!-- Notificações push. No Android 13 e seguintes a app tem de pedir
+     autorização para as mostrar; sem esta linha o pedido nem aparece. -->
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="Cleveroption"
         android:name="${applicationName}"
@@ -11,6 +14,16 @@
         android:fullBackupContent="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:networkSecurityConfig="@xml/network_security_config">
+        <!-- Ícone e cor das notificações push. O Android desenha o ícone da
+             barra só pela transparência: com o ícone da app (colorido) saía um
+             quadrado cinzento. O ic_notificacao é o símbolo a branco, gerado
+             por loja/gerar.ps1. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notificacao" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notificacao" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

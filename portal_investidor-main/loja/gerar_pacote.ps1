@@ -54,6 +54,13 @@ if (-not $temChave -and -not $Teste) {
   Parar 'nao ha android\key.properties, por isso o pacote saia com a chave de debug e a Play Console recusava-o. Ver android\key.properties.exemplo. (Para so experimentar se compila: -Teste)'
 }
 
+# Sem o google-services.json a app compila, mas sem notificacoes push. Nao
+# esta no git (o repositorio e publico): descarrega-se da consola do Firebase.
+$temFirebase = Test-Path (Join-Path $raiz 'android\app\google-services.json')
+if (-not $temFirebase -and -not $Teste) {
+  Parar 'falta android\app\google-services.json: a app saia sem notificacoes push. Descarregue-o na consola do Firebase (projeto Cleveroption, app pt.cleveroption.app). (Para so experimentar se compila: -Teste)'
+}
+
 Write-Host "Servidor: $Api"
 Write-Host "A gerar o pacote...`n"
 $defines = @("--dart-define=API_BASE_URL=$Api", "--dart-define=CARTO_KEY=$env:CARTO_KEY")

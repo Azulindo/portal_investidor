@@ -3,6 +3,7 @@ import 'package:shimmer/shimmer.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../services/api_service.dart';
+import '../services/notificacoes_push.dart';
 import '../widgets/co_card.dart';
 import '../widgets/co_drawer.dart';
 import '../models/investidor_model.dart';
@@ -39,6 +40,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _carregar();
+    // O painel é onde se chega depois do login e ao arrancar com sessão:
+    // é aqui que se pede autorização e se regista o telemóvel para push.
+    NotificacoesPush.ativarParaSessao();
   }
 
   void _carregar() {

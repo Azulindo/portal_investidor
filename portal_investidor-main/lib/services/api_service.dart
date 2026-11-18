@@ -8,6 +8,7 @@ import '../models/notificacao.dart';
 import '../config/api_config.dart';
 import 'auth_service.dart';
 import 'dados_de_exemplo.dart';
+import 'notificacoes_push.dart';
 
 /// Porque e que a sessao acabou a meio.
 ///
@@ -171,6 +172,9 @@ class ApiService {
     limparCache();
     // Para o próximo 401 voltar a avisar: este contador é por sessão.
     _jaAvisouQueExpirou = false;
+    // O token do telemóvel a API apaga-o sozinha com o logout; aqui só se
+    // deixa de o registar até a próxima pessoa entrar.
+    NotificacoesPush.terminarSessao();
   }
 
   /// A sessao acabou sem ser por vontade da pessoa: o token morreu (401) ou

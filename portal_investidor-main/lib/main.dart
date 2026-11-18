@@ -7,6 +7,7 @@ import 'screens/dashboard_screen.dart';
 import 'services/privacy_service.dart';
 import 'services/auth_service.dart';
 import 'services/api_service.dart';
+import 'services/notificacoes_push.dart';
 
 /// Chave global do Navigator, para permitir navegação a partir de locais
 /// sem BuildContext próprio (ex: o ErrorWidget global abaixo).
@@ -109,6 +110,7 @@ void main() async {
   // para o ler.
   ApiService.aoExpirarSessao = (motivo) async {
     await AuthService.limparSessao();
+    NotificacoesPush.terminarSessao();
     navigatorKey.currentState?.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
@@ -123,6 +125,12 @@ void main() async {
       ),
     );
   };
+
+  // Notificações push. Sem google-services.json fica desligado sem erro.
+  await NotificacoesPush.iniciar(
+    navigatorKey: navigatorKey,
+    messengerKey: messengerKey,
+  );
 
   runApp(
     ChangeNotifierProvider(

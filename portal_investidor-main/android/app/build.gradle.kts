@@ -8,6 +8,14 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Firebase, só para as notificações push. O google-services.json não entra no
+// git (o repositório é público): é descarregado da consola do Firebase e posto
+// nesta pasta. Sem ele a app compila na mesma, só sem push — e o
+// loja/gerar_pacote.ps1 recusa gerar o pacote final sem ele.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // A chave de assinatura nunca entra no repositorio: o android/.gitignore ja
 // ignora o key.properties e os ficheiros .jks. Enquanto o ficheiro nao existir,
 // o release assina-se com as chaves de debug, para o `flutter run --release`

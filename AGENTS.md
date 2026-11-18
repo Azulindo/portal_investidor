@@ -82,6 +82,15 @@ opcional em produção: sem ela o mapa cai no OpenStreetMap.
   e antes de qualquer publicação. Mudá-lo depois de a app estar publicada é
   publicar uma app nova, com instalações a zero, e o projeto Firebase está
   registado com este nome.
+- **Notificações push pelo Firebase (só o FCM)**, em
+  `lib/services/notificacoes_push.dart`. Os dados e o login continuam na API.
+  O `android/app/google-services.json` **não está no git** (repositório
+  público): descarrega-se da consola do Firebase, projeto Cleveroption, app
+  `pt.cleveroption.app`. Sem ele a app compila sem push e o
+  `loja/gerar_pacote.ps1` recusa o pacote final. Usa-se o `getToken` (marcado
+  obsoleto no firebase_messaging 17) porque a API envia com
+  `sendEachForMulticast`, que quer o token clássico e não o Installation ID
+  do `onRegistered`.
 - **O `targetSdk` está fixo em 36**, e não herdado do Flutter instalado: é o
   que a Google exige, e uma atualização do Flutter não deve poder baixá-lo sem
   ninguém dar por isso.

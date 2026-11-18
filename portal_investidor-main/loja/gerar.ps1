@@ -67,6 +67,16 @@ Desenhar (Join-Path $icon 'icone_frente.png') $simbolo 1024 1024 0.50 'transpare
 # os pinos ficavam vazios); PNG desenha em todos.
 Desenhar (Join-Path $raiz 'assets\images\simbolo_mapa.png') $simbolo 128 128 0.92 'transparent'
 
+# O icone pequeno das notificacoes push, na barra do Android: branco sobre
+# transparente (o sistema so usa a transparencia). Um por densidade de ecra,
+# 24dp com 2dp de margem de cada lado.
+$res = Join-Path $raiz 'android\app\src\main\res'
+foreach ($d in @(@('mdpi', 24), @('hdpi', 36), @('xhdpi', 48), @('xxhdpi', 72), @('xxxhdpi', 96))) {
+  $pasta = Join-Path $res "drawable-$($d[0])"
+  New-Item -ItemType Directory -Force $pasta | Out-Null
+  Desenhar (Join-Path $pasta 'ic_notificacao.png') $simbolo $d[1] $d[1] 0.83 'transparent'
+}
+
 # Fichas das lojas.
 Desenhar (Join-Path $loja 'icone_app_store_1024.png') $simbolo 1024 1024 0.58 '#002847'
 Desenhar (Join-Path $loja 'icone_play_512.png') $simbolo 512 512 0.58 '#002847'
