@@ -28,9 +28,13 @@ class SecaoFracoes extends StatefulWidget {
     super.key,
     required this.fracoes,
     this.soDisponiveis = false,
+    this.aoAbrirFracao,
   });
 
   final List<ProjectFraction> fracoes;
+
+  /// Abre a ficha da fração. null = os cartões não abrem nada.
+  final void Function(ProjectFraction)? aoAbrirFracao;
 
   /// Vindo do "ver frações disponíveis" de Em comercialização: a lista abre
   /// já filtrada pelas disponíveis, como o ?fracoes=disponiveis do site. Sem
@@ -439,9 +443,13 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
   }
 
   Widget _cartaoFracao(ProjectFraction f, bool mostrarPiso) {
+    final abrir = widget.aoAbrirFracao;
     return CoCard(
       margin: const EdgeInsets.only(bottom: COTokens.space2),
       padding: const EdgeInsets.all(COTokens.space4),
+      // Tocar abre a ficha da fração (como clicar numa linha da tabela do
+      // site).
+      onTap: abrir == null ? null : () => abrir(f),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -501,6 +509,16 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
                 _parzinho('Varanda', '${Fracoes.numero(f.balconyArea!)} m²'),
             ],
           ),
+          if (abrir != null) ...[
+            const SizedBox(height: COTokens.space2),
+            Text(
+              'Ver ficha da fração →',
+              style: COText.small.copyWith(
+                color: COColors.white,
+                fontWeight: COTokens.fwBold,
+              ),
+            ),
+          ],
           if (f.floorPlanUrl != null && f.floorPlanUrl!.isNotEmpty) ...[
             const SizedBox(height: COTokens.space2),
             InkWell(

@@ -23,6 +23,7 @@ import '../widgets/secao_video.dart';
 import '../widgets/visualizador_imagens.dart';
 import '../widgets/co_imagem.dart';
 import '../widgets/selo_venda.dart';
+import 'ficha_fracao_screen.dart';
 import '../widgets/seta_galeria.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
@@ -697,6 +698,15 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                             child: SecaoFracoes(
                               fracoes: project.fractions,
                               soDisponiveis: widget.abrirFracoesDisponiveis,
+                              aoAbrirFracao: (f) => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => FichaFracaoScreen(
+                                    projeto: project,
+                                    fracao: f,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ],

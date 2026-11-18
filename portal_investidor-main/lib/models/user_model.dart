@@ -385,6 +385,15 @@ class ProjectFraction {
   /// Planta da fração em PDF.
   final String? floorPlanUrl;
 
+  /// Lugares de estacionamento.
+  final int? parkingSpaces;
+
+  /// As imagens da planta, para a ficha da fração: o apartamento e onde fica
+  /// no piso. Vieram com a ficha da fração do site (novembro de 2026); quando
+  /// faltam, a ficha mostra o PDF.
+  final String? floorPlanImageUrl;
+  final String? floorLocationImageUrl;
+
   ProjectFraction({
     required this.fractionId,
     required this.projectId,
@@ -402,6 +411,9 @@ class ProjectFraction {
     this.floor,
     this.orientation,
     this.floorPlanUrl,
+    this.parkingSpaces,
+    this.floorPlanImageUrl,
+    this.floorLocationImageUrl,
   });
 
   bool get disponivel => status.toLowerCase().startsWith('dispon');
@@ -427,6 +439,9 @@ class ProjectFraction {
       floor: json['floor']?.toString(),
       orientation: json['orientation']?.toString(),
       floorPlanUrl: _ficheiro(json['floorPlanUrl']),
+      parkingSpaces: int.tryParse(json['parkingSpaces']?.toString() ?? ''),
+      floorPlanImageUrl: _ficheiro(json['floorPlanImageUrl']),
+      floorLocationImageUrl: _ficheiro(json['floorLocationImageUrl']),
     );
   }
 }

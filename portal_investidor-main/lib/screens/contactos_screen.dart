@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../config/empresa.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../widgets/co_card.dart';
@@ -27,14 +28,13 @@ class ContactosScreen extends StatefulWidget {
 }
 
 class _ContactosScreenState extends State<ContactosScreen> {
-  static const String _telefone = '+351912923952';
-  static const String _telefoneVisivel = '+351 912 923 952';
-
-  /// O wa.me exige o número sem "+" nem espaços.
-  static const String _whatsapp = 'https://wa.me/351912923952';
-  static const String _email = 'geral@cleveroption.pt';
-  static const String _morada =
-      'Via Eng. Edgar Cardoso 23, 5.º D, Vila Nova de Gaia';
+  // Os contactos estão em config/empresa.dart, que a ficha da fração também
+  // usa.
+  static const String _telefone = Empresa.telefone;
+  static const String _telefoneVisivel = Empresa.telefoneVisivel;
+  static const String _whatsapp = Empresa.whatsapp;
+  static const String _email = Empresa.email;
+  static const String _morada = Empresa.morada;
   static const String _formulario = 'https://odoo.cleveroption.pt/contactus';
 
   /// Link para a Política de Privacidade do site.

@@ -457,6 +457,10 @@ class DadosDeExemplo {
           'floor': 'R/C',
           'orientation': 'Nascente',
           'floorPlanUrl': 'https://exemplo.pt/plantas/a.pdf',
+          // Os campos da ficha da fração: lugares e as imagens da planta.
+          'parkingSpaces': 1,
+          'floorPlanImageUrl': _foto2,
+          'floorLocationImageUrl': _foto3,
         },
         {
           'fractionId': 2,
