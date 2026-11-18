@@ -127,10 +127,7 @@ void main() async {
   };
 
   // Notificações push. Sem google-services.json fica desligado sem erro.
-  await NotificacoesPush.iniciar(
-    navigatorKey: navigatorKey,
-    messengerKey: messengerKey,
-  );
+  await NotificacoesPush.iniciar(navigatorKey: navigatorKey);
 
   runApp(
     ChangeNotifierProvider(

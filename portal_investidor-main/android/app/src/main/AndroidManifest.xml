@@ -24,6 +24,12 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notificacao" />
+        <!-- O canal "avisos" é criado pela app (NotificacoesPush) com
+             importância alta: som e cartão no topo do ecrã. Sem isto, o
+             Firebase usava o canal "Diversos", que chega calado e sem cartão. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="avisos" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

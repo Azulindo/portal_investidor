@@ -7,7 +7,7 @@ import '../theme/co_tokens.dart';
 import '../utils/tempo.dart';
 import '../utils/ui_helpers.dart';
 import '../widgets/co_card.dart';
-import 'project_details_screen.dart';
+import '../utils/destino_notificacao.dart';
 
 /// A lista de notificacoes — o que o sininho abre.
 ///
@@ -113,20 +113,16 @@ class _NotificacoesScreenState extends State<NotificacoesScreen> {
     _marcarLida(n);
 
     // O href da API e um caminho do site ("/empreendimento?projectId=1") e as
-    // rotas da app nao sao essas. O que serve e o projectId.
-    final id = n.projectId;
-    if (id == null) return;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ProjectDetailsScreen(
-          projectId: id,
-          heroTag: 'notificacao-${n.id}',
-          initialImageUrl: '',
-        ),
-      ),
+    // rotas da app nao sao essas. O destino sai do projectId e do tipo, igual
+    // ao das notificacoes push.
+    final destino = destinoDaNotificacao(
+      tipo: n.tipo,
+      projectId: n.projectId,
+      notificationId: n.id,
     );
+    if (destino == null) return;
+
+    Navigator.push(context, MaterialPageRoute(builder: (_) => destino));
   }
 
   @override
@@ -290,7 +286,9 @@ class _Cartao extends StatelessWidget {
               ],
             ),
           ),
-          if (n.projectId != null)
+          // A seta so aparece quando tocar leva a algum lado.
+          if (destinoDaNotificacao(tipo: n.tipo, projectId: n.projectId) !=
+              null)
             const Padding(
               padding: EdgeInsets.only(left: COTokens.space2, top: 2),
               child: Icon(

@@ -128,8 +128,8 @@ class NotificacoesResposta {
   }
 }
 
-/// Para onde leva quem toca numa notificacao push.
-enum DestinoPush { empreendimento, notificacoes }
+/// Para onde leva quem toca: ver lib/utils/destino_notificacao.dart, que e o
+/// mesmo para a lista do sininho e para as notificacoes push.
 
 /// O que vem no `data` de uma notificacao push (ver a seccao 7 do
 /// API_CONTRACT.md). O FCM obriga a que tudo venha em texto, por isso os
@@ -157,10 +157,4 @@ class NotificacaoPush {
       projectId: inteiro('projectId'),
     );
   }
-
-  /// O mesmo que tocar na notificacao dentro da app: com empreendimento,
-  /// abre-o; sem ele, abre a lista, para a pessoa ver o que era.
-  DestinoPush get destino => projectId != null
-      ? DestinoPush.empreendimento
-      : DestinoPush.notificacoes;
 }
