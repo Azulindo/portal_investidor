@@ -146,6 +146,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           onPressed: () => Scaffold.of(context).openDrawer(),
                         ),
                       ),
+                      // O logótipo no topo do painel, que é o primeiro ecrã
+                      // depois de entrar. Fica preso à barra, por isso vê-se
+                      // sempre, mesmo depois de descer.
+                      centerTitle: true,
+                      title: Image.asset(
+                        'assets/images/logo.png',
+                        height: 30,
+                        fit: BoxFit.contain,
+                        semanticLabel: 'Clever Option',
+                      ),
                       actions: [
                         const SinoNotificacoes(),
                         // As faturas estavam a dois toques, dentro do menu

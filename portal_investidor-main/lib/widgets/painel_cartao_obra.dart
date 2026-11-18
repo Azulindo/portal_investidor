@@ -156,7 +156,12 @@ class ObraCardWidget extends StatelessWidget {
             const SizedBox(height: COTokens.space6),
             Text('ESTADO DA OBRA', style: Claro.seccao),
             const SizedBox(height: COTokens.space4),
-            ReguaObra(obra: obra),
+            ReguaObra(
+              obra: obra,
+              aoTocarNaFoto: obra.temPagina
+                  ? () => _abrirEmpreendimento(context)
+                  : null,
+            ),
           ],
           const SizedBox(height: COTokens.space6),
           const Divider(height: 1, color: COColors.bordaClara),
@@ -194,12 +199,17 @@ class ObraCardWidget extends StatelessWidget {
               child: url.isEmpty
                   ? _semImagem(Icons.image_outlined)
                   : GestureDetector(
-                      // Tocar na fotografia abre-a em grande.
-                      onTap: () => VisualizadorImagens.abrir(
-                        context,
-                        imagens: [url],
-                        legendas: [obra.title],
-                      ),
+                      // A fotografia leva ao empreendimento, onde as
+                      // imagens se veem em grande e com as outras. Só um
+                      // empreendimento sem página (só de historial) a abre
+                      // sozinha.
+                      onTap: obra.temPagina
+                          ? () => _abrirEmpreendimento(context)
+                          : () => VisualizadorImagens.abrir(
+                                context,
+                                imagens: [url],
+                                legendas: [obra.title],
+                              ),
                       child: CoImagem(
                         url,
                         altura: 200,
@@ -261,9 +271,13 @@ class ObraCardWidget extends StatelessWidget {
 /// bolinha e o nome — a card-timeline do site. Desliza para o lado e abre
 /// centrada na fase em curso.
 class ReguaObra extends StatefulWidget {
-  const ReguaObra({super.key, required this.obra});
+  const ReguaObra({super.key, required this.obra, this.aoTocarNaFoto});
 
   final ConstructionItem obra;
+
+  /// O que faz tocar na fotografia de uma fase. No painel abre o
+  /// empreendimento; sem isto, abre a fotografia sozinha.
+  final VoidCallback? aoTocarNaFoto;
 
   @override
   State<ReguaObra> createState() => _ReguaObraState();
@@ -399,11 +413,12 @@ class _ReguaObraState extends State<ReguaObra> {
       child: url == null || url.isEmpty
           ? semFoto
           : GestureDetector(
-              onTap: () => VisualizadorImagens.abrir(
-                context,
-                imagens: [url],
-                legendas: [f.name],
-              ),
+              onTap: widget.aoTocarNaFoto ??
+                  () => VisualizadorImagens.abrir(
+                        context,
+                        imagens: [url],
+                        legendas: [f.name],
+                      ),
               child: CoImagem(url,
                   altura: 88, largura: double.infinity, erro: semFoto),
             ),
