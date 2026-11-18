@@ -541,6 +541,70 @@ Cada entrada: `id`, `name`, `projectName`, `fractions[]`, `amountTotal`,
 
 ---
 
+## 7. Notificações
+
+Todas com `Authorization: Bearer <token>`.
+
+### GET /notification
+As notificações visíveis para quem está ligado (as mesmas do sininho do
+site), da mais recente para a mais antiga, no máximo 30, mais a contagem de
+não lidas. Ver `NotificacoesResposta` em `lib/models`.
+
+### PUT /notification/{id}/read e PUT /notification/read-all
+Marcar como lida. Idempotente. Um id que não existe e um id que não é desta
+pessoa dão os dois 404.
+
+### POST /notification/device — registar o telemóvel para notificações push
+
+> Estado (17/11/2026): no `main` da API (`src/routes/notification.ts`,
+> `src/services/push.ts`, com testes em `src/tests/push.test.ts`). Não há
+> servidor de teste: corre em `https://api.cleveroption.pt/api`, por isso
+> uma notificação de teste criada no backoffice chega a clientes reais se a
+> audiência não for só a conta de teste.
+
+```json
+{ "token": "<token do FCM>", "platform": "android" }
+```
+`platform` é `android` ou `ios`. Responde **204**.
+- A app chama-o depois do login e sempre que o Firebase lhe der um token novo.
+- Se o token já existir, é atualizado e passa para o utilizador que fez o
+  pedido (troca de conta no mesmo telemóvel).
+- O token fica ligado à **sessão** em que foi registado: o `/auth/logout`
+  apaga-o sozinho, e só recebem push os telemóveis com sessão ativa (se a
+  sessão expirar ou a palavra-passe mudar, deixa de receber).
+
+### DELETE /notification/device — deixar de receber push neste telemóvel
+```json
+{ "token": "<token do FCM>" }
+```
+Responde **204**, também se o token não existir. Só apaga tokens do próprio
+utilizador. Com o logout a apagar o token sozinho, isto serve para um botão
+"desativar notificações" e não é obrigatório antes do logout.
+
+### O que chega à app numa notificação push (FCM)
+- `notification`: `title` e `body` da notificação (o `body` numa linha,
+  cortado a ~200 caracteres).
+- `data` (tudo em texto, como o FCM obriga):
+  - `notificationId` — o mesmo `id` do `GET /notification`; para marcar como
+    lida usa-se o `PUT /notification/{id}/read`.
+  - `type` — `obra` | `documento` | `comercial` | `geral`.
+  - `projectId` — só quando a notificação é de um empreendimento.
+
+Vão push todas as notificações, incluindo as automáticas ("a obra avançou",
+"o empreendimento está em comercialização", "a sua área de cliente está
+ativa"), para os mesmos destinatários do sininho. Se o envio falhar, a
+notificação é criada na mesma e fica só no log da API.
+
+**Os textos aparecem no ecrã bloqueado:** sem valores nem dados pessoais.
+
+Do lado do servidor: `firebase-admin` com `sendEachForMulticast` (lotes de
+500), credenciais pela variável `FIREBASE_SERVICE_ACCOUNT_FILE` (caminho do
+JSON da conta de serviço, fora do repositório). Sem ela, os endpoints
+funcionam e guardam os tokens, mas o envio fica desligado. Para os iPhones,
+a chave APNs da Apple tem de estar carregada no projeto do Firebase.
+
+---
+
 ## Endpoints Desativados
 
 Existem no código da API mas com as rotas **comentadas**
@@ -560,8 +624,6 @@ essa constante a `true`.
 
 - `POST /tickets` — criar ticket de suporte
 - `GET /tickets` — listar tickets do utilizador autenticado
-- `GET /notification` — notificações da empresa para o utilizador (ver
-  `docs/notificacoes-api.md` no repositório do site)
 
 Quando forem implementados, devem seguir o mesmo envelope `status` /
 `message` / `code` / `data` descrito acima, com `data` sempre um array

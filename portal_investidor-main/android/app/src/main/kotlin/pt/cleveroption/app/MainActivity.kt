@@ -1,4 +1,4 @@
-package com.cleveroption.portalinvestidor
+package pt.cleveroption.app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

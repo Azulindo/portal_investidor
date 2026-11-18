@@ -26,6 +26,14 @@
 # Guarde o .jks FORA da pasta do projeto, para nao haver hipotese de ir
 # parar ao repositorio.
 #
+# SE A APP FOR DISTRIBUIDA PELO SITE ANTES DA PLAY STORE
+# -----------------------------------------------------
+# Na Play Store, a app que chega aos telemoveis e assinada pela Google (Play
+# App Signing), nao por esta chave. Para quem instalou o APK do site poder
+# atualizar pela loja, ao criar a app na Play Console escolha carregar ESTA
+# chave como "chave de assinatura da app", em vez de deixar a Google gerar
+# uma nova. Ver loja\gerar_pacote.ps1 (opcao -Apk).
+#
 # ESTE FICHEIRO
 # -------------
 # O key.properties verdadeiro e o .jks estao no .gitignore e nao entram no

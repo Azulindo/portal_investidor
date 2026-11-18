@@ -54,6 +54,8 @@ class SecaoLocalizacao extends StatelessWidget {
               options: MapOptions(
                 initialCenter: ponto,
                 initialZoom: 15,
+                minZoom: Mapa.zoomMinimo,
+                maxZoom: Mapa.zoomMaximo,
                 // Só se mexe com dois dedos. O mapa está a meio de uma página
                 // que se rola, e com o arrasto de um dedo ligado quem descia a
                 // página com o dedo por cima do mapa arrastava o mapa — o

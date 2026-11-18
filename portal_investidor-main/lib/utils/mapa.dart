@@ -40,6 +40,15 @@ class Mapa {
   /// mapa carimbado.
   static const String _urlOsm = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
+  /// Limites do zoom, para os dois mapas da app (MapOptions minZoom/maxZoom).
+  ///
+  /// Sem eles dava para aproximar além do que as telas têm (o [TileLayer]
+  /// abaixo vai até 19) e o mapa desaparecia, ficava só o fundo cinzento com
+  /// os pinos por cima. 18 já mostra a rua e o prédio; 9 ainda mostra o Porto
+  /// e arredores. Mais longe do que isso não há nada da Cleveroption para ver.
+  static const double zoomMinimo = 9;
+  static const double zoomMaximo = 18;
+
   static TileLayer telas(BuildContext context) {
     return TileLayer(
       urlTemplate: temChave ? _urlCarto : _urlOsm,
@@ -47,7 +56,7 @@ class Mapa {
       subdomains: temChave ? const ['a', 'b', 'c', 'd'] : const [],
       retinaMode: temChave && RetinaMode.isHighDensity(context),
       maxZoom: 19,
-      userAgentPackageName: 'com.cleveroption.portalinvestidor',
+      userAgentPackageName: 'pt.cleveroption.app',
     );
   }
 

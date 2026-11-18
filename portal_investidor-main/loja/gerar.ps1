@@ -62,6 +62,11 @@ Desenhar (Join-Path $icon 'icone.png') $simbolo 1024 1024 0.58 '#002847'
 # garantido; com mais do que isto o C perdia as pontas nalguns telemoveis.
 Desenhar (Join-Path $icon 'icone_frente.png') $simbolo 1024 1024 0.50 'transparent'
 
+# O simbolo dentro dos pinos do mapa: branco, transparente, quase a ocupar o
+# quadrado. Era um .avif, que o Flutter nao desenha em todo o lado (no browser
+# os pinos ficavam vazios); PNG desenha em todos.
+Desenhar (Join-Path $raiz 'assets\images\simbolo_mapa.png') $simbolo 128 128 0.92 'transparent'
+
 # Fichas das lojas.
 Desenhar (Join-Path $loja 'icone_app_store_1024.png') $simbolo 1024 1024 0.58 '#002847'
 Desenhar (Join-Path $loja 'icone_play_512.png') $simbolo 512 512 0.58 '#002847'

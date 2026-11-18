@@ -27,6 +27,11 @@ class _MapScreenState extends State<MapScreen> {
   List<dynamic> _projects = [];
   bool _loading = true;
   String? _error;
+  // A legenda serve de filtro: só aparecem os pinos dos grupos ligados.
+  Set<String> _gruposLigados = Portfolio.grupos.toSet();
+
+  bool _passaNoFiltro(dynamic project) => _gruposLigados
+      .contains(Portfolio.grupoDeEstado(project['status'] as String?));
 
   @override
   void initState() {
@@ -63,6 +68,7 @@ class _MapScreenState extends State<MapScreen> {
       // A API manda 0/0 quando o projeto não tem morada marcada. Sem este
       // salto, esses projetos apareciam ao largo de África.
       if (lat == null || lng == null || (lat == 0 && lng == 0)) continue;
+      if (!_passaNoFiltro(project)) continue;
       final status = project['status'] as String?;
       final color = _corPorStatus(status);
       final nome = project['name'] as String? ?? 'Projeto';
@@ -245,6 +251,8 @@ class _MapScreenState extends State<MapScreen> {
       final lng = (project['longitude'] as num?)?.toDouble();
       // Mesmo critério dos marcadores: 0/0 é "sem morada", não é o Atlântico.
       if (lat == null || lng == null || (lat == 0 && lng == 0)) continue;
+      // Uma seta para um pino escondido pelo filtro levava a um sítio vazio.
+      if (!_passaNoFiltro(project)) continue;
 
       final ponto = LatLng(lat, lng);
       final pos = camera.latLngToScreenOffset(ponto);
@@ -328,6 +336,8 @@ class _MapScreenState extends State<MapScreen> {
                             options: MapOptions(
                               initialCenter: const LatLng(41.13, -8.61),
                               initialZoom: 12.5,
+                              minZoom: Mapa.zoomMinimo,
+                              maxZoom: Mapa.zoomMaximo,
                               onMapReady: () => setState(() => _mapReady = true),
                               // Recalcula os indicadores de borda sempre que o mapa
                               // se move, faz zoom ou roda.
@@ -390,51 +400,101 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  /// A legenda das cores, que é também o filtro do mapa: tocar num estado
+  /// mostra ou esconde os pinos desse estado.
   Widget _buildLegenda() {
-    return Container(
+    // Material e não Container com cor: com a cor num Container por cima, o
+    // efeito do toque desenhava-se por baixo e não se via.
+    return Material(
       color: COColors.brand900,
-      padding: const EdgeInsets.symmetric(horizontal: COTokens.space4, vertical: COTokens.space2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          // Sem o "Em": "Em desenvolvimento" não cabia num terço do ecrã e
-          // ficava cortado. São as palavras que a etiqueta dos cartões usa.
-          for (final estado in ['Desenvolvimento', 'Construção', 'Concluído'])
-            Flexible(
-              child: _legendaItem(
-                UIHelpers.corDoGrupo(estado, fundoClaro: true),
-                estado,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: COTokens.space2, vertical: 4),
+        child: Row(
+          children: [
+            // Sem o "Em": "Em desenvolvimento" não cabia num terço do ecrã e
+            // ficava cortado. São as palavras que a etiqueta dos cartões usa.
+            for (final (grupo, estado) in const [
+              ('desenvolvimento', 'Desenvolvimento'),
+              ('ativo', 'Construção'),
+              ('concluido', 'Concluído'),
+            ])
+              // Largura proporcional ao texto: em terços iguais, a moldura
+              // de botão comia o espaço e "Desenvolvimento" ficava cortado.
+              Expanded(
+                flex: estado.length + 4,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: _legendaItem(
+                    grupo,
+                    UIHelpers.corDoGrupo(estado, fundoClaro: true),
+                    estado,
+                  ),
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _legendaItem(Color cor, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          // A bolinha tem a cor exata do pino, e a dos projetos em construção
-          // é o navy da barra: sem a borda ficava invisível.
-          decoration: BoxDecoration(
-            color: cor,
-            shape: BoxShape.circle,
-            border: Border.all(color: COColors.brand300, width: 1.5),
+  Widget _legendaItem(String grupo, Color cor, String label) {
+    final ligado = _gruposLigados.contains(grupo);
+    return Semantics(
+      button: true,
+      toggled: ligado,
+      label: '$label no mapa',
+      excludeSemantics: true,
+      child: InkWell(
+        key: ValueKey('filtro-$grupo'),
+        borderRadius: BorderRadius.circular(COTokens.radiusSm),
+        onTap: () => setState(() {
+          _gruposLigados = Portfolio.alternarGrupo(_gruposLigados, grupo);
+        }),
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          // Desligado fica esbatido, mas ainda legível: continua a ser um
+          // botão que se pode voltar a tocar.
+          opacity: ligado ? 1 : 0.6,
+          child: Container(
+            // 44px de altura: o mínimo para se acertar com o dedo.
+            constraints: const BoxConstraints(minHeight: 44),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(COTokens.radiusSm),
+              border: Border.all(
+                color: ligado ? COColors.brand300 : Colors.transparent,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  // A bolinha tem a cor exata do pino, e a dos projetos em
+                  // construção é o navy da barra: sem a borda ficava
+                  // invisível. Não muda quando se desliga (a de construção
+                  // já parece vazia); o estado vê-se pela moldura e pelo
+                  // esbatido.
+                  decoration: BoxDecoration(
+                    color: cor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: COColors.brand300, width: 1.5),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: const TextStyle(color: COColors.white, fontSize: 11),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(width: 5),
-        Flexible(
-          child: Text(
-            label,
-            style: const TextStyle(color: COColors.white, fontSize: 11),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -460,13 +520,12 @@ class _LogoPin extends StatelessWidget {
             child: SizedBox(
               width: 24,
               height: 24,
-              // Pintado de branco. O simbolo vem em navy, que e a cor dos
-              // pinos dos projetos em desenvolvimento: ficava escuro sobre
-              // escuro e nao se lia. A branco le-se nas tres cores de estado.
+              // Branco, para se ler nas três cores de estado. É um PNG gerado
+              // do logótipo em vetor (loja/gerar.ps1): o .avif que estava
+              // aqui não aparecia no browser e os pinos ficavam vazios.
               child: Image.asset(
-                'assets/images/logo_simples_mapa.avif',
+                'assets/images/simbolo_mapa.png',
                 fit: BoxFit.contain,
-                color: COColors.white,
               ),
             ),
           ),

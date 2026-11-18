@@ -21,7 +21,7 @@ if (chaveFicheiro.exists()) {
 val temChaveDeAssinatura = chaveProps.getProperty("storeFile") != null
 
 android {
-    namespace = "com.cleveroption.portalinvestidor"
+    namespace = "pt.cleveroption.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -37,7 +37,7 @@ android {
     defaultConfig {
         // Definitivo: mudar isto depois de publicar faz uma app nova na loja,
         // com instalacoes a zero e sem atualizacoes para quem ja a tinha.
-        applicationId = "com.cleveroption.portalinvestidor"
+        applicationId = "pt.cleveroption.app"
         minSdk = flutter.minSdkVersion
         // Fixo, e nao herdado do Flutter instalado: a Google exige 36 desde
         // agosto de 2026, e uma atualizacao do Flutter nao deve poder baixa-lo

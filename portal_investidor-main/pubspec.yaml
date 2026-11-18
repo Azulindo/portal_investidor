@@ -71,7 +71,7 @@ flutter:
 
   assets:
     - assets/images/logo.png
-    - assets/images/logo_simples_mapa.avif
+    - assets/images/simbolo_mapa.png
 
   fonts:
     - family: MonaSans

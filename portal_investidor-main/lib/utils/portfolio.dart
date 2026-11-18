@@ -30,6 +30,19 @@ class Portfolio {
   static bool estaConcluido(String? status) =>
       grupoDeEstado(status) == 'concluido';
 
+  /// Os três grupos, pela ordem em que a obra os atravessa.
+  static const grupos = ['desenvolvimento', 'ativo', 'concluido'];
+
+  /// Liga ou desliga um grupo num filtro (a legenda do mapa).
+  ///
+  /// Desligar o último não deixa o filtro vazio: volta a mostrar todos. Um
+  /// mapa sem pinos parece avariado, e não há outra forma de "limpar" o filtro.
+  static Set<String> alternarGrupo(Set<String> ligados, String grupo) {
+    final novo = {...ligados};
+    if (!novo.remove(grupo)) novo.add(grupo);
+    return novo.isEmpty ? grupos.toSet() : novo;
+  }
+
   // ── Leitura dos campos ────────────────────────────────────
 
   static String texto(Map p, String chave) => p[chave]?.toString() ?? '';

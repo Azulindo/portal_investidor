@@ -823,6 +823,56 @@ class ApiService {
     );
   }
 
+  /// POST /api/notification/device
+  ///
+  /// Regista este telemovel para receber notificacoes push. Chama-se depois
+  /// do login e sempre que o Firebase der um token novo. O token fica ligado
+  /// a sessao: o /auth/logout apaga-o sozinho.
+  ///
+  /// [plataforma] e 'android' ou 'ios'.
+  Future<void> registarDispositivo({
+    required String token,
+    required String plataforma,
+  }) async {
+    if (ApiConfig.useMock) return;
+    await _pedidoDispositivo(
+      'POST',
+      jsonEncode({'token': token, 'platform': plataforma}),
+    );
+  }
+
+  /// DELETE /api/notification/device
+  ///
+  /// Deixa de receber push neste telemovel. Nao e preciso antes do logout
+  /// (a API ja o faz); serve para um "desativar notificacoes".
+  Future<void> removerDispositivo(String token) async {
+    if (ApiConfig.useMock) return;
+    await _pedidoDispositivo('DELETE', jsonEncode({'token': token}));
+  }
+
+  Future<void> _pedidoDispositivo(String metodo, String corpo) async {
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.notificationDeviceEndpoint}',
+    );
+    try {
+      final pedido = http.Request(metodo, url)
+        ..headers.addAll(await _authHeaders())
+        ..headers['Content-Type'] = 'application/json'
+        ..body = corpo;
+      final response = await http.Response.fromStream(
+        await pedido.send().timeout(ApiConfig.connectionTimeout),
+      );
+      if (response.statusCode == 200 || response.statusCode == 204) return;
+      _falhou(response);
+    } on TimeoutException catch (_) {
+      throw ApiException('O servidor demorou muito tempo a responder.');
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException('Erro de ligação à rede.');
+    }
+  }
+
   Future<void> _marcarLidas(Uri url) async {
     try {
       final response = await http

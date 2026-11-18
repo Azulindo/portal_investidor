@@ -76,9 +76,12 @@ opcional em produção: sem ela o mapa cai no OpenStreetMap.
   `flutter_secure_storage` não arranca numa build de release para web.
 - **Biometria adiada** por decisão do Azulindo, apesar de o `local_auth` estar
   no pubspec.
-- **O identificador do pacote é `com.cleveroption.portalinvestidor`**, igual no
-  Android e no iOS. Mudá-lo depois de a app estar publicada é publicar uma app
-  nova, com instalações a zero.
+- **O identificador do pacote é `pt.cleveroption.app`**, igual no Android e no
+  iOS (o domínio é cleveroption.pt, ao contrário). Até 18/11/2026 foi
+  `com.cleveroption.portalinvestidor`; mudou antes de criar o projeto Firebase
+  e antes de qualquer publicação. Mudá-lo depois de a app estar publicada é
+  publicar uma app nova, com instalações a zero, e o projeto Firebase está
+  registado com este nome.
 - **O `targetSdk` está fixo em 36**, e não herdado do Flutter instalado: é o
   que a Google exige, e uma atualização do Flutter não deve poder baixá-lo sem
   ninguém dar por isso.

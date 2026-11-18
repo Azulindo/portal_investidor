@@ -103,6 +103,9 @@ class ApiConfig {
   /// estes caminhos primeiro e a API seguiu-os.
   static const String notificationsEndpoint = '/notification';
   static String markNotificationReadEndpoint(int id) => '/notification/$id/read';
+  /// POST regista o telemovel para push, DELETE deixa de receber. Ver a
+  /// seccao 7 do API_CONTRACT.md.
+  static const String notificationDeviceEndpoint = '/notification/device';
   static const String markAllNotificationsReadEndpoint =
       '/notification/read-all';
 
