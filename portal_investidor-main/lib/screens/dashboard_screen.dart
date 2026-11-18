@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../services/aviso_versao.dart';
 import '../services/notificacoes_push.dart';
 import '../widgets/co_drawer.dart';
+import '../widgets/efeitos.dart';
 import '../models/investidor_model.dart';
 import '../models/sale_order.dart';
 import '../models/user_model.dart';
@@ -174,32 +175,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                     SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          COTokens.space4,
-                          COTokens.space2,
-                          COTokens.space4,
-                          COTokens.space8,
-                        ),
-                        child: CabecalhoPainel(
-                          nome: user.name,
-                          obras: obras,
-                          encomendas: encomendas,
-                          aCarregar: aCarregar,
-                          aoTocarEmpreendimento: _irParaEmpreendimento,
+                      // Ao descer, o topo fica para trás mais devagar e
+                      // desvanece, e a folha clara passa-lhe por cima.
+                      child: Paralaxe(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            COTokens.space4,
+                            COTokens.space2,
+                            COTokens.space4,
+                            COTokens.space8,
+                          ),
+                          child: CabecalhoPainel(
+                            nome: user.name,
+                            obras: obras,
+                            encomendas: encomendas,
+                            aCarregar: aCarregar,
+                            aoTocarEmpreendimento: _irParaEmpreendimento,
+                          ),
                         ),
                       ),
                     ),
                     SliverFillRemaining(
                       hasScrollBody: false,
-                      child: Container(
-                        color: COColors.fundoClaro,
-                        padding: const EdgeInsets.fromLTRB(
-                          COTokens.space4,
-                          COTokens.space6,
-                          COTokens.space4,
-                          40,
-                        ),
+                      child: FolhaClara(
                         child: obras.isEmpty
                             ? const Padding(
                                 padding: EdgeInsets.symmetric(
@@ -218,19 +216,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             : Column(
                                 children: [
                                   for (var i = 0; i < obras.length; i++)
-                                    ObraCardWidget(
-                                      marcador: SizedBox(
-                                        key: _chaveDe(obras[i]),
-                                        height: 1,
+                                    Revelar(
+                                      child: ObraCardWidget(
+                                        marcador: SizedBox(
+                                          key: _chaveDe(obras[i]),
+                                          height: 1,
+                                        ),
+                                        obra: obras[i],
+                                        heroTag:
+                                            'hero-dashboard-${obras[i].id}-$i',
+                                        encomendas: Carteira.doEmpreendimento(
+                                          obras[i].title,
+                                          encomendas,
+                                        ),
+                                        aCarregarEncomendas: aCarregar,
                                       ),
-                                      obra: obras[i],
-                                      heroTag:
-                                          'hero-dashboard-${obras[i].id}-$i',
-                                      encomendas: Carteira.doEmpreendimento(
-                                        obras[i].title,
-                                        encomendas,
-                                      ),
-                                      aCarregarEncomendas: aCarregar,
                                     ),
                                 ],
                               ),

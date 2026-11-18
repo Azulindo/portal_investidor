@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/user_model.dart';
 import '../theme/co_colors.dart';
+import '../theme/tinta.dart';
 import '../theme/co_tokens.dart';
 import 'co_card.dart';
 
@@ -36,8 +37,8 @@ class SecaoLugar extends StatelessWidget {
         if (info.zoneTitle?.trim().isNotEmpty ?? false) ...[
           Text(
             info.zoneTitle!,
-            style: const TextStyle(
-              color: COColors.white,
+            style: TextStyle(
+              color: context.cor(COColors.white),
               fontSize: 16,
               fontWeight: COTokens.fwBold,
             ),
@@ -47,12 +48,12 @@ class SecaoLugar extends StatelessWidget {
         if (info.zoneDescription?.trim().isNotEmpty ?? false)
           Text(
             info.zoneDescription!,
-            style: COText.body.copyWith(color: COColors.brand300),
+            style: context.estilo(COText.body).copyWith(color: context.cor(COColors.brand300)),
           ),
 
         if (info.zoneNearbyInfrastructures.isNotEmpty) ...[
           const SizedBox(height: COTokens.space6),
-          _lista(
+          _lista(context, 
             titulo: 'Na zona',
             itens: [
               for (final nome in info.zoneNearbyInfrastructures)
@@ -63,7 +64,7 @@ class SecaoLugar extends StatelessWidget {
 
         if (info.zoneNearbyLocations.isNotEmpty) ...[
           const SizedBox(height: COTokens.space6),
-          _lista(
+          _lista(context, 
             titulo: 'De automóvel',
             itens: [
               for (final l in info.zoneNearbyLocations)
@@ -76,7 +77,7 @@ class SecaoLugar extends StatelessWidget {
     );
   }
 
-  Widget _lista({
+  Widget _lista(BuildContext context, {
     required String titulo,
     required List<({String nome, String? meta})> itens,
     String? nota,
@@ -94,7 +95,7 @@ class SecaoLugar extends StatelessWidget {
                   ? null
                   : Border(
                       bottom: BorderSide(
-                        color: COColors.brand700,
+                        color: context.cor(COColors.brand700),
                         width: COTokens.borderWidth,
                       ),
                     ),
@@ -102,12 +103,12 @@ class SecaoLugar extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(itens[i].nome, style: COText.small)),
+                Expanded(child: Text(itens[i].nome, style: context.estilo(COText.small))),
                 if (itens[i].meta != null) ...[
                   const SizedBox(width: COTokens.space4),
                   Text(
                     itens[i].meta!,
-                    style: COText.caption.copyWith(color: COColors.brand300),
+                    style: context.estilo(COText.caption).copyWith(color: context.cor(COColors.brand300)),
                   ),
                 ],
               ],
@@ -115,7 +116,7 @@ class SecaoLugar extends StatelessWidget {
           ),
         if (nota != null) ...[
           const SizedBox(height: COTokens.space2),
-          Text(nota, style: COText.caption),
+          Text(nota, style: context.estilo(COText.caption)),
         ],
       ],
     );

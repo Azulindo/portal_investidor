@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/user_model.dart';
 import '../theme/co_colors.dart';
+import '../theme/tinta.dart';
 import '../theme/co_tokens.dart';
 import 'co_card.dart';
 import 'co_imagem.dart';
@@ -42,7 +43,7 @@ class _SecaoAcabamentosState extends State<SecaoAcabamentos> {
           'alterações decorrentes do projeto, da execução da obra ou da '
           'disponibilidade dos fornecedores. As substituições, a acontecerem, '
           'respeitam os padrões de qualidade estabelecidos.',
-          style: COText.caption,
+          style: context.estilo(COText.caption),
         ),
       ],
     );
@@ -66,7 +67,7 @@ class _SecaoAcabamentosState extends State<SecaoAcabamentos> {
                   Expanded(
                     child: Text(
                       cat.categoryName,
-                      style: COText.body.copyWith(
+                      style: context.estilo(COText.body).copyWith(
                         fontWeight: COTokens.fwMedium,
                         fontSize: 15,
                       ),
@@ -75,10 +76,10 @@ class _SecaoAcabamentosState extends State<SecaoAcabamentos> {
                   AnimatedRotation(
                     turns: aberta ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
-                    child: const Icon(
+                    child: Icon(
                       Icons.expand_more,
                       size: 18,
-                      color: COColors.brand300,
+                      color: context.cor(COColors.brand300),
                     ),
                   ),
                 ],
@@ -110,16 +111,16 @@ class _SecaoAcabamentosState extends State<SecaoAcabamentos> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Divider(color: COColors.brand700, height: COTokens.space4),
+          Divider(color: context.cor(COColors.brand700), height: COTokens.space4),
           for (final item in cat.details)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('–', style: COText.small),
+                  Text('–', style: context.estilo(COText.small)),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(item, style: COText.small)),
+                  Expanded(child: Text(item, style: context.estilo(COText.small))),
                 ],
               ),
             ),

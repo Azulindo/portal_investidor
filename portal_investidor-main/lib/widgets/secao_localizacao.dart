@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/user_model.dart';
 import '../theme/co_colors.dart';
+import '../theme/tinta.dart';
 import '../theme/co_tokens.dart';
 import '../utils/mapa.dart';
 import 'co_card.dart';
@@ -103,17 +104,17 @@ class SecaoLocalizacao extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.directions_outlined,
               size: 14,
-              color: COColors.brand300,
+              color: context.cor(COColors.brand300),
             ),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 morada.isEmpty ? 'Abrir direções' : morada,
-                style: COText.small.copyWith(
-                  color: COColors.brand300,
+                style: context.estilo(COText.small).copyWith(
+                  color: context.cor(COColors.brand300),
                   fontWeight: COTokens.fwMedium,
                 ),
               ),
@@ -147,9 +148,9 @@ class SecaoLocalizacao extends StatelessWidget {
     }
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Não foi possível abrir o mapa.'),
-          backgroundColor: COColors.brand700,
+          backgroundColor: context.cor(COColors.brand700),
         ),
       );
     }
@@ -168,9 +169,9 @@ class _Marcador extends StatelessWidget {
         width: 20,
         height: 20,
         decoration: BoxDecoration(
-          color: COColors.brand900,
+          color: context.cor(COColors.brand900),
           shape: BoxShape.circle,
-          border: Border.all(color: COColors.white, width: 3),
+          border: Border.all(color: context.cor(COColors.white), width: 3),
         ),
       ),
     );

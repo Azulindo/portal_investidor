@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/user_model.dart';
 import '../theme/co_colors.dart';
+import '../theme/tinta.dart';
 import '../theme/co_tokens.dart';
 import 'co_card.dart';
 import 'co_imagem.dart';
@@ -78,13 +79,13 @@ class _EtapasHorizontaisState extends State<EtapasHorizontais> {
         const SizedBox(height: COTokens.space4),
         Text(
           'Fase ${_escolhida + 1} de ${widget.etapas.length}',
-          style: COText.caption,
+          style: context.estilo(COText.caption),
         ),
         const SizedBox(height: 2),
         Text(
           etapa.name,
-          style: const TextStyle(
-            color: COColors.white,
+          style: TextStyle(
+            color: context.cor(COColors.white),
             fontSize: 16,
             fontWeight: COTokens.fwBold,
           ),
@@ -93,7 +94,7 @@ class _EtapasHorizontaisState extends State<EtapasHorizontais> {
           const SizedBox(height: 4),
           Text(
             etapa.description,
-            style: const TextStyle(color: COColors.brand300, fontSize: 14, height: 1.5),
+            style: TextStyle(color: context.cor(COColors.brand300), fontSize: 14, height: 1.5),
           ),
         ],
         if (temFoto) ...[
@@ -108,9 +109,9 @@ class _EtapasHorizontaisState extends State<EtapasHorizontais> {
                 largura: double.infinity,
                 erro: Container(
                   height: 160,
-                  color: COColors.brand700,
-                  child: const Icon(Icons.broken_image,
-                      color: COColors.brand300, size: 24),
+                  color: context.cor(COColors.brand700),
+                  child: Icon(Icons.broken_image,
+                      color: context.cor(COColors.brand300), size: 24),
                 ),
               ),
             ),
@@ -131,8 +132,8 @@ class _EtapasHorizontaisState extends State<EtapasHorizontais> {
         final escolhida = i == _escolhida;
 
         final cor = atual
-            ? COColors.white
-            : (feita ? COColors.brand300 : COColors.brand700);
+            ? context.cor(COColors.white)
+            : (feita ? context.cor(COColors.brand300) : context.cor(COColors.brand700));
 
         return Expanded(
           child: Semantics(
@@ -157,7 +158,7 @@ class _EtapasHorizontaisState extends State<EtapasHorizontais> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: escolhida
-                            ? Border.all(color: COColors.brand300, width: 1)
+                            ? Border.all(color: context.cor(COColors.brand300), width: 1)
                             : null,
                       ),
                       child: Container(
@@ -189,7 +190,7 @@ class _EtapasHorizontaisState extends State<EtapasHorizontais> {
     if (!visivel) return const SizedBox();
     return Container(
       height: 1,
-      color: feita ? COColors.brand300 : COColors.brand700,
+      color: feita ? context.cor(COColors.brand300) : context.cor(COColors.brand700),
     );
   }
 }

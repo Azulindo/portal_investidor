@@ -4,6 +4,7 @@ import '../screens/portfolio_screen.dart';
 import '../screens/project_details_screen.dart';
 import '../services/api_service.dart';
 import '../theme/co_colors.dart';
+import '../theme/tinta.dart';
 import '../theme/co_tokens.dart';
 import '../utils/portfolio.dart';
 import '../utils/ui_helpers.dart';
@@ -164,14 +165,14 @@ class _SecaoOutrosEmpreendimentosState
                     if (cidade.isNotEmpty) ...[
                       // Era o nome da cidade em MAIUSCULAS. Num cartao
                       // pequeno isso ocupava o lugar do nome sem dizer mais.
-                      Text(cidade, style: COText.caption),
+                      Text(cidade, style: context.estilo(COText.caption)),
                       const SizedBox(height: 2),
                     ],
                     Expanded(
                       child: Text(
                         nome,
-                        style: const TextStyle(
-                          color: COColors.white,
+                        style: TextStyle(
+                          color: context.cor(COColors.white),
                           fontSize: 14,
                           fontWeight: COTokens.fwBold,
                           height: 1.25,
@@ -191,12 +192,12 @@ class _SecaoOutrosEmpreendimentosState
   }
 
   Widget _semImagem() {
-    return const ColoredBox(
-      color: COColors.brand700,
+    return ColoredBox(
+      color: context.cor(COColors.brand700),
       child: Center(
         child: Icon(
           Icons.image_not_supported_outlined,
-          color: COColors.neutral500,
+          color: context.cor(COColors.neutral500),
           size: 32,
         ),
       ),
@@ -218,8 +219,8 @@ class _SecaoOutrosEmpreendimentosState
         style: TextButton.styleFrom(padding: EdgeInsets.zero),
         child: Text(
           '$texto  →',
-          style: COText.small.copyWith(
-            color: COColors.brand300,
+          style: context.estilo(COText.small).copyWith(
+            color: context.cor(COColors.brand300),
             fontWeight: COTokens.fwMedium,
           ),
         ),

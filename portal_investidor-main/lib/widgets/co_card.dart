@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/co_colors.dart';
+import '../theme/tinta.dart';
 import '../theme/co_tokens.dart';
 
 /// O cartão da Cleveroption.
@@ -47,12 +48,12 @@ class CoCard extends StatelessWidget {
     return Container(
       margin: margin,
       decoration: BoxDecoration(
-        color: COColors.brand700.withValues(alpha: 0.28),
+        color: context.cor(COColors.brand700).withValues(alpha: 0.28),
         borderRadius: BorderRadius.circular(COTokens.radiusSm),
         border: Border.all(
           color: destacado
-              ? COColors.neutral500
-              : COColors.neutral500.withValues(alpha: 0.45),
+              ? context.cor(COColors.neutral500)
+              : context.cor(COColors.neutral500).withValues(alpha: 0.45),
           width: COTokens.borderWidth,
         ),
         // Sem sombra: o sistema pede contenção.
@@ -86,9 +87,26 @@ class CoTitulo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Na zona clara cada secção já está no seu cartão, por isso o título
+    // volta a ser a etiqueta em maiúsculas do site ("ESTADO DA OBRA"), igual
+    // à do painel.
+    if (Superficie.eClara(context)) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: espacoAbaixo),
+        child: Text(
+          texto.toUpperCase(),
+          style: const TextStyle(
+            color: COColors.brand900,
+            fontSize: 13,
+            fontWeight: COTokens.fwBold,
+            letterSpacing: 0.5,
+          ),
+        ),
+      );
+    }
     return Padding(
       padding: EdgeInsets.only(bottom: espacoAbaixo),
-      child: Text(texto, style: COText.h2.copyWith(fontSize: 18)),
+      child: Text(texto, style: context.estilo(COText.h2).copyWith(fontSize: 18)),
     );
   }
 }
@@ -106,7 +124,7 @@ class CoEtiqueta extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: espacoAbaixo),
-      child: Text(texto, style: COText.small),
+      child: Text(texto, style: context.estilo(COText.small)),
     );
   }
 }
@@ -125,12 +143,12 @@ class CoLinhaInfo extends StatelessWidget {
       padding: const EdgeInsets.only(top: 6),
       child: Row(
         children: [
-          Icon(icone, color: COColors.brand300, size: 14),
+          Icon(icone, color: context.cor(COColors.brand300), size: 14),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
               texto,
-              style: COText.small,
+              style: context.estilo(COText.small),
               overflow: TextOverflow.ellipsis,
             ),
           ),

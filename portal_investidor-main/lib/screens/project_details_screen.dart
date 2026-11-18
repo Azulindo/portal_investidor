@@ -9,6 +9,8 @@ import '../models/user_model.dart';
 import '../utils/ui_helpers.dart';
 import '../utils/video.dart';
 import '../widgets/co_card.dart';
+import '../theme/tinta.dart';
+import '../widgets/efeitos.dart';
 import '../widgets/etapas_horizontais.dart';
 import '../models/sale_order.dart';
 import '../utils/carteira.dart';
@@ -500,244 +502,241 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                   ),
 
                   // ===========================================
-                  // CONTEÚDO DO PROJETO — no mesmo scroll da imagem, para
-                  // o espaço que ela liberta ao subir ser aproveitado.
+                  // O TOPO — nome, morada e estado, ainda no navy, como a
+                  // faixa de cima do painel.
                   // ===========================================
-                  SliverPadding(
-                    padding: const EdgeInsets.all(COTokens.space6),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        Text(
-                          titulo,
-                          style: const TextStyle(
-                            color: COColors.white,
-                            fontSize: 24,
-                            fontWeight: COTokens.fwBold,
-                            height: 1.2,
-                          ),
-                        ),
-
-                        // Linha da propria empresa, quando o empreendimento
-                        // tem uma: vem do backoffice e e o que o site mostra
-                        // por baixo do nome.
-                        if (info.subtitle != null) ...[
-                          const SizedBox(height: 6),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        COTokens.space6,
+                        COTokens.space4,
+                        COTokens.space6,
+                        COTokens.space8,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            info.subtitle!,
+                            titulo,
                             style: const TextStyle(
-                              color: COColors.brand300,
-                              fontSize: 15,
-                              height: 1.3,
+                              color: COColors.white,
+                              fontSize: 24,
+                              fontWeight: COTokens.fwBold,
+                              height: 1.2,
                             ),
                           ),
-                        ],
-
-                        if (info.city.isNotEmpty ||
-                            info.address.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            [
-                              info.address,
-                              info.city,
-                            ].where((s) => s.isNotEmpty).join(', '),
-                            style: const TextStyle(
-                              color: COColors.neutral500,
-                              fontSize: 13,
+                          // Linha da propria empresa, quando o empreendimento
+                          // tem uma: vem do backoffice e e o que o site mostra
+                          // por baixo do nome.
+                          if (info.subtitle != null) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              info.subtitle!,
+                              style: const TextStyle(
+                                color: COColors.brand300,
+                                fontSize: 15,
+                                height: 1.3,
+                              ),
                             ),
-                          ),
-                        ],
-
-                        if (info.nFractions != null) ...[
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.apartment,
-                                color: COColors.neutral500,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                '${info.nFractions} frações',
-                                style: const TextStyle(
-                                  color: COColors.neutral500,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            UIHelpers.buildStatusBadge(status),
-                            if (status != 'Desenvolvimento')
-                              SeloVenda(forSale: info.forSale),
                           ],
-                        ),
-
-                        const SizedBox(height: COTokens.space6),
-
-                        const CoTitulo('Sobre o projeto'),
-                        const SizedBox(height: COTokens.space4),
-                        Text(
-                          descricao,
-                          style: const TextStyle(
-                            color: COColors.brand300,
-                            fontSize: 16,
-                            height: 1.6,
-                          ),
-                        ),
-
-                        // O LUGAR — a envolvente (campos zone* de
-                        // projectInfo). No site vem logo depois da
-                        // descrição, antes das galerias.
-                        if (temLugar) ...[
-                          const SizedBox(height: COTokens.space9),
-                          SecaoLugar(info: info),
-                        ],
-
-                        // GALERIA DA OBRA (imagens de categoria "obra").
-                        // No site vem antes da timeline, pela mesma razão:
-                        // vê-se a obra e depois lê-se em que fase está.
-                        if (project.imagensDeObra.isNotEmpty) ...[
-                          const SizedBox(height: COTokens.space9),
-                          SecaoGaleriaObra(imagens: project.imagensDeObra),
-                        ],
-
-                        const SizedBox(height: 32),
-
-                        // ETAPAS DO PROJETO (projectSteps)
-                        if (status == 'Desenvolvimento') ...[
-                          const CoTitulo('Etapas do desenvolvimento'),
-                          const Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
+                          if (info.city.isNotEmpty ||
+                              info.address.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              [
+                                info.address,
+                                info.city,
+                              ].where((s) => s.isNotEmpty).join(', '),
+                              style: const TextStyle(
+                                color: COColors.brand300,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                          if (info.nFractions != null) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.apartment,
+                                  color: COColors.brand300,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  '${info.nFractions} frações',
+                                  style: const TextStyle(
+                                    color: COColors.brand300,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
                             children: [
-                              Text(
-                                'Projeto em desenvolvimento.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: COColors.brand300,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              Text(
-                                'Timeline disponível em breve!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: COColors.brand300,
-                                  fontSize: 15,
-                                ),
-                              ),
+                              UIHelpers.buildStatusBadge(status),
+                              if (status != 'Desenvolvimento')
+                                SeloVenda(forSale: info.forSale),
                             ],
                           ),
-                        ] else if (steps.isNotEmpty) ...[
-                          // Era uma lista vertical: cada etapa ocupava a
-                          // largura toda com nome, descrição e foto, uma
-                          // debaixo da outra. Passou a uma régua
-                          // horizontal com a etapa escolhida em baixo —
-                          // ver lib/widgets/etapas_horizontais.dart.
-                          EtapasHorizontais(
-                            etapas: steps,
-                            etapaAtual: safeCurrentStep,
-                            aoTocarNaFoto: (url, legenda) {
-                              final naGaleria = galeria.indexOf(url);
-                              if (naGaleria != -1) {
-                                _irParaImagem(naGaleria, galeria.length);
-                              } else {
-                                // A foto desta etapa não está na galeria
-                                // do empreendimento: abre sozinha, no
-                                // mesmo visualizador das outras.
-                                VisualizadorImagens.abrir(
-                                  context,
-                                  imagens: [url],
-                                  legendas: [legenda],
-                                );
-                              }
-                            },
-                          ),
                         ],
+                      ),
+                    ),
+                  ),
 
-                        // AS ENCOMENDAS DESTE EMPREENDIMENTO
-                        FutureBuilder<List<SaleOrder>>(
-                          future: _encomendasFuture,
-                          builder: (context, snap) {
-                            final minhas = Carteira.doEmpreendimento(
-                              titulo,
-                              snap.data ?? const <SaleOrder>[],
-                            );
-                            if (minhas.isEmpty) {
-                              return const SizedBox.shrink();
-                            }
-                            return Padding(
-                              padding: const EdgeInsets.only(
-                                top: COTokens.space9,
+                  // ===========================================
+                  // O CORPO — fundo claro e cada secção no seu cartão
+                  // branco, como o painel e o portal do site. A Superficie
+                  // faz as secções (escritas para o navy) pedirem as cores
+                  // claras.
+                  // ===========================================
+                  SliverToBoxAdapter(
+                    child: Superficie(
+                      child: FolhaClara(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            BlocoClaro(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const CoTitulo('Sobre o projeto'),
+                                  Text(
+                                    descricao,
+                                    style: const TextStyle(
+                                      color: COColors.brand700,
+                                      fontSize: 15,
+                                      height: 1.6,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: SecaoEncomendas(encomendas: minhas),
-                            );
-                          },
-                        ),
+                            ),
 
-                        // VÍDEO — no site aparece logo abaixo dos passos
-                        // da timeline.
-                        if (temVideo) ...[
-                          const SizedBox(height: COTokens.space9),
-                          SecaoVideo(videoUrl: info.videoUrl),
-                        ],
+                            // O LUGAR — a envolvente (campos zone*). No site
+                            // vem logo depois da descrição.
+                            if (temLugar)
+                              BlocoClaro(child: SecaoLugar(info: info)),
 
-                        // FRAÇÕES (projectFractions) e ACABAMENTOS
-                        // (projectFinishes). Cada secção decide-se sozinha:
-                        // sem dados na API não aparece, como no site.
-                        if (project.fractions.isNotEmpty) ...[
-                          const SizedBox(height: COTokens.space9),
-                          KeyedSubtree(
-                            key: _chaveFracoes,
-                            child: SecaoFracoes(
-                              fracoes: project.fractions,
-                              soDisponiveis: widget.abrirFracoesDisponiveis,
-                              aoAbrirFracao: (f) => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => FichaFracaoScreen(
-                                    projeto: project,
-                                    fracao: f,
+                            // GALERIA DA OBRA — vê-se a obra e depois lê-se
+                            // em que fase está, como no site.
+                            if (project.imagensDeObra.isNotEmpty)
+                              BlocoClaro(
+                                child: SecaoGaleriaObra(
+                                  imagens: project.imagensDeObra,
+                                ),
+                              ),
+
+                            // ETAPAS DO PROJETO (projectSteps)
+                            if (status == 'Desenvolvimento')
+                              const BlocoClaro(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CoTitulo('Etapas do desenvolvimento'),
+                                    Text(
+                                      'Projeto em desenvolvimento. A '
+                                      'timeline fica disponível em breve.',
+                                      style: TextStyle(
+                                        color: COColors.brand500,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else if (steps.isNotEmpty)
+                              BlocoClaro(
+                                child: EtapasHorizontais(
+                                  etapas: steps,
+                                  etapaAtual: safeCurrentStep,
+                                  aoTocarNaFoto: (url, legenda) {
+                                    final naGaleria = galeria.indexOf(url);
+                                    if (naGaleria != -1) {
+                                      _irParaImagem(naGaleria, galeria.length);
+                                    } else {
+                                      // A foto desta etapa não está na
+                                      // galeria: abre sozinha.
+                                      VisualizadorImagens.abrir(
+                                        context,
+                                        imagens: [url],
+                                        legendas: [legenda],
+                                      );
+                                    }
+                                  },
+                                ),
+                              ),
+
+                            // AS ENCOMENDAS DESTE EMPREENDIMENTO
+                            FutureBuilder<List<SaleOrder>>(
+                              future: _encomendasFuture,
+                              builder: (context, snap) {
+                                final minhas = Carteira.doEmpreendimento(
+                                  titulo,
+                                  snap.data ?? const <SaleOrder>[],
+                                );
+                                if (minhas.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+                                return BlocoClaro(
+                                  child: SecaoEncomendas(encomendas: minhas),
+                                );
+                              },
+                            ),
+
+                            // VÍDEO — no site aparece logo abaixo dos passos.
+                            if (temVideo)
+                              BlocoClaro(
+                                child: SecaoVideo(videoUrl: info.videoUrl),
+                              ),
+
+                            // FRAÇÕES e ACABAMENTOS: sem dados na API não
+                            // aparecem, como no site.
+                            if (project.fractions.isNotEmpty)
+                              KeyedSubtree(
+                                key: _chaveFracoes,
+                                child: BlocoClaro(
+                                  child: SecaoFracoes(
+                                    fracoes: project.fractions,
+                                    soDisponiveis:
+                                        widget.abrirFracoesDisponiveis,
+                                    aoAbrirFracao: (f) => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => FichaFracaoScreen(
+                                          projeto: project,
+                                          fracao: f,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
+
+                            if (project.finishes.isNotEmpty)
+                              BlocoClaro(
+                                child: SecaoAcabamentos(
+                                  acabamentos: project.finishes,
+                                ),
+                              ),
+
+                            // ONDE FICA — mais abaixo do que no site: as
+                            // frações são o que a pessoa vem ver.
+                            BlocoClaro(child: SecaoLocalizacao(info: info)),
+
+                            // OUTROS EMPREENDIMENTOS — fecha a página.
+                            BlocoClaro(
+                              child: SecaoOutrosEmpreendimentos(
+                                projectIdAtual: widget.projectId,
+                              ),
                             ),
-                          ),
-                        ],
-
-                        if (project.finishes.isNotEmpty) ...[
-                          const SizedBox(height: COTokens.space9),
-                          SecaoAcabamentos(acabamentos: project.finishes),
-                        ],
-
-                        // ONDE FICA — mapa só deste empreendimento. No site
-                        // vem depois da timeline e antes das frações; aqui
-                        // ficou mais abaixo, porque as frações são o que a
-                        // pessoa vem ver e um mapa pelo meio afastava-as.
-                        const SizedBox(height: COTokens.space9),
-                        SecaoLocalizacao(info: info),
-
-                        // OUTROS EMPREENDIMENTOS — como no site, fecha a
-                        // página.
-                        const SizedBox(height: COTokens.space9),
-                        SecaoOutrosEmpreendimentos(
-                          projectIdAtual: widget.projectId,
+                          ],
                         ),
-
-                        // Aqui estava o botão "MANIFESTAR INTERESSE". Dizia
-                        // "Interesse registado! Um gestor irá contactá-lo."
-                        // e não fazia chamada nenhuma à API — não havia
-                        // interesse nenhum registado em sítio algum. Saiu
-                        // até haver endpoint para isso. No site o
-                        // equivalente (DevCTA) manda para o registo.
-                        const SizedBox(height: 40),
-                      ]),
+                      ),
                     ),
                   ),
                 ],

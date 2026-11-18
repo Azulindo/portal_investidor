@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/co_colors.dart';
+import '../theme/tinta.dart';
 import '../theme/co_tokens.dart';
 import '../utils/video.dart';
 import 'co_card.dart';
@@ -43,7 +44,7 @@ class SecaoVideo extends StatelessWidget {
                   Video.miniatura(id),
                   // Sem miniatura (vídeo privado ou apagado) fica o fundo e o
                   // botão, que continuam a dizer que há um vídeo para ver.
-                  erro: const ColoredBox(color: COColors.brand700),
+                  erro: ColoredBox(color: context.cor(COColors.brand700)),
                 ),
                 const ColoredBox(color: Color(0x33000000)),
                 Center(
@@ -52,11 +53,11 @@ class SecaoVideo extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.55),
                       shape: BoxShape.circle,
-                      border: Border.all(color: COColors.white, width: 1.5),
+                      border: Border.all(color: context.cor(COColors.white), width: 1.5),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.play_arrow_rounded,
-                      color: COColors.white,
+                      color: context.cor(COColors.white),
                       size: 32,
                     ),
                   ),
@@ -66,7 +67,7 @@ class SecaoVideo extends StatelessWidget {
           ),
         ),
         const SizedBox(height: COTokens.space2),
-        Text('Abre no YouTube.', style: COText.caption),
+        Text('Abre no YouTube.', style: context.estilo(COText.caption)),
       ],
     );
   }
@@ -83,9 +84,9 @@ class SecaoVideo extends StatelessWidget {
     }
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Não foi possível abrir o vídeo.'),
-          backgroundColor: COColors.brand700,
+          backgroundColor: context.cor(COColors.brand700),
         ),
       );
     }

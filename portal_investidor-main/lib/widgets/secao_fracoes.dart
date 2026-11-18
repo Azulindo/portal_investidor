@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/user_model.dart';
 import '../theme/co_colors.dart';
+import '../theme/tinta.dart';
 import '../theme/co_tokens.dart';
 import '../utils/fracoes.dart';
 import 'co_card.dart';
@@ -126,9 +127,9 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
     }
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Não foi possível abrir a planta.'),
-          backgroundColor: COColors.brand700,
+          backgroundColor: context.cor(COColors.brand700),
         ),
       );
     }
@@ -157,7 +158,7 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
         const SizedBox(height: COTokens.space2),
         Text(
           'Toque numa tipologia para ver só essas frações.',
-          style: COText.caption,
+          style: context.estilo(COText.caption),
         ),
         const SizedBox(height: COTokens.space4),
 
@@ -177,7 +178,7 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
               padding: const EdgeInsets.only(bottom: COTokens.space6),
               child: Text(
                 'Nenhuma fração corresponde a estes filtros.',
-                style: COText.small,
+                style: context.estilo(COText.small),
               ),
             )
           else ...[
@@ -204,17 +205,17 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
               Expanded(
                 child: Text(
                   linha.tipologia,
-                  style: COText.body.copyWith(fontWeight: COTokens.fwBold),
+                  style: context.estilo(COText.body).copyWith(fontWeight: COTokens.fwBold),
                 ),
               ),
               Text(
                 Fracoes.contagem(linha.quantidade),
-                style: COText.small,
+                style: context.estilo(COText.small),
               ),
               const SizedBox(width: 6),
-              const Icon(
+              Icon(
                 Icons.chevron_right,
-                color: COColors.neutral500,
+                color: context.cor(COColors.neutral500),
                 size: 18,
               ),
             ],
@@ -242,12 +243,12 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
   Widget _parzinho(String etiqueta, String valor) {
     return RichText(
       text: TextSpan(
-        style: COText.caption,
+        style: context.estilo(COText.caption),
         children: [
           TextSpan(text: '${etiqueta.toUpperCase()}  '),
           TextSpan(
             text: valor,
-            style: COText.small.copyWith(color: COColors.white),
+            style: context.estilo(COText.small).copyWith(color: context.cor(COColors.white)),
           ),
         ],
       ),
@@ -258,14 +259,14 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: COColors.white.withValues(alpha: 0.12),
+        color: context.cor(COColors.white).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: COColors.brand300.withValues(alpha: 0.5)),
+        border: Border.all(color: context.cor(COColors.brand300).withValues(alpha: 0.5)),
       ),
       child: Text(
         texto.toUpperCase(),
-        style: COText.caption.copyWith(
-          color: COColors.white,
+        style: context.estilo(COText.caption).copyWith(
+          color: context.cor(COColors.white),
           fontSize: 10,
           fontWeight: COTokens.fwBold,
           letterSpacing: 0.6,
@@ -284,15 +285,15 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
         alignment: Alignment.centerLeft,
         child: TextButton.icon(
           onPressed: () => setState(() => _aMostrar += _lote),
-          icon: const Icon(
+          icon: Icon(
             Icons.expand_more,
             size: 18,
-            color: COColors.brand300,
+            color: context.cor(COColors.brand300),
           ),
           label: Text(
             'Mostrar mais $proximo — faltam $quantasFaltam',
-            style: COText.small.copyWith(
-              color: COColors.brand300,
+            style: context.estilo(COText.small).copyWith(
+              color: context.cor(COColors.brand300),
               fontWeight: COTokens.fwMedium,
             ),
           ),
@@ -314,14 +315,14 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
         icon: Icon(
           _aberta ? Icons.expand_less : Icons.expand_more,
           size: 18,
-          color: COColors.brand300,
+          color: context.cor(COColors.brand300),
         ),
         label: Text(
           _aberta
               ? 'Esconder frações'
               : 'Ver todas — ${Fracoes.contagem(widget.fracoes.length)}',
-          style: COText.small.copyWith(
-            color: COColors.brand300,
+          style: context.estilo(COText.small).copyWith(
+            color: context.cor(COColors.brand300),
             fontWeight: COTokens.fwMedium,
           ),
         ),
@@ -383,42 +384,42 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(etiqueta.toUpperCase(), style: COText.overline),
+          Text(etiqueta.toUpperCase(), style: context.estilo(COText.overline)),
           const SizedBox(height: 6),
           DropdownButtonFormField<T?>(
             initialValue: valor,
             isExpanded: true,
-            dropdownColor: COColors.brand700,
-            iconEnabledColor: COColors.brand300,
-            style: COText.small.copyWith(color: COColors.white),
+            dropdownColor: context.cor(COColors.brand700),
+            iconEnabledColor: context.cor(COColors.brand300),
+            style: context.estilo(COText.small).copyWith(color: context.cor(COColors.white)),
             decoration: InputDecoration(
               isDense: true,
               filled: true,
-              fillColor: COColors.brand700,
+              fillColor: context.cor(COColors.brand700),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
                 vertical: 12,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(COTokens.radiusSm),
-                borderSide: const BorderSide(color: COColors.brand500),
+                borderSide: BorderSide(color: context.cor(COColors.brand500)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(COTokens.radiusSm),
-                borderSide: const BorderSide(color: COColors.brand500),
+                borderSide: BorderSide(color: context.cor(COColors.brand500)),
               ),
             ),
             items: [
               DropdownMenuItem<T?>(
                 value: null,
-                child: Text(textoDeTodas, style: COText.small),
+                child: Text(textoDeTodas, style: context.estilo(COText.small)),
               ),
               for (final o in opcoes)
                 DropdownMenuItem<T?>(
                   value: o.valor,
                   child: Text(
                     o.texto,
-                    style: COText.small.copyWith(color: COColors.white),
+                    style: context.estilo(COText.small).copyWith(color: context.cor(COColors.white)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -435,7 +436,7 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
       children: [
         Text(
           '$visiveis de ${Fracoes.contagem(widget.fracoes.length)}',
-          style: COText.caption,
+          style: context.estilo(COText.caption),
         ),
         if (_temFiltro) ...[
           const SizedBox(width: COTokens.space4),
@@ -445,11 +446,11 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Text(
                 'limpar filtros',
-                style: COText.caption.copyWith(
-                  color: COColors.brand300,
+                style: context.estilo(COText.caption).copyWith(
+                  color: context.cor(COColors.brand300),
                   fontWeight: COTokens.fwMedium,
                   decoration: TextDecoration.underline,
-                  decorationColor: COColors.brand300,
+                  decorationColor: context.cor(COColors.brand300),
                 ),
               ),
             ),
@@ -479,9 +480,9 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
                   children: [
                     Text(
                       f.fractionNumber,
-                      style: COText.body.copyWith(fontWeight: COTokens.fwBold),
+                      style: context.estilo(COText.body).copyWith(fontWeight: COTokens.fwBold),
                     ),
-                    Text(f.type, style: COText.small),
+                    Text(f.type, style: context.estilo(COText.small)),
                   ],
                 ),
               ),
@@ -490,8 +491,8 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
                 children: [
                   Text(
                     f.price != null ? Fracoes.euros(f.price!) : 'Sob consulta',
-                    style: COText.valor.copyWith(
-                      color: COColors.white,
+                    style: context.estilo(COText.valor).copyWith(
+                      color: context.cor(COColors.white),
                       fontSize: 17,
                     ),
                   ),
@@ -530,8 +531,8 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
             const SizedBox(height: COTokens.space2),
             Text(
               'Ver ficha da fração →',
-              style: COText.small.copyWith(
-                color: COColors.white,
+              style: context.estilo(COText.small).copyWith(
+                color: context.cor(COColors.white),
                 fontWeight: COTokens.fwBold,
               ),
             ),
@@ -545,16 +546,16 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.picture_as_pdf_outlined,
                       size: 14,
-                      color: COColors.brand300,
+                      color: context.cor(COColors.brand300),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       'Ver planta',
-                      style: COText.small.copyWith(
-                        color: COColors.brand300,
+                      style: context.estilo(COText.small).copyWith(
+                        color: context.cor(COColors.brand300),
                         fontWeight: COTokens.fwMedium,
                       ),
                     ),

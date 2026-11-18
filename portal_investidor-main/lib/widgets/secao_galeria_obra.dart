@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/user_model.dart';
 import '../theme/co_colors.dart';
+import '../theme/tinta.dart';
 import '../theme/co_tokens.dart';
 import 'co_card.dart';
 import 'visualizador_imagens.dart';
@@ -34,7 +35,7 @@ class SecaoGaleriaObra extends StatelessWidget {
           imagens.length == 1
               ? '1 fotografia do acompanhamento'
               : '${imagens.length} fotografias do acompanhamento',
-          style: COText.caption,
+          style: context.estilo(COText.caption),
         ),
         const SizedBox(height: COTokens.space4),
         SizedBox(
@@ -66,11 +67,11 @@ class SecaoGaleriaObra extends StatelessWidget {
           img.imageUrl,
           largura: 210,
           altura: 150,
-          aCarregar: _vazio(const SizedBox.shrink()),
-          erro: _vazio(
-            const Icon(
+          aCarregar: _vazio(context, const SizedBox.shrink()),
+          erro: _vazio(context, 
+            Icon(
               Icons.broken_image_outlined,
-              color: COColors.brand300,
+              color: context.cor(COColors.brand300),
               size: 20,
             ),
           ),
@@ -81,11 +82,11 @@ class SecaoGaleriaObra extends StatelessWidget {
 
   /// Caixa do tamanho da miniatura, para a fila não saltar enquanto carrega
   /// nem encolher quando uma imagem falha.
-  Widget _vazio(Widget dentro) {
+  Widget _vazio(BuildContext context, Widget dentro) {
     return Container(
       width: 210,
       height: 150,
-      color: COColors.brand700,
+      color: context.cor(COColors.brand700),
       alignment: Alignment.center,
       child: dentro,
     );

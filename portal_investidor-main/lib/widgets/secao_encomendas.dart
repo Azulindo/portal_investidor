@@ -7,6 +7,7 @@ import '../models/sale_order.dart';
 import '../services/api_service.dart';
 import '../utils/contacto.dart';
 import '../theme/co_colors.dart';
+import '../theme/tinta.dart';
 import '../theme/co_tokens.dart';
 import '../utils/carteira.dart';
 import 'co_card.dart';
@@ -58,7 +59,7 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
           if (widget.comCabecalho && grupo.key.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: COTokens.space2, bottom: 2),
-              child: Text(grupo.key, style: COText.caption),
+              child: Text(grupo.key, style: context.estilo(COText.caption)),
             ),
           for (final o in grupo.value) _linha(o),
         ],
@@ -71,9 +72,9 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
     final temFaturas = o.invoices.isNotEmpty;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: COColors.brand700, width: 1),
+          bottom: BorderSide(color: context.cor(COColors.brand700), width: 1),
         ),
       ),
       child: Column(
@@ -96,13 +97,13 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
                       Expanded(
                         child: Text(
                           o.name,
-                          style: COText.small.copyWith(color: COColors.white),
+                          style: context.estilo(COText.small).copyWith(color: context.cor(COColors.white)),
                         ),
                       ),
                       Text(
                         Carteira.euros(o.amountTotal),
-                        style: COText.body.copyWith(
-                          color: COColors.white,
+                        style: context.estilo(COText.body).copyWith(
+                          color: context.cor(COColors.white),
                           fontWeight: COTokens.fwMedium,
                         ),
                       ),
@@ -111,10 +112,10 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
                         AnimatedRotation(
                           turns: aberta ? 0.5 : 0,
                           duration: const Duration(milliseconds: 200),
-                          child: const Icon(
+                          child: Icon(
                             Icons.expand_more,
                             size: 16,
-                            color: COColors.neutral500,
+                            color: context.cor(COColors.neutral500),
                           ),
                         ),
                       ],
@@ -131,7 +132,7 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
                       else
                         '${Carteira.euros(o.pago)} pagos',
                     ].join('  ·  '),
-                    style: COText.caption,
+                    style: context.estilo(COText.caption),
                   ),
                   if (temFaturas) ...[
                     const SizedBox(height: 8),
@@ -175,22 +176,22 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(f.name, style: COText.caption),
+                        Text(f.name, style: context.estilo(COText.caption)),
                         // De que é a fatura. Sem isto o investidor via só o
                         // numero e o valor, e tinha de abrir o PDF para saber.
                         if (f.descricao.isNotEmpty)
                           Text(
                             f.descricao,
-                            style: COText.caption.copyWith(
-                              color: COColors.brand300,
+                            style: context.estilo(COText.caption).copyWith(
+                              color: context.cor(COColors.brand300),
                             ),
                           ),
                         Text(
                           '${Carteira.data(f.date)}  ·  ${f.estado.toLowerCase()}',
-                          style: COText.caption.copyWith(
+                          style: context.estilo(COText.caption).copyWith(
                             color: f.paymentState == 'paid'
-                                ? COColors.brand300
-                                : COColors.neutral500,
+                                ? context.cor(COColors.brand300)
+                                : context.cor(COColors.neutral500),
                           ),
                         ),
                       ],
@@ -199,7 +200,7 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
                   const SizedBox(width: COTokens.space2),
                   Text(
                     Carteira.euros(f.amountTotal),
-                    style: COText.caption.copyWith(color: COColors.white),
+                    style: context.estilo(COText.caption).copyWith(color: context.cor(COColors.white)),
                   ),
                   // A fatura existe mas nao tem documento. Daqui sabe-se o
                   // empreendimento, por isso o pedido sai mais completo do
@@ -260,7 +261,7 @@ class PedirFatura extends StatelessWidget {
       onPressed: () => _abrir(context),
       tooltip: 'Pedir esta fatura',
       visualDensity: VisualDensity.compact,
-      icon: Icon(Icons.mail_outline, size: 16, color: cor),
+      icon: Icon(Icons.mail_outline, size: 16, color: context.cor(cor)),
     );
   }
 }
@@ -317,12 +318,12 @@ class _BarraDeProgresso extends StatelessWidget {
                 if (faturado > 0)
                   Expanded(
                     flex: peso(faturado),
-                    child: const ColoredBox(color: COColors.brand300),
+                    child: ColoredBox(color: context.cor(COColors.brand300)),
                   ),
                 if (restante > 0)
                   Expanded(
                     flex: peso(restante),
-                    child: const ColoredBox(color: COColors.brand700),
+                    child: ColoredBox(color: context.cor(COColors.brand700)),
                   ),
               ],
             ),
@@ -334,7 +335,7 @@ class _BarraDeProgresso extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '${Carteira.euros(faturado)} faturado, por pagar',
-            style: COText.caption.copyWith(color: COColors.brand300),
+            style: context.estilo(COText.caption).copyWith(color: context.cor(COColors.brand300)),
           ),
         ],
       ],
