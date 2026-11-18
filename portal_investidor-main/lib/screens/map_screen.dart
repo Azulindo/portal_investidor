@@ -6,8 +6,12 @@ import 'package:latlong2/latlong.dart';
 import '../services/api_service.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import '../utils/mapa.dart';
+import '../utils/portfolio.dart';
+import '../utils/ui_helpers.dart';
 import '../widgets/co_drawer.dart';
 import 'project_details_screen.dart';
+import '../widgets/co_imagem.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -23,6 +27,11 @@ class _MapScreenState extends State<MapScreen> {
   List<dynamic> _projects = [];
   bool _loading = true;
   String? _error;
+  // A legenda serve de filtro: só aparecem os pinos dos grupos ligados.
+  Set<String> _gruposLigados = Portfolio.grupos.toSet();
+
+  bool _passaNoFiltro(dynamic project) => _gruposLigados
+      .contains(Portfolio.grupoDeEstado(project['status'] as String?));
 
   @override
   void initState() {
@@ -40,25 +49,26 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  Color _corPorStatus(String? status) {
-    switch (status) {
-      case 'Concluído':
-        return const Color(0xFF43A047); // bright green
-      case 'Construção':
-        return const Color(0xFF42A5F5); // light blue
-      case 'Desenvolvimento':
-        return const Color(0xFF9E9E9E); // neutral grey
-      default:
-        return const Color(0xFF9E9E9E);
-    }
-  }
+  /// A cor do pino.
+  ///
+  /// Comparava o estado por igualdade — case 'Construção', case
+  /// 'Desenvolvimento' — mas a API escreve "Em construção" e "Em
+  /// desenvolvimento". Nenhum dos dois casos batia certo, por isso saíam
+  /// todos cinzentos menos os concluídos. É o mesmo erro que já tinha
+  /// aparecido nos filtros do portfólio e na etiqueta dos cartões; agora
+  /// os três usam a mesma função.
+  Color _corPorStatus(String? status) =>
+      UIHelpers.corDoGrupo(status, fundoClaro: true);
 
   List<Marker> _buildMarkers() {
     final markers = <Marker>[];
     for (final project in _projects) {
       final lat = (project['latitude'] as num?)?.toDouble();
       final lng = (project['longitude'] as num?)?.toDouble();
-      if (lat == null || lng == null) continue;
+      // A API manda 0/0 quando o projeto não tem morada marcada. Sem este
+      // salto, esses projetos apareciam ao largo de África.
+      if (lat == null || lng == null || (lat == 0 && lng == 0)) continue;
+      if (!_passaNoFiltro(project)) continue;
       final status = project['status'] as String?;
       final color = _corPorStatus(status);
       final nome = project['name'] as String? ?? 'Projeto';
@@ -73,8 +83,10 @@ class _MapScreenState extends State<MapScreen> {
           child: GestureDetector(
             onTap: () {
               final city      = project['city']    as String?;
-              final forSale   = project['forSale'] as bool? ?? false;
-              final mainImage = project['mainImageUrl'] as String?;
+              // A venda como o site mostra: so quem tem pagina propria.
+              final forSale   = Portfolio.estaAVenda(project);
+              final temPagina = Portfolio.temPagina(project);
+              final mainImage = Portfolio.imagem(project);
 
               showModalBottomSheet(
                 context: context,
@@ -84,8 +96,11 @@ class _MapScreenState extends State<MapScreen> {
                   margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
                   decoration: BoxDecoration(
                     color: COColors.brand700,
-                    borderRadius: BorderRadius.circular(12.0),
-                    border: Border.all(color: COColors.brand500, width: 1),
+                    borderRadius: BorderRadius.circular(COTokens.radiusSm),
+                    border: Border.all(
+                      color: COColors.brand500,
+                      width: COTokens.borderWidth,
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -93,14 +108,15 @@ class _MapScreenState extends State<MapScreen> {
                     children: [
                       // Image or colour header
                       ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12.0)),
-                        child: mainImage != null && mainImage.isNotEmpty
-                            ? Image.network(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(COTokens.radiusSm),
+                        ),
+                        child: mainImage.isNotEmpty
+                            ? CoImagem(
                                 mainImage,
-                                height: 160,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _noImageHeader(color),
+                                altura: 160,
+                                largura: double.infinity,
+                                erro: _noImageHeader(color),
                               )
                             : _noImageHeader(color),
                       ),
@@ -123,7 +139,9 @@ class _MapScreenState extends State<MapScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 city,
-                                style: const TextStyle(color: COColors.neutral500, fontSize: 13),
+                                // brand300 e nao neutral500: a folha e navy, e
+                                // o neutral500 so chega a 3,4:1 sobre ela.
+                                style: const TextStyle(color: COColors.brand300, fontSize: 13),
                               ),
                             ],
                             const SizedBox(height: 14),
@@ -131,11 +149,13 @@ class _MapScreenState extends State<MapScreen> {
                             // Info row
                             Row(
                               children: [
-                                _infoChip(color, status ?? 'Desconhecido'),
-                                const SizedBox(width: 8),
+                                _infoChip(status, status ?? 'Desconhecido'),
                                 if (forSale) ...[
                                   const SizedBox(width: 8),
-                                  _infoChip(const Color(0xFF5BBFBF), 'Frações à venda'),
+                                  // "Concluído" é o que dá o teal da marca, e
+                                  // este chip quer essa cor: é o único sobre o
+                                  // qual há alguma coisa a fazer.
+                                  _infoChip('Concluído', 'Frações à venda'),
                                 ],
                               ],
                             ),
@@ -147,8 +167,10 @@ class _MapScreenState extends State<MapScreen> {
                                 Expanded(
                                   child: OutlinedButton(
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: COColors.neutral500,
-                                      side: const BorderSide(color: COColors.neutral500),
+                                      // Era neutral500, que sobre o navy da
+                                      // folha dava 3,4:1 — abaixo do minimo.
+                                      foregroundColor: COColors.brand300,
+                                      side: const BorderSide(color: COColors.brand300),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -158,7 +180,9 @@ class _MapScreenState extends State<MapScreen> {
                                     child: const Text('Voltar'),
                                   ),
                                 ),
-                                if (projectId != null) ...[
+                                // Sem pagina nao se oferece o botao: a API
+                                // responde 404 aos detalhes desses.
+                                if (projectId != null && temPagina) ...[
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: ElevatedButton(
@@ -179,12 +203,12 @@ class _MapScreenState extends State<MapScreen> {
                                             builder: (_) => ProjectDetailsScreen(
                                               projectId: projectId,
                                               heroTag: 'map_project_$projectId',
-                                              initialImageUrl: mainImage ?? '',
+                                              initialImageUrl: mainImage,
                                             ),
                                           ),
                                         );
                                       },
-                                      child: const Text('Ver Detalhes',
+                                      child: const Text('Ver detalhes',
                                           style: TextStyle(fontWeight: COTokens.fwBold)),
                                     ),
                                   ),
@@ -225,7 +249,10 @@ class _MapScreenState extends State<MapScreen> {
     for (final project in _projects) {
       final lat = (project['latitude'] as num?)?.toDouble();
       final lng = (project['longitude'] as num?)?.toDouble();
-      if (lat == null || lng == null) continue;
+      // Mesmo critério dos marcadores: 0/0 é "sem morada", não é o Atlântico.
+      if (lat == null || lng == null || (lat == 0 && lng == 0)) continue;
+      // Uma seta para um pino escondido pelo filtro levava a um sítio vazio.
+      if (!_passaNoFiltro(project)) continue;
 
       final ponto = LatLng(lat, lng);
       final pos = camera.latLngToScreenOffset(ponto);
@@ -269,10 +296,9 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         backgroundColor: COColors.brand900,
         foregroundColor: COColors.white,
-        title: const Text(
-          'MAPA DE PROJETOS',
-          style: TextStyle(fontSize: 13, fontWeight: COTokens.fwBold, letterSpacing: 1.5),
-        ),
+        title: const Text('Mapa de projetos', style: COText.tituloEcra),
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -310,18 +336,24 @@ class _MapScreenState extends State<MapScreen> {
                             options: MapOptions(
                               initialCenter: const LatLng(41.13, -8.61),
                               initialZoom: 12.5,
+                              minZoom: Mapa.zoomMinimo,
+                              maxZoom: Mapa.zoomMaximo,
+                              // Sem rodar: com dois dedos o mapa rodava sem
+                              // querer ao fazer zoom, e não há bússola para o
+                              // pôr outra vez a norte.
+                              interactionOptions: const InteractionOptions(
+                                flags: InteractiveFlag.all &
+                                    ~InteractiveFlag.rotate,
+                              ),
                               onMapReady: () => setState(() => _mapReady = true),
                               // Recalcula os indicadores de borda sempre que o mapa
-                              // se move, faz zoom ou roda.
+                              // se move ou faz zoom.
                               onPositionChanged: (_, _) => setState(() {}),
                             ),
                             children: [
-                              TileLayer(
-                                urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                                subdomains: const ['a', 'b', 'c', 'd'],
-                                userAgentPackageName: 'com.cleveroption.portalinvestidor',
-                              ),
+                              Mapa.telas(context),
                               MarkerLayer(markers: _buildMarkers()),
+                              Mapa.atribuicao(),
                             ],
                           ),
                           // Setas que apontam para projetos fora da área visível.
@@ -343,18 +375,30 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _infoChip(Color color, String label) {
+  /// Etiqueta de estado dentro da folha de informação.
+  ///
+  /// A cor vem da paleta de fundo ESCURO, e não da do mapa: a folha é navy, e
+  /// as cores do mapa são escolhidas para se verem sobre as telas claras — o
+  /// "Desenvolvimento" ficava navy sobre navy e não se lia.
+  ///
+  /// E mesmo com a paleta certa, o texto é branco: a 11px, o cinzento do
+  /// estado em desenvolvimento ficava em 3,4:1 sobre a folha, abaixo do
+  /// mínimo. A cor do estado continua a identificar-se, pelo fundo e pela
+  /// borda.
+  Widget _infoChip(String? status, String label) {
+    final cor = UIHelpers.corDoGrupo(status);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: cor.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: cor.withValues(alpha: 0.7)),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
+        style: const TextStyle(
+          color: COColors.white,
           fontSize: 11,
           fontWeight: COTokens.fwBold,
           letterSpacing: 0.4,
@@ -363,39 +407,101 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  /// A legenda das cores, que é também o filtro do mapa: tocar num estado
+  /// mostra ou esconde os pinos desse estado.
   Widget _buildLegenda() {
-    return Container(
+    // Material e não Container com cor: com a cor num Container por cima, o
+    // efeito do toque desenhava-se por baixo e não se via.
+    return Material(
       color: COColors.brand900,
-      padding: const EdgeInsets.symmetric(horizontal: COTokens.space4, vertical: COTokens.space2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Flexible(child: _legendaItem(const Color(0xFF9E9E9E), 'Em Desenvolvimento')),
-          Flexible(child: _legendaItem(const Color(0xFF42A5F5), 'Em Construção')),
-          Flexible(child: _legendaItem(const Color(0xFF43A047), 'Concluído')),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: COTokens.space2, vertical: 4),
+        child: Row(
+          children: [
+            // Sem o "Em": "Em desenvolvimento" não cabia num terço do ecrã e
+            // ficava cortado. São as palavras que a etiqueta dos cartões usa.
+            for (final (grupo, estado) in const [
+              ('desenvolvimento', 'Desenvolvimento'),
+              ('ativo', 'Construção'),
+              ('concluido', 'Concluído'),
+            ])
+              // Largura proporcional ao texto: em terços iguais, a moldura
+              // de botão comia o espaço e "Desenvolvimento" ficava cortado.
+              Expanded(
+                flex: estado.length + 4,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: _legendaItem(
+                    grupo,
+                    UIHelpers.corDoGrupo(estado, fundoClaro: true),
+                    estado,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _legendaItem(Color cor, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: cor, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 5),
-        Flexible(
-          child: Text(
-            label,
-            style: const TextStyle(color: COColors.white, fontSize: 11),
-            overflow: TextOverflow.ellipsis,
+  Widget _legendaItem(String grupo, Color cor, String label) {
+    final ligado = _gruposLigados.contains(grupo);
+    return Semantics(
+      button: true,
+      toggled: ligado,
+      label: '$label no mapa',
+      excludeSemantics: true,
+      child: InkWell(
+        key: ValueKey('filtro-$grupo'),
+        borderRadius: BorderRadius.circular(COTokens.radiusSm),
+        onTap: () => setState(() {
+          _gruposLigados = Portfolio.alternarGrupo(_gruposLigados, grupo);
+        }),
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          // Desligado fica esbatido, mas ainda legível: continua a ser um
+          // botão que se pode voltar a tocar.
+          opacity: ligado ? 1 : 0.6,
+          child: Container(
+            // 44px de altura: o mínimo para se acertar com o dedo.
+            constraints: const BoxConstraints(minHeight: 44),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(COTokens.radiusSm),
+              border: Border.all(
+                color: ligado ? COColors.brand300 : Colors.transparent,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  // A bolinha tem a cor exata do pino, e a dos projetos em
+                  // construção é o navy da barra: sem a borda ficava
+                  // invisível. Não muda quando se desliga (a de construção
+                  // já parece vazia); o estado vê-se pela moldura e pelo
+                  // esbatido.
+                  decoration: BoxDecoration(
+                    color: cor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: COColors.brand300, width: 1.5),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: const TextStyle(color: COColors.white, fontSize: 11),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -421,7 +527,13 @@ class _LogoPin extends StatelessWidget {
             child: SizedBox(
               width: 24,
               height: 24,
-              child: Image.asset('assets/images/logo_simples_mapa.avif', fit: BoxFit.contain),
+              // Branco, para se ler nas três cores de estado. É um PNG gerado
+              // do logótipo em vetor (loja/gerar.ps1): o .avif que estava
+              // aqui não aparecia no browser e os pinos ficavam vazios.
+              child: Image.asset(
+                'assets/images/simbolo_mapa.png',
+                fit: BoxFit.contain,
+              ),
             ),
           ),
         ),

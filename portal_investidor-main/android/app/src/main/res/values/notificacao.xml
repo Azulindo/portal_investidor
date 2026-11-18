@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Cor de destaque das notificações push (o navy da marca). Fica num
+         ficheiro à parte porque o colors.xml é regerado pelo
+         flutter_launcher_icons. -->
+    <color name="notificacao">#002847</color>
+</resources>

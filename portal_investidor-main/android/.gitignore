@@ -12,3 +12,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Configuração do Firebase (notificações push). Descarrega-se da consola do
+# Firebase; o repositório é público, por isso fica fora do git.
+/app/google-services.json

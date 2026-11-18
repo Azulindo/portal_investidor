@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12 e acima deixaram de olhar para o android:fullBackupContent e
+  passaram a pedir este ficheiro. Sem ele, o allowBackup="false" sozinho
+  nao chega nos telemoveis novos.
+
+  Aqui nao se exclui nada em particular: exclui-se tudo. A app nao tem
+  dados que valha a pena restaurar noutro telemovel, e os que tem — o
+  token da sessao no shared_preferences — sao exatamente os que nao devem
+  sair daqui.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

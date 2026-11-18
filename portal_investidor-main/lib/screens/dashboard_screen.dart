@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
 import '../services/api_service.dart';
-import '../services/privacy_service.dart';
+import '../services/aviso_versao.dart';
+import '../services/notificacoes_push.dart';
 import '../widgets/co_drawer.dart';
+import '../widgets/efeitos.dart';
 import '../models/investidor_model.dart';
+import '../models/sale_order.dart';
 import '../models/user_model.dart';
+import '../utils/carteira.dart';
 import '../utils/ui_helpers.dart';
-import 'project_details_screen.dart';
+import 'documents_screen.dart';
+import '../widgets/sino_notificacoes.dart';
+import '../widgets/painel_cabecalho.dart';
+import '../widgets/painel_cartao_obra.dart';
+import '../widgets/painel_esqueleto.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,16 +28,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final ApiService _apiService = ApiService();
   late Future<InvestidorModel?> _investidorFuture;
 
+  /// As encomendas vêm de um endpoint à parte (/document/sale-orders) e são o
+  /// que alimenta os totais. Não travam o painel: se falharem, mostram-se as
+  /// obras sem os totais, em vez de um ecrã de erro por cima de dados que já
+  /// chegaram bem.
+  late Future<List<SaleOrder>> _encomendasFuture;
+
   @override
   void initState() {
     super.initState();
-    _investidorFuture = _apiService.buscarDadosDoInvestidor(ApiService.idLogado ?? 0);
+    _carregar();
+    // O painel é onde se chega depois do login e ao arrancar com sessão:
+    // é aqui que se pede autorização e se regista o telemóvel para push.
+    NotificacoesPush.ativarParaSessao();
+    // Depois do primeiro frame, para o SnackBar ter onde aparecer.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AvisoVersao.verificar(context);
+    });
+  }
+
+  void _carregar() {
+    _investidorFuture = _apiService.buscarDadosDoInvestidor(
+      ApiService.idLogado ?? 0,
+    );
+    _encomendasFuture = _apiService
+        .buscarOrdensDeCompra()
+        // Sem isto, uma falha aqui aparecia como um erro não tratado.
+        .catchError((_) => <SaleOrder>[]);
   }
 
   void _recarregar() {
-    setState(() {
-      _investidorFuture = _apiService.buscarDadosDoInvestidor(ApiService.idLogado ?? 0);
-    });
+    // Quem puxa para atualizar quer dados novos, nao os de ha dois
+    // minutos: a cache do ApiService tem de sair da frente.
+    ApiService.limparCache();
+    setState(_carregar);
   }
 
   @override
@@ -49,7 +80,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           future: _investidorFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: COColors.white));
+              // Era um circulo a rodar no meio do ecra. O esqueleto nao
+              // torna nada mais rapido, mas o olho ja sabe onde as coisas
+              // vao aparecer e a espera sente-se menor.
+              return const EsqueletoPainel();
             }
 
             if (snapshot.hasError || snapshot.data == null) {
@@ -69,10 +103,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         onPressed: () => Scaffold.of(context).openDrawer(),
                       ),
                     ),
-                    flexibleSpace: FlexibleSpaceBar(
-                      title: Image.asset('assets/images/logo.png', height: 45),
-                      centerTitle: true,
-                    ),
+                    elevation: 0,
+                    scrolledUnderElevation: 0,
                   ),
                   SliverFillRemaining(
                     hasScrollBody: false,
@@ -88,327 +120,162 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final user = snapshot.data!;
             final obras = user.obras;
 
-            return CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  expandedHeight: 100,
-                  floating: true,
-                  pinned: true,
-                  backgroundColor: COColors.brand900,
-                  leading: Builder(
-                    builder: (context) => IconButton(
-                      icon: const Icon(Icons.menu, color: COColors.white),
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                    ),
-                  ),
-                  flexibleSpace: FlexibleSpaceBar(
-                    title: Image.asset('assets/images/logo.png', height: 65),
-                    centerTitle: true,
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.all(COTokens.space6),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      Text('Olá, ${user.name}',
-                          style: const TextStyle(fontSize: 22, fontWeight: COTokens.fwBold, color: COColors.white)),
-                      const SizedBox(height: 4),
-                      const Text('Bem-vindo ao seu painel de investimentos.',
-                          style: TextStyle(color: COColors.brand300, fontSize: 13)),
-                      const SizedBox(height: COTokens.space6),
+            // Como o portal do site: a faixa navy em cima com os totais e,
+            // por baixo, o fundo claro com um cartão branco por
+            // empreendimento.
+            return FutureBuilder<List<SaleOrder>>(
+              future: _encomendasFuture,
+              builder: (context, snap) {
+                // Encomendas em falta ou falhadas não escondem as obras: os
+                // cartões aparecem na mesma, sem a parte do dinheiro.
+                final encomendas = snap.data ?? const <SaleOrder>[];
+                final aCarregar =
+                    snap.connectionState == ConnectionState.waiting;
 
-                      const Text('STATUS DAS OBRAS',
-                          style: TextStyle(
-                              color: COColors.brand300,
-                              fontSize: 11,
-                              fontWeight: COTokens.fwBold,
-                              letterSpacing: 1.5)),
-                      const SizedBox(height: COTokens.space4),
-
-                      if (obras.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: COTokens.space8),
-                          child: Column(
-                            children: [
-                              Opacity(opacity: 0.2, child: Image.asset('assets/images/logo.png', height: 80)),
-                              const SizedBox(height: COTokens.space6),
-                              const Text('Ainda não existem registos associados ao seu perfil.',
-                                  style: TextStyle(color: COColors.neutral500, fontSize: 14)),
-                            ],
+                return CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+                      floating: true,
+                      pinned: true,
+                      backgroundColor: COColors.brand900,
+                      elevation: 0,
+                      scrolledUnderElevation: 0,
+                      leading: Builder(
+                        builder: (context) => IconButton(
+                          icon: const Icon(Icons.menu, color: COColors.white),
+                          onPressed: () => Scaffold.of(context).openDrawer(),
+                        ),
+                      ),
+                      // O símbolo da Cleveroption no topo do painel, preso à
+                      // barra. Era o logótipo inteiro, mas com o nome escrito
+                      // (e a margem que a imagem tem à volta) cabia minúsculo
+                      // entre o menu e as Faturas. O símbolo sozinho lê-se a
+                      // este tamanho. É o mesmo dos pinos do mapa (branco,
+                      // sem fundo, gerado por loja/gerar.ps1).
+                      centerTitle: true,
+                      title: Image.asset(
+                        'assets/images/simbolo_mapa.png',
+                        height: 38,
+                        fit: BoxFit.contain,
+                        semanticLabel: 'Clever Option',
+                      ),
+                      actions: [
+                        const SinoNotificacoes(),
+                        // As faturas estavam a dois toques, dentro do menu
+                        // lateral. Para quem abre a app por causa do que
+                        // deve, são o destino mais provável.
+                        TextButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const DocumentsScreen(),
+                            ),
                           ),
-                        )
-                      else
-                        ...List.generate(obras.length, (index) => ObraCardWidget(
-                              obra: obras[index],
-                              heroTag: 'hero-dashboard-${obras[index].id}-$index',
-                            )),
-
-                      const SizedBox(height: 40),
-                    ]),
-                  ),
-                ),
-              ],
+                          icon: const Icon(
+                            Icons.receipt_long_outlined,
+                            size: 18,
+                            color: COColors.brand300,
+                          ),
+                          label: const Text(
+                            'Faturas',
+                            style: TextStyle(
+                              color: COColors.brand300,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: COTokens.space2),
+                      ],
+                    ),
+                    SliverToBoxAdapter(
+                      // Ao descer, o topo fica para trás mais devagar e
+                      // desvanece, e a folha clara passa-lhe por cima.
+                      child: Paralaxe(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            COTokens.space4,
+                            COTokens.space2,
+                            COTokens.space4,
+                            COTokens.space8,
+                          ),
+                          child: CabecalhoPainel(
+                            nome: user.name,
+                            obras: obras,
+                            encomendas: encomendas,
+                            aCarregar: aCarregar,
+                            aoTocarEmpreendimento: _irParaEmpreendimento,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: FolhaClara(
+                        child: obras.isEmpty
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: COTokens.space8,
+                                ),
+                                child: Text(
+                                  'Ainda não tem empreendimentos associados à '
+                                  'sua conta. Assim que tiver, aparecerão aqui.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: COColors.brand500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                children: [
+                                  for (var i = 0; i < obras.length; i++)
+                                    Revelar(
+                                      child: ObraCardWidget(
+                                        marcador: SizedBox(
+                                          key: _chaveDe(obras[i]),
+                                          height: 1,
+                                        ),
+                                        obra: obras[i],
+                                        heroTag:
+                                            'hero-dashboard-${obras[i].id}-$i',
+                                        encomendas: Carteira.doEmpreendimento(
+                                          obras[i].title,
+                                          encomendas,
+                                        ),
+                                        aCarregarEncomendas: aCarregar,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),
       ),
     );
   }
-}
 
-// =========================================================
-// CARD DE OBRA (SIMPLIFICADO)
-// Mostra imagem, nome, cidade, data prevista de conclusão e
-// uma timeline horizontal numerada com destaque até currentStep.
-// Ao tocar, abre o ProjectDetailsScreen (que busca os detalhes
-// completos via GET /api/project/details?projectId=id).
-// =========================================================
-class ObraCardWidget extends StatelessWidget {
-  final ConstructionItem obra;
-  final String heroTag;
+  /// Uma chave por empreendimento, para a carteira lá de cima poder descer
+  /// até ao cartão certo.
+  final Map<int, GlobalKey> _chaves = {};
+  GlobalKey _chaveDe(ConstructionItem obra) =>
+      _chaves.putIfAbsent(obra.id, () => GlobalKey());
 
-  const ObraCardWidget({super.key, required this.obra, required this.heroTag});
-
-  @override
-  Widget build(BuildContext context) {
-    final urlImagem = obra.imageUrl;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProjectDetailsScreen(
-              projectId: obra.id,
-              heroTag: obra.imageUrl,
-              initialImageUrl: obra.imageUrl,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: COTokens.space6),
-        decoration: BoxDecoration(
-          color: COColors.brand700.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(COTokens.radiusSm),
-          border: Border.all(color: COColors.brand700.withValues(alpha: 0.5)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // IMAGEM PRINCIPAL DO PROJETO (com Hero para a transição)
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(COTokens.radiusSm)),
-                  child: Hero(
-                    tag: heroTag,
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: urlImagem.isNotEmpty
-                          ? Image.network(
-                              urlImagem,
-                              height: 180,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return _imagePlaceholder(broken: true);
-                              },
-                            )
-                          : _imagePlaceholder(broken: false),
-                    ),
-                  ),
-                ),
-                if (obra.status.isNotEmpty)
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: UIHelpers.buildStatusBadge(obra.status),
-                  ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(COTokens.space4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // NOME DO PROJETO
-                  Text(
-                    obra.title,
-                    style: const TextStyle(
-                      color: COColors.white,
-                      fontSize: 16,
-                      fontWeight: COTokens.fwBold,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-
-                  // CIDADE
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined, color: COColors.brand300, size: 14),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          obra.location,
-                          style: const TextStyle(color: COColors.brand300, fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // DATA PREVISTA DE CONCLUSÃO
-                  if (obra.dataFim != null && obra.dataFim!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.calendar_today_outlined, color: COColors.brand300, size: 12),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Data Prevista de Conclusão: ${obra.dataFim}',
-                            style: const TextStyle(color: COColors.brand300, fontSize: 11),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  const SizedBox(height: COTokens.space6),
-
-                  // TIMELINE HORIZONTAL DAS FASES
-                  if (obra.status == 'Desenvolvimento')
-                    const Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Projeto em desenvolvimento.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: COColors.brand300, fontSize: 14),
-                          ),
-                          Text(
-                            'Timeline disponível em breve!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: COColors.brand300, fontSize: 14),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (obra.steps.isNotEmpty)
-                    _Timeline(obra: obra),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _imagePlaceholder({required bool broken}) {
-    return Container(
-      height: 180,
-      color: COColors.brand700,
-      child: Center(
-        child: broken
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.broken_image_outlined, color: COColors.brand300, size: 40),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Imagem indisponível',
-                    style: TextStyle(color: COColors.neutral500, fontSize: 12),
-                  ),
-                ],
-              )
-            : const Icon(Icons.image_outlined, color: COColors.brand500, size: 40),
-      ),
-    );
-  }
-}
-
-// =========================================================
-// TIMELINE HORIZONTAL (interna ao card)
-// Bolas numeradas (stepOrder) + nome do step por baixo.
-// Destacadas (cor brand300) até ao step cujo stepOrder == currentStep.
-// =========================================================
-class _Timeline extends StatelessWidget {
-  final ConstructionItem obra;
-
-  const _Timeline({required this.obra});
-
-  @override
-  Widget build(BuildContext context) {
-    final steps = obra.steps;
-    final currentIndex = steps.indexWhere((s) => s.stepOrder == obra.currentStep);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: List.generate(steps.length, (index) {
-        final step = steps[index];
-        final isCurrent = index == currentIndex;
-        final isDone = currentIndex != -1 && index <= currentIndex;
-        final showLeftLine = index > 0;
-        final showRightLine = index < steps.length - 1;
-        final leftLineDone = currentIndex != -1 && index <= currentIndex;
-        final rightLineDone = currentIndex != -1 && index < currentIndex;
-
-        final Color dotColor = isCurrent
-            ? Colors.greenAccent
-            : (isDone ? Colors.green : COColors.brand700);
-        final Color dotBorder = isCurrent ? Colors.white : dotColor;
-
-        return Expanded(
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: showLeftLine
-                        ? Container(height: 2, color: leftLineDone ? Colors.green : COColors.brand700)
-                        : const SizedBox(),
-                  ),
-                  Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: dotColor,
-                      border: isCurrent ? Border.all(color: dotBorder, width: 2) : null,
-                    ),
-                  ),
-                  Expanded(
-                    child: showRightLine
-                        ? Container(height: 2, color: rightLineDone ? Colors.green : COColors.brand700)
-                        : const SizedBox(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Text(
-                  step.name,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isCurrent ? Colors.white : (isDone ? COColors.brand300 : COColors.neutral500),
-                    fontSize: 10,
-                    fontWeight: isCurrent ? COTokens.fwBold : COTokens.fwRegular,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      }),
+  void _irParaEmpreendimento(ConstructionItem obra) {
+    final contexto = _chaves[obra.id]?.currentContext;
+    if (contexto == null) return;
+    // A chave está num marcador de 1px acima do cartão (ver
+    // ObraCardWidget.marcador), e não no cartão: um cartão mais alto do que
+    // o ecrã, com alinhamento ao topo, ficava a meio; e o topo exato ficava
+    // por baixo da barra de cima.
+    Scrollable.ensureVisible(
+      contexto,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
     );
   }
 }

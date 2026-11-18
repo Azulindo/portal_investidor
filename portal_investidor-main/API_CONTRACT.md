@@ -5,9 +5,18 @@ Este documento define o contrato real da API do backend do Portal Investidor
 
 ## Base URL
 
-- **Desenvolvimento (emulador Android)**: `http://10.0.2.2:3000/api`
-- **Desenvolvimento (dispositivo físico / rede local)**: `http://<IP_DA_MÁQUINA>:3000/api`
-- **Produção**: a definir (`ApiConfig.baseUrlProd`)
+Definido em `lib/config/api_config.dart`. Pode ser fixado na compilação:
+
+```
+flutter run --dart-define=API_BASE_URL=http://<IP_DA_MAQUINA>:3000/api
+```
+
+Sem esse valor, cada plataforma usa o seu caminho para o localhost da máquina
+de desenvolvimento:
+
+- **Emulador Android**: `http://10.0.2.2:3000/api`
+- **iOS, Windows, macOS, Linux e web**: `http://localhost:3000/api`
+- **Dispositivo físico**: tem de ser o IP da máquina, via `--dart-define`.
 
 ## Headers
 
@@ -123,6 +132,8 @@ os pedidos autenticados subsequentes.
   "code": "AUTH_LOGIN_SUCCESSFUL",
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "f3a9...",
+    "expiresIn": 900,
     "user": {
       "email": "guilherme@cleveroption.pt",
       "firstName": "Guilherme",
@@ -135,6 +146,10 @@ os pedidos autenticados subsequentes.
 O payload decodificado do `token` inclui: `id` (id numérico do utilizador,
 usado nos restantes endpoints), `partnerId`, `commercialPartnerId`, `email`,
 `role` (`"user"` ou `"admin"`).
+
+**O `token` dura 15 minutos** (`expiresIn`, em segundos). Quem mantém a sessão
+é o `refreshToken`, que se troca por um par novo em `POST /auth/refresh`. Uma
+app que guarde só o `token` perde a sessão a cada quarto de hora.
 
 **Response (401 Unauthorized) — credenciais inválidas:**
 ```json
@@ -156,6 +171,65 @@ usado nos restantes endpoints), `partnerId`, `commercialPartnerId`, `email`,
   ]
 }
 ```
+
+---
+
+### 2.1 POST /auth/refresh
+
+Troca o refresh token por um token de acesso novo. Não leva header
+`Authorization`.
+
+**Request:**
+```json
+{ "refreshToken": "f3a9..." }
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": 200,
+  "message": "Sessão renovada",
+  "code": "AUTH_SESSION_REFRESHED",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "b7c1...",
+    "expiresIn": 900
+  }
+}
+```
+
+Três coisas a saber:
+
+- **O refresh token é rodado a cada troca.** O que se enviou deixa de servir;
+  o novo vem na resposta e substitui o guardado.
+- **`refreshToken` pode vir `null`.** Quer dizer "mantém o que tens": houve
+  outro pedido a renovar ao mesmo tempo e foi esse que levou o novo. Apagar o
+  guardado por causa deste `null` deita a sessão fora.
+- **Nunca renovar em paralelo com o mesmo refresh token.** Um token já trocado
+  que volta a aparecer é tratado como cópia roubada, e a API revoga a família
+  toda — ou seja, termina a sessão.
+
+**Response (401 / 403) — a sessão acabou:**
+
+Os códigos são os mesmos dos pedidos autenticados (`AUTH_INVALID_TOKEN`,
+`AUTH_TOKEN_EXPIRED`, `AUTH_ACCOUNT_BLOCKED`), de propósito: um refresh
+recusado trata-se como um token de acesso recusado.
+
+---
+
+### 2.2 POST /auth/logout
+
+Revoga o refresh token e toda a família dele. Não leva header
+`Authorization`.
+
+**Request:**
+```json
+{ "refreshToken": "f3a9..." }
+```
+
+Responde sempre 200 (`AUTH_LOGGED_OUT`), mesmo com um token que já não
+exista. Deve ser chamado antes de apagar os tokens do dispositivo — depois já
+não há com que o fazer.
 
 ---
 
@@ -209,7 +283,8 @@ Authorization: Bearer <token>
 - `projects` é sempre um array (`[]` se o utilizador não tiver projetos associados).
 - Cada projeto em `projects.steps` usa a chave `id` (não `stepId`) para o id do passo.
 - `mainImageUrl` pode ser `null` se o projeto não tiver imagem principal marcada.
-- Este endpoint **não** devolve `totalInvested`, `roiEsperado`, `faturas` nem `createdAt` — esses campos não existem atualmente na base de dados e devem ser tratados como `0.0` / `[]` / ausentes no cliente.
+- Este endpoint **não** devolve `faturas` nem `createdAt` — esses campos não existem na base de dados e devem ser tratados como `[]` / ausentes no cliente. O `roiEsperado` também nunca existiu: a Cleveroption é uma construtora e não reporta valorizações, por isso o campo foi removido do cliente.
+- **`hasDetailPage: false`** marca um projeto "só de historial": aparece nas listas, mas não tem ecrã de detalhes — o `GET /project/details` responde-lhe 404. O cliente não deve deixar abri-lo, nem anunciá-lo como em comercialização. **Campo ausente conta como `true`.**
 
 **Response (401 Unauthorized) — token ausente/inválido:**
 ```json
@@ -286,14 +361,17 @@ Authorization: Bearer <token>
 
 ### 5. GET /project/details
 
-Obtém os detalhes completos de um projeto específico (info, etapas e
-galeria de imagens), para o ecrã de detalhe do projeto. Requer
-`Authorization: Bearer <token>`.
+Detalhes completos de um projeto: informação, etapas, galeria, frações e
+acabamentos.
+
+**Rota pública, com autenticação opcional** (`optionalAuth`). Sem token
+responde na mesma, mas o **preço das frações vem `null`** — é assim que o site
+mostra "Registe-se para ver". Com token válido, os preços vêm preenchidos.
 
 **Request:**
 ```
 GET /project/details?projectId=101
-Authorization: Bearer <token>
+Authorization: Bearer <token>        (opcional)
 ```
 
 **Response (200 OK):**
@@ -310,39 +388,67 @@ Authorization: Bearer <token>
         "address": "Rua Barão do Corvo",
         "city": "Vila Nova de Gaia",
         "status": "Em Construção",
-        "currentStepId": 2,
+        "currentStep": 2,
         "description": "Edifício com apartamentos T2 e T1 Smart...",
         "startDate": "2023-03-01",
         "endDate": "2027-12-31",
-        "mainImageUrl": "https://framerusercontent.com/images/KN2dkpL3HkRWu6d8vX5TSAnKxs.jpg?width=800"
+        "mainImageUrl": "https://.../capa.jpg",
+        "descriptionImageUrl": "https://.../conceito.jpg",
+        "forSale": true,
+        "latitude": 41.1234,
+        "longitude": -8.6123,
+        "videoUrl": "https://www.youtube.com/watch?v=...",
+        "zoneTitle": "Uma vila da Feira, entre o verde e a cidade",
+        "zoneDescription": "Canedo é uma vila de Santa Maria da Feira...",
+        "zoneNearbyInfrastructures": ["Escolas", "Centro de saúde"],
+        "zoneNearbyLocations": [
+          { "name": "Porto (centro)", "time": "25–30 min" }
+        ]
       }
     ],
     "projectSteps": [
       {
-        "stepId": 1,
+        "id": 1,
         "stepOrder": 1,
         "name": "Início de Obra",
-        "description": "Início de Obra",
-        "imageUrl": "https://cleveroption.pt/images/theluxor/obra-inicio.jpg"
-      },
-      {
-        "stepId": 2,
-        "stepOrder": 2,
-        "name": "Estrutura em Betão",
-        "description": "Estrutura em Betão",
-        "imageUrl": "https://cleveroption.pt/images/theluxor/obra-estrutura.jpg"
+        "description": "Escavação e fundações.",
+        "imageUrl": "https://.../obra-inicio.jpg"
       }
     ],
     "projectImages": [
       {
         "imageId": 1,
-        "imageUrl": "https://framerusercontent.com/images/KN2dkpL3HkRWu6d8vX5TSAnKxs.jpg?width=800",
-        "imageDescription": "Destaque - Fachada principal do The Luxor"
-      },
+        "imageUrl": "https://.../fachada.jpg",
+        "imageDescription": "Fachada principal",
+        "category": "exterior",
+        "active": true,
+        "sortOrder": 0
+      }
+    ],
+    "projectFractions": [
       {
-        "imageId": 2,
-        "imageUrl": "https://framerusercontent.com/images/dXdoQc1BRGX8UzfrUaoBivYjjZA.jpg?width=800",
-        "imageDescription": "Fachada"
+        "fractionId": 1,
+        "projectId": 101,
+        "fractionNumber": "G",
+        "type": "T1",
+        "totalArea": 45.11,
+        "garageArea": 12,
+        "balconyArea": 1.73,
+        "price": null,
+        "status": "Disponível",
+        "block": 1,
+        "floor": "1",
+        "orientation": "norte",
+        "floorPlanUrl": "https://.../planta-g.pdf"
+      }
+    ],
+    "projectFinishes": [
+      {
+        "finishId": 1,
+        "categoryId": 3,
+        "categoryName": "Instalações sanitárias",
+        "imageUrl": "https://.../wc.jpg",
+        "details": ["Pavimento: ...", "Paredes: ..."]
       }
     ]
   }
@@ -350,10 +456,18 @@ Authorization: Bearer <token>
 ```
 
 **Notas:**
-- `projectInfo` é um **array** (sem `LIMIT 1`); o cliente deve usar `projectInfo[0]`. Se o projeto não existir, este array vem vazio.
-- `projectSteps` usa a chave **`stepId`** (diferente de `/project/portfolio`, que usa `id`). A imagem associada a cada etapa vem em `imageUrl` e pode ser `null`.
-- `projectImages` é a galeria completa de imagens do projeto (capa + restantes), cada entrada com `imageId`, `imageUrl` e `imageDescription` (pode ser `null`).
-- `mainImageUrl` em `projectInfo[0]` pode ser `null`; nesse caso o cliente deve fazer fallback para a primeira entrada de `projectImages`, ou para a imagem que já tinha em cache (ex: vinda do portfólio).
+- `projectInfo` é um **array** (sem `LIMIT 1`); usar `projectInfo[0]`. Se o projeto não existir, vem vazio.
+- `currentStep` é um **`stepOrder`**, não o `id` de um passo. Compara-se com `steps[].stepOrder`.
+- `projectSteps` usa `id` (igual a `/project/portfolio` e `/user/{id}`).
+- **`projectImages[].category`** separa as três galerias: `"exterior"`, `"interior"` e `"obra"`. A de obra é o acompanhamento da construção — antes vinha das fotos dos passos da timeline, agora tem categoria própria. Respeitar `active` (não mostrar as inativas) e `sortOrder` (ordem definida no backoffice).
+- **`projectFractions[].price` vem `null` num pedido sem token.** Não é um erro nem zero: é o preço escondido. Mostrar "Registe-se para ver".
+- **`projectInfo[].subtitle`** é uma linha curta para pôr por baixo do nome, escrita no backoffice. Opcional: vem `null` ou ausente na maioria dos projetos.
+- **Um projeto com `hasDetailPage: false` responde 404 `PROJECT_NOT_FOUND`.** Não é erro de rede nem id errado: aquele projeto não tem página. A flag vem no `/project/portfolio` e no `/user/{id}`, e é lá que se deve impedir a navegação.
+- `projectFractions[].floor` é **texto**, não número — há pisos como `"Vale"` ou `"R/C"`.
+- `projectFractions[].block` é `null` quando o empreendimento só tem um edifício.
+- `projectFinishes` já vem agrupado por categoria, com os itens em `details`.
+- `latitude`/`longitude` podem vir a `0` quando o projeto não tem morada marcada — tratar como "sem coordenadas" e não desenhar no mapa.
+- `mainImageUrl` pode ser `null`; nesse caso usar a primeira entrada de `projectImages`, ou a imagem que já se tinha do portfólio.
 
 **Response (400 Bad Request) — `projectId` ausente ou inválido:**
 ```json
@@ -397,10 +511,116 @@ mensagem do erro original.
 
 ---
 
-## Endpoints Planeados (ainda não implementados)
+## 6. Documentos
 
-Os seguintes endpoints fazem parte do produto mas **não existem no backend
-atual** — não devem ser chamados pelo cliente até serem implementados:
+Ambos exigem `Authorization: Bearer <token>`.
+
+### GET /document/list
+
+Faturas do cliente autenticado, com os anexos de cada uma. É o que alimenta o
+ecrã "Documentos".
+
+Cada entrada: `id`, `name`, `date`, `paymentState`, `amountTotal` e
+`attachments[]` (`id`, `resId`, `name`, `mimetype`, `storeFName`).
+
+`paymentState` vem do Odoo: `paid`, `not_paid`, `partial`, `in_payment`,
+`reversed`.
+
+### GET /document/sale-orders
+
+As encomendas do cliente, cada uma com as suas faturas. Traz a ligação ao
+empreendimento (`projectName`) e as frações compradas, que a `/document/list`
+não tem. É o que o site usa no painel do investidor.
+
+Cada entrada: `id`, `name`, `projectName`, `fractions[]`, `amountTotal`,
+`date`, `invoices[]` — e cada fatura com `amountTotal`, `amountResidual`,
+`paymentState` e `attachments[]`.
+
+> `amountResidual` só é de confiança em faturas `paid` e `partial`. Nas
+> `not_paid` umas trazem o total e outras zero, por isso contam como 0 pago.
+
+---
+
+## 7. Notificações
+
+Todas com `Authorization: Bearer <token>`.
+
+### GET /notification
+As notificações visíveis para quem está ligado (as mesmas do sininho do
+site), da mais recente para a mais antiga, no máximo 30, mais a contagem de
+não lidas. Ver `NotificacoesResposta` em `lib/models`.
+
+### PUT /notification/{id}/read e PUT /notification/read-all
+Marcar como lida. Idempotente. Um id que não existe e um id que não é desta
+pessoa dão os dois 404.
+
+### POST /notification/device — registar o telemóvel para notificações push
+
+> Estado (17/11/2026): no `main` da API (`src/routes/notification.ts`,
+> `src/services/push.ts`, com testes em `src/tests/push.test.ts`). Não há
+> servidor de teste: corre em `https://api.cleveroption.pt/api`, por isso
+> uma notificação de teste criada no backoffice chega a clientes reais se a
+> audiência não for só a conta de teste.
+
+```json
+{ "token": "<token do FCM>", "platform": "android" }
+```
+`platform` é `android` ou `ios`. Responde **204**.
+- A app chama-o depois do login e sempre que o Firebase lhe der um token novo.
+- Se o token já existir, é atualizado e passa para o utilizador que fez o
+  pedido (troca de conta no mesmo telemóvel).
+- O token fica ligado à **sessão** em que foi registado: o `/auth/logout`
+  apaga-o sozinho, e só recebem push os telemóveis com sessão ativa (se a
+  sessão expirar ou a palavra-passe mudar, deixa de receber).
+
+### DELETE /notification/device — deixar de receber push neste telemóvel
+```json
+{ "token": "<token do FCM>" }
+```
+Responde **204**, também se o token não existir. Só apaga tokens do próprio
+utilizador. Com o logout a apagar o token sozinho, isto serve para um botão
+"desativar notificações" e não é obrigatório antes do logout.
+
+### O que chega à app numa notificação push (FCM)
+- `notification`: `title` e `body` da notificação (o `body` numa linha,
+  cortado a ~200 caracteres).
+- `data` (tudo em texto, como o FCM obriga):
+  - `notificationId` — o mesmo `id` do `GET /notification`; para marcar como
+    lida usa-se o `PUT /notification/{id}/read`.
+  - `type` — `obra` | `documento` | `comercial` | `geral`.
+  - `projectId` — só quando a notificação é de um empreendimento.
+
+Vão push todas as notificações, incluindo as automáticas ("a obra avançou",
+"o empreendimento está em comercialização", "a sua área de cliente está
+ativa"), para os mesmos destinatários do sininho. Se o envio falhar, a
+notificação é criada na mesma e fica só no log da API.
+
+**Os textos aparecem no ecrã bloqueado:** sem valores nem dados pessoais.
+
+Do lado do servidor: `firebase-admin` com `sendEachForMulticast` (lotes de
+500), credenciais pela variável `FIREBASE_SERVICE_ACCOUNT_FILE` (caminho do
+JSON da conta de serviço, fora do repositório). Sem ela, os endpoints
+funcionam e guardam os tokens, mas o envio fica desligado. Para os iPhones,
+a chave APNs da Apple tem de estar carregada no projeto do Firebase.
+
+---
+
+## Endpoints Desativados
+
+Existem no código da API mas com as rotas **comentadas**
+(`src/routes/document.ts`: "desativado temporariamente — TODO: desenvolver
+esta parte mais tarde"). Chamá-los dá 404:
+
+- `GET /document/attachment/:id/token` — gerar URL de download temporário
+- `GET /document/attachment/:id` — descarregar o anexo
+
+Do lado da app, o código está escrito e trancado atrás de
+`ApiConfig.downloadDeAnexosDisponivel`. Quando as rotas voltarem, basta pôr
+essa constante a `true`.
+
+---
+
+## Endpoints Planeados (ainda não implementados)
 
 - `POST /tickets` — criar ticket de suporte
 - `GET /tickets` — listar tickets do utilizador autenticado
@@ -415,10 +635,10 @@ Quando forem implementados, devem seguir o mesmo envelope `status` /
 
 1. **Envelope consistente**: toda a resposta (sucesso ou erro) inclui `status`, `message` e `code`; o corpo útil vem em `data`.
 2. **Arrays nunca null**: campos de array (`projects`, `projectSteps`, `projectImages`, `userData`, etc.) devem ser `[]` em vez de `null` quando vazios.
-3. **Autenticação**: todos os endpoints `/user/*` e `/project/*` exigem `Authorization: Bearer <token>`, obtido em `/auth/login`. Tokens expiram (atualmente `1d`).
+3. **Autenticação**: `/user/*` e `/document/*` exigem `Authorization: Bearer <token>`, obtido em `/auth/login`. **O token de acesso dura 15 minutos** e renova-se em `/auth/refresh` com o refresh token (ver 2.1). **`/project/*` é público**: `/portfolio` não pede nada e `/details` tem autenticação opcional — o token só serve para revelar o preço das frações.
 4. **IDs consistentes entre endpoints**: o `id` devolvido em `/project/portfolio` é o mesmo a usar em `/project/details?projectId=<id>` e corresponde ao `id` de cada projeto em `/user/{id}` (`data.projects[].id`).
-5. **Chaves de "step" inconsistentes** (a corrigir no futuro): `/project/portfolio` e `/user/{id}` usam `steps[].id`, enquanto `/project/details` usa `projectSteps[].stepId` para o mesmo conceito (id do passo).
-6. **Números com default**: campos numéricos como `totalInvested`, `roiEsperado`, `valor` (quando existirem) devem ter valor `0.0` se `null`.
+5. **Chaves de "step" já uniformes**: `/project/portfolio`, `/user/{id}` e `/project/details` usam todos `id`. (O `stepId` de `/project/details` foi corrigido.)
+6. **Números com default**: campos numéricos como `totalInvested` ou `valor` (quando existirem) devem ter valor `0.0` se `null`.
 7. **Strings com default**: campos de texto devem ter valores padrão descritivos (ex: `"Título não informado"`) quando ausentes.
 8. **Datas**: usar formato ISO 8601 ou `YYYY-MM-DD` (campos `date` do Postgres, ex: `startDate`, `endDate`).
 9. **Timeout**: o cliente configura um timeout de 10 segundos para todos os requests (`ApiConfig.connectionTimeout`).

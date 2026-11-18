@@ -1,14 +1,36 @@
+import '../config/api_config.dart';
+
+/// Um campo de texto opcional da API: null quando vem null, ausente, ou
+/// so com espacos. Texto vazio conta como ausente, porque uma linha com
+/// rotulo e nada ao lado e pior do que nao haver linha.
+String? _texto(dynamic valor) {
+  final t = valor?.toString().trim() ?? '';
+  return t.isEmpty ? null : t;
+}
+
+/// Um ficheiro da API, com o endereco completo.
+///
+/// As respostas trazem caminhos relativos ("/media/..."), por isso resolve-se
+/// aqui, a entrada, e nao em cada widget: quem le os modelos recebe sempre um
+/// endereco que se pode abrir. Ver ApiConfig.urlDeFicheiro.
+String? _ficheiro(dynamic valor) => ApiConfig.urlDeFicheiro(_texto(valor));
+
 class ConstructionStep {
   final int id;
   final int stepOrder;
   final String name;
   final String description;
 
+  /// A fotografia da fase, para a régua do painel. Vem no /user/:id, como no
+  /// site; null quando a fase ainda não tem foto.
+  final String? imageUrl;
+
   ConstructionStep({
     required this.id,
     required this.stepOrder,
     required this.name,
     required this.description,
+    this.imageUrl,
   });
 
   factory ConstructionStep.fromJson(Map<String, dynamic> json) {
@@ -17,6 +39,7 @@ class ConstructionStep {
       stepOrder: json['stepOrder'] ?? 0,
       name: json['name'] ?? '',
       description: json['description'] ?? '',
+      imageUrl: _ficheiro(json['imageUrl']),
     );
   }
 }
@@ -34,6 +57,16 @@ class ConstructionItem {
   final String? dataFim;
   final String status;
   final int? nFractions;
+  /// Tem frações em comercialização.
+  final bool forSale;
+  /// Tem ecrã de detalhes. Os empreendimentos "só de historial" aparecem nas
+  /// listas e no mapa, mas a API responde 404 a quem lhes pedir os detalhes,
+  /// por isso não se deve deixar abri-los.
+  final bool temPagina;
+  /// Onde fica, para o mapa. Vem a 0 quando o projeto não tem morada marcada.
+  final double? latitude;
+  final double? longitude;
+  final String? address;
 
   ConstructionItem({
     required this.id,
@@ -45,7 +78,29 @@ class ConstructionItem {
     this.dataFim,
     this.status = '',
     this.nFractions,
+    this.forSale = false,
+    this.temPagina = true,
+    this.latitude,
+    this.longitude,
+    this.address,
   });
+
+  /// Em comercialização, como o site o mostra: só quem tem página. Sem ecrã
+  /// para onde ir, anunciar que há frações à venda não leva a nada.
+  bool get estaAVenda => forSale && temPagina;
+
+  /// Dá para marcar no mapa. A API manda 0/0 quando não há coordenadas.
+  bool get temCoordenadas =>
+      latitude != null &&
+      longitude != null &&
+      (latitude != 0 || longitude != 0);
+
+  /// Ano de conclusão, que é como a data se mostra.
+  String? get anoFim {
+    if (dataFim == null) return null;
+    final m = RegExp(r'\d{4}').firstMatch(dataFim!);
+    return m?.group(0) ?? dataFim;
+  }
 
   ConstructionStep? get currentStepObject {
     try {
@@ -78,10 +133,17 @@ class ConstructionItem {
       location: json['city']?.toString() ?? 'Localização não informada',
       currentStep: json['currentStep'] ?? 0,
       steps: steps,
-      imageUrl: json['mainImageUrl']?.toString() ?? '',
+      imageUrl: _ficheiro(json['mainImageUrl']) ?? '',
       dataFim: json['endDate']?.toString(),
       status: json['status']?.toString() ?? '',
       nFractions: int.tryParse(json['nFractions']?.toString() ?? ''),
+      forSale: json['forSale'] == true,
+      // Ausente conta como tendo página, para uma API anterior a este campo
+      // continuar a funcionar.
+      temPagina: json['hasDetailPage'] != false,
+      latitude: double.tryParse(json['latitude']?.toString() ?? ''),
+      longitude: double.tryParse(json['longitude']?.toString() ?? ''),
+      address: json['address']?.toString(),
     );
   }
 }
@@ -97,14 +159,12 @@ class FaturaItem {
 class UserModel {
   final String name;
   final double totalInvestido;
-  final double roiEsperado;
   final List<ConstructionItem> obras;
   final List<FaturaItem> faturas;
 
   UserModel({
     required this.name,
     required this.totalInvestido,
-    required this.roiEsperado,
     required this.obras,
     required this.faturas,
   });
@@ -117,6 +177,8 @@ class UserModel {
 /// Corresponde a uma linha de "projectInfo" devolvida pelo backend.
 class ProjectInfo {
   final String name;
+  /// Linha curta por baixo do nome, quando o empreendimento tem uma.
+  final String? subtitle;
   final int? nFractions;
   final String address;
   final String city;
@@ -128,9 +190,23 @@ class ProjectInfo {
   final String? endDate;
   final String? mainImageUrl;
   final bool forSale;
+  // Onde fica, para o mapa.
+  final double? latitude;
+  final double? longitude;
+  // Imagem que acompanha o texto do conceito, separada da imagem de capa.
+  final String? descriptionImageUrl;
+  final String? videoUrl;
+  // Secção "O lugar": a envolvente do empreendimento.
+  final String? zoneTitle;
+  final String? zoneDescription;
+  /// Ex.: "Escolas", "Centro de saúde" — o que existe na zona.
+  final List<String> zoneNearbyInfrastructures;
+  /// Ex.: { name: "Porto (centro)", time: "25–30 min" }.
+  final List<ZoneLocation> zoneNearbyLocations;
 
   ProjectInfo({
     required this.name,
+    this.subtitle,
     this.nFractions,
     required this.address,
     required this.city,
@@ -141,11 +217,27 @@ class ProjectInfo {
     this.endDate,
     this.mainImageUrl,
     this.forSale = false,
+    this.latitude,
+    this.longitude,
+    this.descriptionImageUrl,
+    this.videoUrl,
+    this.zoneTitle,
+    this.zoneDescription,
+    this.zoneNearbyInfrastructures = const [],
+    this.zoneNearbyLocations = const [],
   });
+
+  /// Ano de conclusão, que é como a data aparece em todo o lado.
+  String? get anoFim {
+    if (endDate == null) return null;
+    final m = RegExp(r'\d{4}').firstMatch(endDate!);
+    return m?.group(0) ?? endDate;
+  }
 
   factory ProjectInfo.fromJson(Map<String, dynamic> json) {
     return ProjectInfo(
       name: json['name']?.toString() ?? 'Projeto sem título',
+      subtitle: _texto(json['subtitle']),
       nFractions: int.tryParse(json['nFractions']?.toString() ?? ''),
       address: json['address']?.toString() ?? '',
       city: json['city']?.toString() ?? '',
@@ -154,10 +246,37 @@ class ProjectInfo {
       description: json['description']?.toString() ?? 'Nenhuma descrição disponível.',
       startDate: json['startDate']?.toString(),
       endDate: json['endDate']?.toString(),
-      mainImageUrl: json['mainImageUrl']?.toString(),
+      mainImageUrl: _ficheiro(json['mainImageUrl']),
       forSale: json['forSale'] == true,
+      latitude: double.tryParse(json['latitude']?.toString() ?? ''),
+      longitude: double.tryParse(json['longitude']?.toString() ?? ''),
+      descriptionImageUrl: _ficheiro(json['descriptionImageUrl']),
+      videoUrl: json['videoUrl']?.toString(),
+      zoneTitle: json['zoneTitle']?.toString(),
+      zoneDescription: json['zoneDescription']?.toString(),
+      zoneNearbyInfrastructures: (json['zoneNearbyInfrastructures'] as List? ?? [])
+          .map((e) => e.toString())
+          .where((e) => e.isNotEmpty)
+          .toList(),
+      zoneNearbyLocations: (json['zoneNearbyLocations'] as List? ?? [])
+          .whereType<Map>()
+          .map((e) => ZoneLocation.fromJson(e.cast<String, dynamic>()))
+          .toList(),
     );
   }
+}
+
+/// Um destino e o tempo que demora a chegar lá de carro.
+class ZoneLocation {
+  final String name;
+  final String time;
+
+  ZoneLocation({required this.name, required this.time});
+
+  factory ZoneLocation.fromJson(Map<String, dynamic> json) => ZoneLocation(
+        name: json['name']?.toString() ?? '',
+        time: json['time']?.toString() ?? '',
+      );
 }
 
 /// Corresponde a uma linha de "projectSteps" devolvida pelo backend.
@@ -184,28 +303,179 @@ class ProjectStepDetail {
       stepOrder: int.tryParse(json['stepOrder']?.toString() ?? '') ?? 0,
       name: json['name']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
-      imageUrl: json['imageUrl']?.toString(),
+      imageUrl: _ficheiro(json['imageUrl']),
     );
   }
 }
 
 /// Corresponde a uma linha de "projectImages" devolvida pelo backend.
+///
+/// A categoria separa as três galerias: exterior, interior e obra. A de obra
+/// é o acompanhamento da construção — antes as fotos da obra vinham dos passos
+/// da timeline, mas passaram a ter categoria própria.
 class ProjectImage {
   final int imageId;
   final String imageUrl;
   final String? imageDescription;
+  /// "interior" | "exterior" | "obra". Sem valor, trata-se como exterior.
+  final String category;
+  /// Imagens inativas não devem ser apresentadas.
+  final bool active;
+  /// Ordem definida no backoffice.
+  final int sortOrder;
 
   ProjectImage({
     required this.imageId,
     required this.imageUrl,
     this.imageDescription,
+    this.category = 'exterior',
+    this.active = true,
+    this.sortOrder = 0,
   });
+
+  bool get eDeObra => category == 'obra';
 
   factory ProjectImage.fromJson(Map<String, dynamic> json) {
     return ProjectImage(
       imageId: int.tryParse(json['imageId']?.toString() ?? '') ?? 0,
-      imageUrl: json['imageUrl']?.toString() ?? '',
+      imageUrl: _ficheiro(json['imageUrl']) ?? '',
       imageDescription: json['imageDescription']?.toString(),
+      category: json['category']?.toString() ?? 'exterior',
+      // Ausente conta como ativa: só se esconde o que vier explicitamente a false.
+      active: json['active'] != false,
+      sortOrder: int.tryParse(json['sortOrder']?.toString() ?? '') ?? 0,
+    );
+  }
+}
+
+/// Uma fração do empreendimento ("projectFractions").
+class ProjectFraction {
+  final int fractionId;
+  final int projectId;
+  final String fractionNumber;
+  final String type;
+
+  /// Referência interna da fração, como vem no Excel do mapa de frações.
+  /// Não é o que o cliente conhece — serve para falar com a equipa.
+  final String? internalNumber;
+
+  /// Área bruta privativa. Chegou com o import do Excel (2026-10-29).
+  final double? grossPrivateArea;
+
+  /// Pode faltar: a coluna deixou de ser obrigatória quando passou a ser
+  /// preenchida pelo Excel. Se fosse lida como 0, o intervalo de áreas de
+  /// uma tipologia começaria em "0 m²" por causa de uma fração por medir.
+  final double? totalArea;
+
+  /// Área útil. Também veio do import do Excel.
+  final double? usefulArea;
+
+  final double? garageArea;
+  final double? balconyArea;
+  /// null num pedido anónimo — o preço só vem para quem tem sessão. Nesse caso
+  /// mostra-se "Registe-se para ver" em vez de um valor.
+  final double? price;
+  /// "Disponível" | "Reservado" | "Vendido".
+  final String status;
+  /// O edifício; null quando o empreendimento só tem um.
+  ///
+  /// Texto e não número. Era `int?` aqui, e a coluna era `smallint` na base
+  /// de dados — mas em 2026-10-29 passou a texto de propósito, para aceitar
+  /// blocos com nome. Enquanto forem "1" e "2" o `int.tryParse` antigo ia
+  /// safando-se; no primeiro bloco "A" ou "Nascente" a app deixava-o cair
+  /// em silêncio e o site mostrava-o.
+  final String? block;
+  /// Texto e não número: há pisos não numéricos (ex.: "Vale").
+  final String? floor;
+  final String? orientation;
+  /// Planta da fração em PDF.
+  final String? floorPlanUrl;
+
+  /// Lugares de estacionamento.
+  final int? parkingSpaces;
+
+  /// As imagens da planta, para a ficha da fração: o apartamento e onde fica
+  /// no piso. Vieram com a ficha da fração do site (novembro de 2026); quando
+  /// faltam, a ficha mostra o PDF.
+  final String? floorPlanImageUrl;
+  final String? floorLocationImageUrl;
+
+  ProjectFraction({
+    required this.fractionId,
+    required this.projectId,
+    required this.fractionNumber,
+    required this.type,
+    this.internalNumber,
+    this.grossPrivateArea,
+    this.totalArea,
+    this.usefulArea,
+    this.garageArea,
+    this.balconyArea,
+    this.price,
+    required this.status,
+    this.block,
+    this.floor,
+    this.orientation,
+    this.floorPlanUrl,
+    this.parkingSpaces,
+    this.floorPlanImageUrl,
+    this.floorLocationImageUrl,
+  });
+
+  bool get disponivel => status.toLowerCase().startsWith('dispon');
+
+  factory ProjectFraction.fromJson(Map<String, dynamic> json) {
+    return ProjectFraction(
+      fractionId: int.tryParse(json['fractionId']?.toString() ?? '') ?? 0,
+      projectId: int.tryParse(json['projectId']?.toString() ?? '') ?? 0,
+      fractionNumber: json['fractionNumber']?.toString() ?? '',
+      type: json['type']?.toString() ?? '',
+      internalNumber: _texto(json['internalNumber']),
+      grossPrivateArea:
+          double.tryParse(json['grossPrivateArea']?.toString() ?? ''),
+      totalArea: double.tryParse(json['totalArea']?.toString() ?? ''),
+      usefulArea: double.tryParse(json['usefulArea']?.toString() ?? ''),
+      garageArea: double.tryParse(json['garageArea']?.toString() ?? ''),
+      balconyArea: double.tryParse(json['balconyArea']?.toString() ?? ''),
+      price: double.tryParse(json['price']?.toString() ?? ''),
+      status: json['status']?.toString() ?? '',
+      // Texto vazio conta como ausente: um "Bloco" sem nome na lista de
+      // detalhes seria pior do que nao haver linha nenhuma.
+      block: _texto(json['block']),
+      floor: json['floor']?.toString(),
+      orientation: json['orientation']?.toString(),
+      floorPlanUrl: _ficheiro(json['floorPlanUrl']),
+      parkingSpaces: int.tryParse(json['parkingSpaces']?.toString() ?? ''),
+      floorPlanImageUrl: _ficheiro(json['floorPlanImageUrl']),
+      floorLocationImageUrl: _ficheiro(json['floorLocationImageUrl']),
+    );
+  }
+}
+
+/// Uma categoria do mapa de acabamentos (ex.: "Instalações sanitárias"), já
+/// agrupada pela API.
+class ProjectFinish {
+  final int finishId;
+  final int categoryId;
+  final String categoryName;
+  final String? imageUrl;
+  final List<String> details;
+
+  ProjectFinish({
+    required this.finishId,
+    required this.categoryId,
+    required this.categoryName,
+    this.imageUrl,
+    this.details = const [],
+  });
+
+  factory ProjectFinish.fromJson(Map<String, dynamic> json) {
+    return ProjectFinish(
+      finishId: int.tryParse(json['finishId']?.toString() ?? '') ?? 0,
+      categoryId: int.tryParse(json['categoryId']?.toString() ?? '') ?? 0,
+      categoryName: json['categoryName']?.toString() ?? '',
+      imageUrl: _ficheiro(json['imageUrl']),
+      details: (json['details'] as List? ?? []).map((e) => e.toString()).toList(),
     );
   }
 }
@@ -215,15 +485,20 @@ class ProjectDetailModel {
   final ProjectInfo info;
   final List<ProjectStepDetail> steps;
   final List<ProjectImage> images;
+  final List<ProjectFraction> fractions;
+  final List<ProjectFinish> finishes;
 
   ProjectDetailModel({
     required this.info,
     required this.steps,
     required this.images,
+    this.fractions = const [],
+    this.finishes = const [],
   });
 
   factory ProjectDetailModel.fromJson(Map<String, dynamic> json) {
-    // "data" -> { projectInfo: [...], projectSteps: [...], projectImages: [...] }
+    // "data" -> { projectInfo, projectSteps, projectImages, projectFractions,
+    //             projectFinishes }
     final data = json['data'] is Map<String, dynamic> ? json['data'] as Map<String, dynamic> : json;
 
     final projectInfoList = data['projectInfo'] is List ? data['projectInfo'] as List : [];
@@ -231,25 +506,57 @@ class ProjectDetailModel {
         ? projectInfoList[0] as Map<String, dynamic>
         : <String, dynamic>{};
 
-    final stepsList = data['projectSteps'] is List ? data['projectSteps'] as List : [];
-    final imagesList = data['projectImages'] is List ? data['projectImages'] as List : [];
+    List<T> lista<T>(String chave, T Function(Map<String, dynamic>) de) =>
+        (data[chave] is List ? data[chave] as List : [])
+            .whereType<Map>()
+            .map((e) => de(e.cast<String, dynamic>()))
+            .toList();
 
     return ProjectDetailModel(
       info: ProjectInfo.fromJson(infoJson),
-      steps: stepsList
-          .whereType<Map>()
-          .map((s) => ProjectStepDetail.fromJson(s as Map<String, dynamic>))
-          .toList(),
-      images: imagesList
-          .whereType<Map>()
-          .map((i) => ProjectImage.fromJson(i as Map<String, dynamic>))
-          .toList(),
+      steps: lista('projectSteps', ProjectStepDetail.fromJson),
+      images: lista('projectImages', ProjectImage.fromJson),
+      fractions: lista('projectFractions', ProjectFraction.fromJson),
+      finishes: lista('projectFinishes', ProjectFinish.fromJson),
     );
   }
 
-  /// Lista de URLs de imagem da galeria (filtra entradas vazias)
-  List<String> get galeria => images
-      .map((i) => i.imageUrl)
-      .where((url) => url.isNotEmpty)
-      .toList();
+  /// Imagens que se podem mostrar, pela ordem definida no backoffice.
+  List<ProjectImage> get _visiveis {
+    final ativas = images.where((i) => i.active && i.imageUrl.isNotEmpty).toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return ativas;
+  }
+
+  /// A galeria do empreendimento: interiores e exteriores, sem as fotos de obra.
+  List<String> get galeria =>
+      imagensDaGaleria.map((i) => i.imageUrl).toList();
+
+  /// O acompanhamento da construção.
+  List<String> get galeriaDeObra =>
+      imagensDeObra.map((i) => i.imageUrl).toList();
+
+  /// As mesmas imagens da [galeria], mas com a categoria e a descrição —
+  /// para quem precisa de mostrar a que grupo pertence cada uma.
+  List<ProjectImage> get imagensDaGaleria =>
+      _visiveis.where((i) => !i.eDeObra).toList();
+
+  List<ProjectImage> get imagensDeObra =>
+      _visiveis.where((i) => i.eDeObra).toList();
+
+  /// Só vale a pena identificar a categoria quando existem imagens dos dois
+  /// tipos. Com só exteriores, dizer "exterior" em todas não informa nada.
+  /// É a mesma decisão que o site toma (separarGaleria).
+  bool get galeriaTemInteriorEExterior {
+    final cats = imagensDaGaleria.map((i) => i.category).toSet();
+    return cats.contains('interior') && cats.contains('exterior');
+  }
+
+  List<String> galeriaDe(String categoria) =>
+      _visiveis.where((i) => i.category == categoria).map((i) => i.imageUrl).toList();
+
+  /// Quantas frações estão por vender. Devolve null quando a API não trouxe
+  /// frações nenhumas, para se distinguir de "nenhuma disponível".
+  int? get fracoesDisponiveis =>
+      fractions.isEmpty ? null : fractions.where((f) => f.disponivel).length;
 }

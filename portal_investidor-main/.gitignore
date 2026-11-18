@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Chave da conta de servico do Firebase: e da API (servidor), nunca da app.
+# Da acesso a enviar notificacoes em nome da Cleveroption; o repositorio e publico.
+*firebase-adminsdk*.json

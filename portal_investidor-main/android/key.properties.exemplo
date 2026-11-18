@@ -1,0 +1,46 @@
+# Modelo do android/key.properties. Copie para "key.properties" (sem o
+# .exemplo) e preencha com os dados da chave de assinatura.
+#
+# QUEM CRIA A CHAVE
+# -----------------
+# Quem ficar responsavel pela app na empresa, e nao quem a esta a
+# desenvolver. A chave e a identidade da app na Play Store: so ela permite
+# publicar atualizacoes, e vale enquanto a app existir. Numa chave criada por
+# alguem de passagem, essa pessoa leva-a quando sair.
+#
+# O ficheiro .jks e as palavras-passe vivem no gestor de palavras-passe da
+# empresa. Quem desenvolve precisa de uma copia para gerar os pacotes, mas a
+# chave nao e dele.
+#
+# Perder a chave e deixar de poder atualizar a app. Recuperar implica pedir
+# uma reposicao a Google, que demora e nem sempre e concedida.
+#
+# COMO CRIAR (uma vez, e para sempre)
+# -----------------------------------
+#   keytool -genkeypair -v -keystore upload-keystore.jks -storetype JKS \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# No Windows o keytool costuma estar em:
+#   C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe
+#
+# Guarde o .jks FORA da pasta do projeto, para nao haver hipotese de ir
+# parar ao repositorio.
+#
+# SE A APP FOR DISTRIBUIDA PELO SITE ANTES DA PLAY STORE
+# -----------------------------------------------------
+# Na Play Store, a app que chega aos telemoveis e assinada pela Google (Play
+# App Signing), nao por esta chave. Para quem instalou o APK do site poder
+# atualizar pela loja, ao criar a app na Play Console escolha carregar ESTA
+# chave como "chave de assinatura da app", em vez de deixar a Google gerar
+# uma nova. Ver loja\gerar_pacote.ps1 (opcao -Apk).
+#
+# ESTE FICHEIRO
+# -------------
+# O key.properties verdadeiro e o .jks estao no .gitignore e nao entram no
+# repositorio. Sem este ficheiro o build de release assina-se com as chaves
+# de debug, o que serve para testar e e recusado pela Play Console.
+
+storePassword=
+keyPassword=
+keyAlias=upload
+storeFile=C:/caminho/para/upload-keystore.jks

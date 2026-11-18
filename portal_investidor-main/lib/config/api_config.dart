@@ -1,23 +1,130 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+/// Onde está a API e como se lhe chama.
+///
+/// O URL base pode ser fixado na compilação, que é o que se usa para apontar
+/// à API a sério:
+///
+///   flutter run --dart-define=API_BASE_URL=http://100.108.195.117:3000/api
+///
+/// Sem esse valor, cada plataforma usa o seu caminho para o "localhost" da
+/// máquina de desenvolvimento: o emulador Android vê-o em 10.0.2.2, e o
+/// simulador iOS, o Windows, o macOS, o Linux e a web veem-no em localhost.
+/// Antes estava 10.0.2.2 em todo o lado, por isso só funcionava no emulador
+/// Android.
 class ApiConfig {
-  // Toggle between mock data and real API
-  static bool useMock = false;
+  /// Dados de exemplo em vez da API. Útil sem rede ou com a API em baixo.
+  ///
+  /// Liga-se no arranque, sem editar nada:
+  ///   flutter run --dart-define=USE_MOCK=true
+  ///
+  /// Assim o repositório fica sempre a apontar à API a sério, e não há o
+  /// risco de alguém fazer commit com os dados de exemplo ligados.
+  static bool useMock = const bool.fromEnvironment('USE_MOCK');
 
-  // Base URLs
-  static const String baseUrlDev = 'http://10.0.2.2:3000/api';
-  static const String baseUrlProd = 'http://10.0.2.2:3000/api';
+  static const String _baseUrlDefinido = String.fromEnvironment('API_BASE_URL');
 
-  // Get the appropriate base URL based on useMock setting
-  static String get baseUrl => useMock ? baseUrlDev : baseUrlProd;
+  /// O host da máquina de desenvolvimento, visto de dentro de cada plataforma.
+  static String get _baseUrlLocal {
+    if (kIsWeb) return 'http://localhost:3000/api';
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000/api';
+    return 'http://localhost:3000/api';
+  }
 
-  // Connection timeout for API calls
+  static String get baseUrl {
+    final escolhido =
+        _baseUrlDefinido.isNotEmpty ? _baseUrlDefinido : _baseUrlLocal;
+    // Sem a barra do fim: todos os endpoints aqui começam por "/", e um
+    // API_BASE_URL colado com barra ("...pt/api/") dava caminhos com "//".
+    return escolhido.endsWith('/')
+        ? escolhido.substring(0, escolhido.length - 1)
+        : escolhido;
+  }
+
+  /// O endereço completo de um ficheiro que a API devolveu.
+  ///
+  /// As respostas trazem caminhos relativos desde que os ficheiros passaram a
+  /// ser servidos pela própria API: `/media/aires-de-ornelas/.../hero.webp`.
+  /// O site resolve-os com um proxy no próprio domínio; a app não tem onde,
+  /// e o CachedNetworkImage precisa do endereço inteiro — sem isto a app não
+  /// mostrava uma única fotografia.
+  ///
+  /// Um endereço que já venha completo fica como está: há imagens antigas
+  /// apontadas para fora.
+  static String? urlDeFicheiro(String? caminho) {
+    final limpo = caminho?.trim() ?? '';
+    if (limpo.isEmpty) return null;
+    if (limpo.startsWith('http://') || limpo.startsWith('https://')) {
+      return limpo;
+    }
+    return limpo.startsWith('/') ? '$baseUrl$limpo' : '$baseUrl/$limpo';
+  }
+
+  /// Tempo máximo de espera por uma resposta.
   static const Duration connectionTimeout = Duration(seconds: 10);
 
-  // ---- Endpoints ----
-  static const String loginEndpoint = '/auth/login';
-  static const String registerEndpoint = '/auth/register';
-  static String userEndpoint(int id) => '/user/$id';
+  // ── Endpoints ────────────────────────────────────────────────
+  // Públicos (sem sessão): portfolio e details. Em details, o preço das
+  // frações só vem preenchido quando se envia o token — sem ele vem null.
   static const String portfolioEndpoint = '/project/portfolio';
-  static String projectDetailsEndpoint(int projectId) => '/project/details?projectId=$projectId';
+  static String projectDetailsEndpoint(int projectId) =>
+      '/project/details?projectId=$projectId';
+
+  // Autenticação. São os mesmos endpoints que os formulários do site chamam
+  // (no site passam por route handlers em /api/..., mas esses são só proxies
+  // finos para estes).
+  static const String loginEndpoint = '/auth/login';
+
+  /// Troca o refresh token por um token de acesso novo. O de acesso dura 15
+  /// minutos, por isso sem isto a sessão caía a cada quarto de hora.
+  static const String refreshEndpoint = '/auth/refresh';
+
+  /// Revoga o refresh token e toda a família dele, do lado do servidor.
+  static const String logoutEndpoint = '/auth/logout';
+
+  static const String registerEndpoint = '/auth/register';
+  static const String forgotPasswordEndpoint = '/auth/forgot-password';
+  static const String resetPasswordEndpoint = '/auth/reset-password';
+  // Com sessão: pede a atual e a nova. A API termina as outras sessões da
+  // pessoa e mantém esta.
+  static const String changePasswordEndpoint = '/auth/change-password';
+  static const String resendConfirmationEndpoint = '/auth/resend-confirmation';
+  static String confirmEmailEndpoint(String token) =>
+      '/auth/confirm-email?token=${Uri.encodeQueryComponent(token)}';
+
+  // Com sessão.
+  static String userEndpoint(int id) => '/user/$id';
   static const String documentListEndpoint = '/document/list';
-  static String attachmentDownloadUrl(int attachmentId) => '$baseUrl/document/attachment/$attachmentId';
+  static const String saleOrdersEndpoint = '/document/sale-orders';
+
+  /// Notificacoes.
+  ///
+  /// O caminho e "/notification" no singular e os metodos de marcar lida sao
+  /// PUT e nao PATCH como o resto da API. Nao e engano: foi o site que fixou
+  /// estes caminhos primeiro e a API seguiu-os.
+  static const String notificationsEndpoint = '/notification';
+  static String markNotificationReadEndpoint(int id) => '/notification/$id/read';
+  /// POST regista o telemovel para push, DELETE deixa de receber. Ver a
+  /// seccao 7 do API_CONTRACT.md.
+  static const String notificationDeviceEndpoint = '/notification/device';
+  static const String markAllNotificationsReadEndpoint =
+      '/notification/read-all';
+
+  /// Download de anexos.
+  ///
+  /// As rotas estiveram comentadas na API e voltaram em 2026-10-08, já
+  /// corrigidas para os novos formatos de dados. Confirmado no repositório da
+  /// API: /document/attachment/:id/token devolve {data: {token}} e
+  /// /document/attachment/:id?token=... devolve o ficheiro, com um token de
+  /// 5 minutos que não serve como token de sessão.
+  ///
+  /// Por confirmar contra o servidor real, que a app ainda não usa.
+  static const bool downloadDeAnexosDisponivel = true;
+
+  static String attachmentTokenEndpoint(int attachmentId) =>
+      '/document/attachment/$attachmentId/token';
+  static String attachmentDownloadUrl(int attachmentId, String token) =>
+      '$baseUrl/document/attachment/$attachmentId?token=$token';
 }

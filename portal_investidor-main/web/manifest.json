@@ -1,11 +1,11 @@
 {
-    "name": "portal_investidor",
-    "short_name": "portal_investidor",
+    "name": "Cleveroption — Área Reservada",
+    "short_name": "Cleveroption",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#002847",
+    "theme_color": "#002847",
+    "description": "Área Reservada da Cleveroption — acompanhe a construção do seu imóvel.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

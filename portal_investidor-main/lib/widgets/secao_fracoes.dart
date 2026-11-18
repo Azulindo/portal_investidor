@@ -1,0 +1,571 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../models/user_model.dart';
+import '../theme/co_colors.dart';
+import '../theme/tinta.dart';
+import '../theme/co_tokens.dart';
+import '../utils/fracoes.dart';
+import 'co_card.dart';
+
+/// Frações do empreendimento — o equivalente ao FractionsTable do site.
+///
+/// No site é uma tabela larga com onze colunas. Num telemóvel isso não se lê,
+/// por isso aqui são duas camadas, como o site faz em ecrã pequeno:
+///
+///   1. o quadro das tipologias, sempre visível, uma linha por tipologia;
+///   2. a lista das frações, cada uma num cartão, aberta a pedido e com os
+///      três filtros (Tipologia, Disponibilidade, Piso).
+///
+/// Carregar numa tipologia do quadro abre a lista já filtrada a essa
+/// tipologia, como no site.
+///
+/// O preço aparece sempre: na app há sempre sessão, e a API só esconde o
+/// preço a pedidos anónimos.
+class SecaoFracoes extends StatefulWidget {
+  const SecaoFracoes({
+    super.key,
+    required this.fracoes,
+    this.soDisponiveis = false,
+    this.aoAbrirFracao,
+  });
+
+  final List<ProjectFraction> fracoes;
+
+  /// Abre a ficha da fração. null = os cartões não abrem nada.
+  final void Function(ProjectFraction)? aoAbrirFracao;
+
+  /// Vindo do "ver frações disponíveis" de Em comercialização: a lista abre
+  /// já filtrada pelas disponíveis, como o ?fracoes=disponiveis do site. Sem
+  /// nenhuma disponível não se filtra — uma lista vazia não ajudava ninguém.
+  final bool soDisponiveis;
+
+  @override
+  State<SecaoFracoes> createState() => _SecaoFracoesState();
+}
+
+class _SecaoFracoesState extends State<SecaoFracoes> {
+  bool _aberta = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.soDisponiveis) return;
+    for (final f in widget.fracoes) {
+      if (f.disponivel) {
+        _estado = f.status;
+        _aberta = true;
+        break;
+      }
+    }
+  }
+
+  /// Quantas frações se mostram de cada vez.
+  ///
+  /// Um empreendimento pode ter 130 frações, e abri-las todas de uma vez dava
+  /// uma página sem fim — a pessoa ficava a arrastar sem chegar ao mapa que
+  /// vem a seguir. Vinte enchem o ecrã umas vezes e param; quem quiser mais,
+  /// pede. Os filtros em cima continuam a ser o caminho rápido para a fração
+  /// certa.
+  static const int _lote = 20;
+
+  int _aMostrar = _lote;
+
+  // null em qualquer um destes é "todas".
+  String? _tipologia;
+  String? _estado;
+  String? _piso;
+
+  bool get _temFiltro =>
+      _tipologia != null || _estado != null || _piso != null;
+
+  /// Mudar de filtro recomeça a contagem: o lote que já estava aberto era de
+  /// outra lista.
+  void _filtrar(void Function() mudanca) => setState(() {
+        mudanca();
+        _aMostrar = _lote;
+      });
+
+  void _limpar() => _filtrar(() {
+        _tipologia = null;
+        _estado = null;
+        _piso = null;
+      });
+
+  /// Onde começa a lista (os filtros), para descer até lá.
+  final _chaveLista = GlobalKey();
+
+  void _verTipologia(String tipologia) {
+    _filtrar(() {
+      _estado = null;
+      _piso = null;
+      _tipologia = tipologia;
+      _aberta = true;
+    });
+    // A lista fica por baixo do quadro das tipologias, fora do ecrã: sem
+    // descer até ela, o toque parecia não ter feito nada.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final contexto = _chaveLista.currentContext;
+      if (contexto == null || !contexto.mounted) return;
+      Scrollable.ensureVisible(
+        contexto,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+        alignment: 0.05,
+      );
+    });
+  }
+
+  Future<void> _abrirPlanta(String url) async {
+    bool ok;
+    try {
+      ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (_) {
+      ok = false;
+    }
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Não foi possível abrir a planta.'),
+          backgroundColor: context.cor(COColors.brand700),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Empreendimentos ainda em desenvolvimento não têm frações na API — a
+    // secção simplesmente não aparece, como no site.
+    if (widget.fracoes.isEmpty) return const SizedBox.shrink();
+
+    final resumo = Fracoes.resumo(widget.fracoes);
+    final estados = Fracoes.estados(widget.fracoes);
+    final pisos = Fracoes.pisos(widget.fracoes);
+    final visiveis = Fracoes.filtrar(
+      widget.fracoes,
+      tipologia: _tipologia,
+      estado: _estado,
+      piso: _piso,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const CoTitulo('Frações e características'),
+        const SizedBox(height: COTokens.space2),
+        Text(
+          'Toque numa tipologia para ver só essas frações.',
+          style: context.estilo(COText.caption),
+        ),
+        const SizedBox(height: COTokens.space4),
+
+        for (final linha in resumo) _linhaResumo(linha),
+
+        const SizedBox(height: COTokens.space2),
+        _botaoVerMais(),
+
+        if (_aberta) ...[
+          SizedBox(key: _chaveLista, height: COTokens.space6),
+          _filtros(resumo, estados, pisos),
+          const SizedBox(height: COTokens.space4),
+          _contador(visiveis.length),
+          const SizedBox(height: COTokens.space4),
+          if (visiveis.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: COTokens.space6),
+              child: Text(
+                'Nenhuma fração corresponde a estes filtros.',
+                style: context.estilo(COText.small),
+              ),
+            )
+          else ...[
+            for (final f in visiveis.take(_aMostrar))
+              _cartaoFracao(f, pisos.isNotEmpty),
+            if (visiveis.length > _aMostrar)
+              _botaoMaisFracoes(visiveis.length - _aMostrar),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _linhaResumo(ResumoTipologia linha) {
+    return CoCard(
+      onTap: () => _verTipologia(linha.tipologia),
+      margin: const EdgeInsets.only(bottom: COTokens.space2),
+      padding: const EdgeInsets.all(COTokens.space4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  linha.tipologia,
+                  style: context.estilo(COText.body).copyWith(fontWeight: COTokens.fwBold),
+                ),
+              ),
+              Text(
+                Fracoes.contagem(linha.quantidade),
+                style: context.estilo(COText.small),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                Icons.chevron_right,
+                color: context.cor(COColors.neutral500),
+                size: 18,
+              ),
+            ],
+          ),
+          const SizedBox(height: COTokens.space2),
+          Wrap(
+            spacing: COTokens.space4,
+            runSpacing: 4,
+            children: [
+              _parzinho('Área', linha.area),
+              if (linha.exterior != '—') _parzinho('Exterior', linha.exterior),
+              if (linha.garagem != '—') _parzinho('Garagem', linha.garagem),
+            ],
+          ),
+          if (linha.disponiveis > 0) ...[
+            const SizedBox(height: COTokens.space2),
+            _selo('${linha.disponiveis} por vender'),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Etiqueta pequena com o valor ao lado, para as áreas do quadro resumo.
+  Widget _parzinho(String etiqueta, String valor) {
+    return RichText(
+      text: TextSpan(
+        style: context.estilo(COText.caption),
+        children: [
+          TextSpan(text: '${etiqueta.toUpperCase()}  '),
+          TextSpan(
+            text: valor,
+            style: context.estilo(COText.small).copyWith(color: context.cor(COColors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _selo(String texto) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: context.cor(COColors.white).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: context.cor(COColors.brand300).withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        texto.toUpperCase(),
+        style: context.estilo(COText.caption).copyWith(
+          color: context.cor(COColors.white),
+          fontSize: 10,
+          fontWeight: COTokens.fwBold,
+          letterSpacing: 0.6,
+        ),
+      ),
+    );
+  }
+
+  /// Mais um lote de frações, no fim da lista.
+  Widget _botaoMaisFracoes(int quantasFaltam) {
+    final proximo = math.min(quantasFaltam, _lote);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: COTokens.space6),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: () => setState(() => _aMostrar += _lote),
+          icon: Icon(
+            Icons.expand_more,
+            size: 18,
+            color: context.cor(COColors.brand300),
+          ),
+          label: Text(
+            'Mostrar mais $proximo — faltam $quantasFaltam',
+            style: context.estilo(COText.small).copyWith(
+              color: context.cor(COColors.brand300),
+              fontWeight: COTokens.fwMedium,
+            ),
+          ),
+          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+        ),
+      ),
+    );
+  }
+
+  Widget _botaoVerMais() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () => setState(() {
+          _aberta = !_aberta;
+          // Reabrir recomeça no primeiro lote.
+          if (_aberta) _aMostrar = _lote;
+        }),
+        icon: Icon(
+          _aberta ? Icons.expand_less : Icons.expand_more,
+          size: 18,
+          color: context.cor(COColors.brand300),
+        ),
+        label: Text(
+          _aberta
+              ? 'Esconder frações'
+              : 'Ver todas — ${Fracoes.contagem(widget.fracoes.length)}',
+          style: context.estilo(COText.small).copyWith(
+            color: context.cor(COColors.brand300),
+            fontWeight: COTokens.fwMedium,
+          ),
+        ),
+        style: TextButton.styleFrom(padding: EdgeInsets.zero),
+      ),
+    );
+  }
+
+  Widget _filtros(
+    List<ResumoTipologia> resumo,
+    List<String> estados,
+    List<String> pisos,
+  ) {
+    return Wrap(
+      spacing: COTokens.space4,
+      runSpacing: COTokens.space4,
+      children: [
+        _filtro<String>(
+          etiqueta: 'Tipologia',
+          valor: _tipologia,
+          textoDeTodas: 'Todas',
+          opcoes: [
+            for (final r in resumo)
+              (valor: r.tipologia, texto: '${r.tipologia} (${r.quantidade})'),
+          ],
+          aoMudar: (v) => _filtrar(() => _tipologia = v),
+        ),
+        // Os filtros de estado e de piso só aparecem quando há mais de um
+        // valor — com um só, o filtro não filtra nada. É o que o site faz.
+        if (estados.length > 1)
+          _filtro<String>(
+            etiqueta: 'Disponibilidade',
+            valor: _estado,
+            textoDeTodas: 'Todas',
+            opcoes: [for (final e in estados) (valor: e, texto: e)],
+            aoMudar: (v) => _filtrar(() => _estado = v),
+          ),
+        if (pisos.length > 1)
+          _filtro<String>(
+            etiqueta: 'Piso',
+            valor: _piso,
+            textoDeTodas: 'Todos',
+            opcoes: [for (final p in pisos) (valor: p, texto: p)],
+            aoMudar: (v) => _filtrar(() => _piso = v),
+          ),
+      ],
+    );
+  }
+
+  Widget _filtro<T extends Object>({
+    required String etiqueta,
+    required T? valor,
+    required String textoDeTodas,
+    required List<({T valor, String texto})> opcoes,
+    required void Function(T?) aoMudar,
+  }) {
+    return SizedBox(
+      width: 160,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(etiqueta.toUpperCase(), style: context.estilo(COText.overline)),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<T?>(
+            initialValue: valor,
+            isExpanded: true,
+            dropdownColor: context.cor(COColors.brand700),
+            iconEnabledColor: context.cor(COColors.brand300),
+            style: context.estilo(COText.small).copyWith(color: context.cor(COColors.white)),
+            decoration: InputDecoration(
+              isDense: true,
+              filled: true,
+              fillColor: context.cor(COColors.brand700),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(COTokens.radiusSm),
+                borderSide: BorderSide(color: context.cor(COColors.brand500)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(COTokens.radiusSm),
+                borderSide: BorderSide(color: context.cor(COColors.brand500)),
+              ),
+            ),
+            items: [
+              DropdownMenuItem<T?>(
+                value: null,
+                child: Text(textoDeTodas, style: context.estilo(COText.small)),
+              ),
+              for (final o in opcoes)
+                DropdownMenuItem<T?>(
+                  value: o.valor,
+                  child: Text(
+                    o.texto,
+                    style: context.estilo(COText.small).copyWith(color: context.cor(COColors.white)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+            onChanged: aoMudar,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _contador(int visiveis) {
+    return Row(
+      children: [
+        Text(
+          '$visiveis de ${Fracoes.contagem(widget.fracoes.length)}',
+          style: context.estilo(COText.caption),
+        ),
+        if (_temFiltro) ...[
+          const SizedBox(width: COTokens.space4),
+          InkWell(
+            onTap: _limpar,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                'limpar filtros',
+                style: context.estilo(COText.caption).copyWith(
+                  color: context.cor(COColors.brand300),
+                  fontWeight: COTokens.fwMedium,
+                  decoration: TextDecoration.underline,
+                  decorationColor: context.cor(COColors.brand300),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _cartaoFracao(ProjectFraction f, bool mostrarPiso) {
+    final abrir = widget.aoAbrirFracao;
+    return CoCard(
+      margin: const EdgeInsets.only(bottom: COTokens.space2),
+      padding: const EdgeInsets.all(COTokens.space4),
+      // Tocar abre a ficha da fração (como clicar numa linha da tabela do
+      // site).
+      onTap: abrir == null ? null : () => abrir(f),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      f.fractionNumber,
+                      style: context.estilo(COText.body).copyWith(fontWeight: COTokens.fwBold),
+                    ),
+                    Text(f.type, style: context.estilo(COText.small)),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    f.price != null ? Fracoes.euros(f.price!) : 'Sob consulta',
+                    style: context.estilo(COText.valor).copyWith(
+                      color: context.cor(COColors.white),
+                      fontSize: 17,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  _selo(f.status),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: COTokens.space2),
+          Wrap(
+            spacing: COTokens.space4,
+            runSpacing: 4,
+            children: [
+              if (f.block != null) _parzinho('Bloco', '${f.block}'),
+              if (mostrarPiso && f.floor != null)
+                _parzinho('Piso', f.floor!),
+              if (f.orientation != null)
+                _parzinho('Orientação', f.orientation!),
+              if ((f.totalArea ?? 0) > 0)
+                _parzinho('Área bruta', '${Fracoes.numero(f.totalArea!)} m²'),
+              // As duas que vieram com o import do Excel. Nem todos os
+              // empreendimentos as têm preenchidas.
+              if ((f.grossPrivateArea ?? 0) > 0)
+                _parzinho('Área bruta privativa',
+                    '${Fracoes.numero(f.grossPrivateArea!)} m²'),
+              if ((f.usefulArea ?? 0) > 0)
+                _parzinho('Área útil', '${Fracoes.numero(f.usefulArea!)} m²'),
+              if ((f.garageArea ?? 0) > 0)
+                _parzinho('Garagem', '${Fracoes.numero(f.garageArea!)} m²'),
+              if ((f.balconyArea ?? 0) > 0)
+                _parzinho('Varanda', '${Fracoes.numero(f.balconyArea!)} m²'),
+            ],
+          ),
+          if (abrir != null) ...[
+            const SizedBox(height: COTokens.space2),
+            Text(
+              'Ver ficha da fração →',
+              style: context.estilo(COText.small).copyWith(
+                color: context.cor(COColors.white),
+                fontWeight: COTokens.fwBold,
+              ),
+            ),
+          ],
+          if (f.floorPlanUrl != null && f.floorPlanUrl!.isNotEmpty) ...[
+            const SizedBox(height: COTokens.space2),
+            InkWell(
+              onTap: () => _abrirPlanta(f.floorPlanUrl!),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.picture_as_pdf_outlined,
+                      size: 14,
+                      color: context.cor(COColors.brand300),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Ver planta',
+                      style: context.estilo(COText.small).copyWith(
+                        color: context.cor(COColors.brand300),
+                        fontWeight: COTokens.fwMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}

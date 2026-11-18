@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import '../models/sale_order.dart';
+import '../utils/carteira.dart';
+import '../utils/contacto.dart';
 import '../widgets/co_drawer.dart';
 import '../services/api_service.dart';
 
@@ -15,26 +18,60 @@ class DocumentsScreen extends StatefulWidget {
 class _DocumentsScreenState extends State<DocumentsScreen> {
   late Future<List<Map<String, dynamic>>> _documentsFuture;
 
+  /// Os totais do topo saem das encomendas, e não da lista de faturas.
+  ///
+  /// A `/document/list` só traz o total de cada fatura: não diz quanto falta
+  /// numa fatura paga em parte, e por isso estas contavam inteiras como
+  /// dívida — tal como as anuladas (`reversed`). As encomendas trazem o que
+  /// falta pagar fatura a fatura, e são as mesmas contas do painel: assim os
+  /// dois ecrãs nunca dizem números diferentes à mesma pessoa.
+  late Future<List<SaleOrder>> _encomendasFuture;
+
   @override
   void initState() {
     super.initState();
     _documentsFuture = ApiService().buscarDocumentos();
+    _encomendasFuture = ApiService().buscarOrdensDeCompra();
   }
 
   void _refresh() {
+    // As encomendas guardam-se 3 minutos. Quem puxa para atualizar quer os
+    // números de agora.
+    ApiService.limparCache();
     setState(() {
       _documentsFuture = ApiService().buscarDocumentos();
+      _encomendasFuture = ApiService().buscarOrdensDeCompra();
     });
   }
 
-  // Formats 18450.0 → "18.450,00 €"
+  /// 18450.0 → "18 450,00 €".
+  ///
+  /// Com cêntimos, ao contrário do resto da app: uma fatura paga-se ao
+  /// cêntimo. Mas com o espaço a separar os milhares, como o painel — antes
+  /// era um ponto, e a mesma pessoa via "402.657,50 €" aqui e "2 972 293 €"
+  /// no ecrã anterior.
   String _formatAmount(double value) {
     final parts = value.toStringAsFixed(2).split('.');
     final intPart = parts[0].replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+$)'),
-      (m) => '${m[1]}.',
+      (m) => '${m[1]} ',
     );
     return '$intPart,${parts[1]} €';
+  }
+
+  /// Um dos dois números do topo, feito com as contas do painel.
+  Widget _valorDoResumo(double Function(List<SaleOrder>) conta, Color cor) {
+    return FutureBuilder<List<SaleOrder>>(
+      future: _encomendasFuture,
+      builder: (context, s) => Text(
+        s.hasData ? Carteira.euros(conta(s.data!)) : '—',
+        style: TextStyle(
+          color: cor,
+          fontSize: 16,
+          fontWeight: COTokens.fwBold,
+        ),
+      ),
+    );
   }
 
   // Converts "2025-07-01" → "1 Jul 2025"
@@ -85,9 +122,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // Quando o servidor diz porquê (ex.: o download ainda não está
+        // ligado), mostra-se isso. "Não foi possível abrir" sozinho deixava
+        // a pessoa a pensar que o ficheiro estava estragado.
+        final motivo = e is ApiException ? e.message : 'Não foi possível abrir "$name".';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Não foi possível abrir "$name"'),
+            content: Text(motivo),
             backgroundColor: COColors.brand700,
           ),
         );
@@ -102,7 +143,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       appBar: AppBar(
         backgroundColor: COColors.brand900,
         title: const Text(
-          'OS SEUS DOCUMENTOS',
+          'Os seus documentos',
           style: TextStyle(
             color: COColors.white,
             fontSize: 13,
@@ -151,17 +192,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
           final documents = snapshot.data ?? [];
 
-          double totalPago = 0.0;
-          double totalPendente = 0.0;
-          for (final doc in documents) {
-            final amount = double.tryParse(doc['amountTotal']?.toString() ?? '0') ?? 0.0;
-            if (doc['paymentState'] == 'paid') {
-              totalPago += amount;
-            } else {
-              totalPendente += amount;
-            }
-          }
-
           return RefreshIndicator(
             onRefresh: () async => _refresh(),
             color: COColors.brand300,
@@ -179,6 +209,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                       border: Border.all(color: COColors.brand700, width: 1),
                     ),
                     child: Row(
+                      // Alinhados por baixo: "Faturado, por pagar" parte em
+                      // duas linhas num telemóvel, e centrados os dois números
+                      // ficavam a alturas diferentes.
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Expanded(
                           child: Column(
@@ -194,14 +228,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                _formatAmount(totalPago),
-                                style: const TextStyle(
-                                  color: _accentTeal,
-                                  fontSize: 16,
-                                  fontWeight: COTokens.fwBold,
-                                ),
-                              ),
+                              _valorDoResumo(Carteira.totalPago, _accentTeal),
                             ],
                           ),
                         ),
@@ -211,8 +238,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Não "Em falta": o painel diz quanto falta
+                              // pagar no total, incluindo o que ainda nem foi
+                              // faturado, e os dois números lado a lado
+                              // pareciam contradizer-se. Aqui é só o que já
+                              // tem fatura e espera pagamento.
                               const Text(
-                                'EM FALTA',
+                                'FATURADO, POR PAGAR',
                                 style: TextStyle(
                                   color: COColors.neutral500,
                                   fontSize: 11,
@@ -221,13 +253,12 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                _formatAmount(totalPendente),
-                                style: const TextStyle(
-                                  color: _accentCoral,
-                                  fontSize: 16,
-                                  fontWeight: COTokens.fwBold,
+                              _valorDoResumo(
+                                (encomendas) => encomendas.fold(
+                                  0.0,
+                                  (soma, o) => soma + o.faturadoPorPagar,
                                 ),
+                                _accentCoral,
                               ),
                             ],
                           ),
@@ -247,7 +278,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                         color: COColors.neutral500,
                         fontSize: 11,
                         fontWeight: COTokens.fwBold,
-                        letterSpacing: 1.5,
                       ),
                     ),
                   ),
@@ -280,7 +310,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                             bottom: COTokens.space6,
                           ),
                           itemCount: documents.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          separatorBuilder: (_, _) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final doc = documents[index];
                             final String? paymentState = doc['paymentState'];
@@ -360,6 +390,18 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                                     ),
                                   ),
 
+                                  // Sem documento, a fatura existe mas nao ha
+                                  // nada para descarregar. Em vez de nao
+                                  // mostrar nada, abre-se o formulario ja
+                                  // preenchido a pedi-la — e o que o site faz
+                                  // no DescarregarFatura.
+                                  if (attachments.isEmpty) ...[
+                                    const SizedBox(width: 12),
+                                    _BotaoPedirFatura(
+                                      fatura: doc['name']?.toString(),
+                                    ),
+                                  ],
+
                                   // PDF button — right, vertically centred
                                   if (attachments.isNotEmpty) ...[
                                     const SizedBox(width: 12),
@@ -416,6 +458,74 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// "Pedir" — abre o formulário de contacto já preenchido com o número da
+/// fatura e com quem está ligado.
+///
+/// Mesmo tamanho e mesma forma do botão do PDF, para a lista não ficar aos
+/// degraus consoante a fatura tenha documento ou não.
+class _BotaoPedirFatura extends StatelessWidget {
+  const _BotaoPedirFatura({this.fatura});
+
+  final String? fatura;
+
+  /// Sem empreendimento de propósito: o GET /document/list devolve a fatura
+  /// sem dizer a que obra pertence. Quem quiser o pedido com essa informação
+  /// faz o mesmo a partir das encomendas, no detalhe do empreendimento, onde
+  /// ela se sabe.
+  Future<void> _abrir(BuildContext context) async {
+    final investidor = ApiService.dadosLogado;
+    final destino = Contacto.pedidoDeFatura(
+      fatura: fatura,
+      cliente: investidor?.name,
+      email: investidor?.email,
+    );
+
+    final abriu = await launchUrl(
+      destino,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!abriu && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível abrir o formulário de contacto.'),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _abrir(context),
+      child: Container(
+        width: 58,
+        height: 58,
+        decoration: BoxDecoration(
+          color: COColors.brand700.withValues(alpha: 0.35),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: COColors.brand300, width: 1),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.mail_outline, color: COColors.brand300, size: 22),
+            SizedBox(height: 4),
+            Text(
+              'PEDIR',
+              style: TextStyle(
+                color: COColors.brand300,
+                fontSize: 10,
+                fontWeight: COTokens.fwBold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

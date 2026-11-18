@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Esta e a configuracao de RELEASE: nada de http em lado nenhum.
+
+  Sem este ficheiro a app aceitava http para qualquer servidor. Com ele,
+  se alguem apontar a app de producao para um endereco http por engano,
+  o pedido falha em vez de seguir em claro pela rede.
+
+  Para desenvolvimento ha outro ficheiro com o mesmo nome em
+  android/app/src/debug/res/xml/. O Gradle substitui este por esse nos
+  builds de debug, por isso o emulador e o telemovel ligado por cabo
+  continuam a falar com a API local em http sem ser preciso mexer aqui.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

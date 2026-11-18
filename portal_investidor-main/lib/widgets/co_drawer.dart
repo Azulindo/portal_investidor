@@ -1,11 +1,29 @@
 import 'package:flutter/material.dart';
 import '../theme/co_colors.dart';
 import '../theme/co_tokens.dart';
+import '../screens/contactos_screen.dart';
 import '../screens/dashboard_screen.dart';
+import '../screens/login_screen.dart';
+import '../services/api_service.dart';
 import '../screens/portfolio_screen.dart';
 import '../screens/documents_screen.dart';
+import '../screens/privacidade_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/map_screen.dart';
+import '../screens/sobre_screen.dart';
+
+/// O estilo dos itens do menu.
+///
+/// Estava escrito a mao nove vezes, igual nas nove — bastava alguem mexer
+/// num para o menu ficar desalinhado consigo proprio. Os rotulos tambem
+/// estavam em MAIUSCULAS, que era a ultima superficie da app ainda a
+/// gritar depois de os titulos das seccoes terem passado a caixa de frase.
+/// A 14px tambem se le melhor do que a 12px, e o alvo do dedo cresce.
+const TextStyle _estiloItem = TextStyle(
+  color: COColors.white,
+  fontWeight: COTokens.fwMedium,
+  fontSize: 14,
+);
 
 class CoDrawer extends StatelessWidget {
   const CoDrawer({super.key});
@@ -41,31 +59,52 @@ class CoDrawer extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Image.asset('assets/images/logo.png', height: 55),
+                // Era 55 de altura e quase não se dava por ele. 84 é o que
+                // cabe no cabeçalho do menu com a legenda por baixo; se o
+                // logótipo for mais largo do que o menu, encolhe para caber.
+                Image.asset(
+                  'assets/images/logo.png',
+                  height: 84,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.centerLeft,
+                ),
                 const SizedBox(height: COTokens.space2),
-                const Text('PORTAL DO INVESTIDOR', style: TextStyle(color: COColors.brand300, fontSize: 10, fontWeight: COTokens.fwBold, letterSpacing: 1.5)),
+                // Por baixo do logótipo, o mesmo que no login.
+                const Text('Área Reservada',
+                    style: TextStyle(color: COColors.brand300, fontSize: 12)),
               ],
             ),
           ),
           const Divider(color: COColors.brand700, height: 1),
           ListTile(
             leading: const Icon(Icons.dashboard_outlined, color: COColors.white),
-            title: const Text('DASHBOARD', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            title: const Text('Dashboard', style: _estiloItem),
             onTap: () => _navegarSuave(context, const DashboardScreen()), // <--- CORREÇÃO AQUI
           ),
           ListTile(
             leading: const Icon(Icons.photo_library_outlined, color: COColors.white),
-            title: const Text('O NOSSO PORTFÓLIO', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            title: const Text('O nosso portfólio', style: _estiloItem),
             onTap: () => _navegarSuave(context, const PortfolioScreen()),
           ),
           ListTile(
+            leading: const Icon(Icons.sell_outlined, color: COColors.white),
+            title: const Text('Em comercialização', style: _estiloItem),
+            // No site é uma página à parte, mas a lista é a mesma do
+            // portfólio com o filtro ligado — abre-se já filtrado em vez de
+            // se duplicar o ecrã.
+            onTap: () => _navegarSuave(
+              context,
+              const PortfolioScreen(apenasAVendaInicial: true),
+            ),
+          ),
+          ListTile(
             leading: const Icon(Icons.map_outlined, color: COColors.white),
-            title: const Text('MAPA', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            title: const Text('Mapa', style: _estiloItem),
             onTap: () => _navegarSuave(context, const MapScreen()),
           ),
           ListTile(
             leading: const Icon(Icons.folder_shared_outlined, color: COColors.white),
-            title: const Text('FATURAS', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            title: const Text('Faturas', style: _estiloItem),
             onTap: () => _navegarSuave(context, const DocumentsScreen()),
           ),
           const Padding(
@@ -74,14 +113,64 @@ class CoDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.person_outline, color: COColors.white),
-            title: const Text('O MEU PERFIL', style: TextStyle(color: COColors.white, fontWeight: COTokens.fwMedium, fontSize: 12, letterSpacing: 0.5)),
+            title: const Text('O meu perfil', style: _estiloItem),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.info_outline, color: COColors.white),
+            title: const Text('Sobre nós', style: _estiloItem),
+            onTap: () => _navegarSuave(context, const SobreScreen()),
+          ),
+          ListTile(
+            leading: const Icon(Icons.alternate_email_outlined, color: COColors.white),
+            title: const Text('Contactos', style: _estiloItem),
+            onTap: () => _navegarSuave(context, const ContactosScreen()),
+          ),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined, color: COColors.white),
+            title: const Text('Privacidade', style: _estiloItem),
+            onTap: () => _navegarSuave(context, const PrivacidadeScreen()),
+          ),
+
+          // Sair, separado do resto por um risco: não é mais um destino, é a
+          // única entrada daqui que não leva a lado nenhum da app.
+          //
+          // Fica no menu e não no cabeçalho, ao contrário do site. O site não
+          // tem menu, por isso pôs o botão ao lado do sino — mas aí ele só
+          // existe nos ecrãs que têm aquele cabeçalho. Na app o menu está em
+          // todos, que é precisamente o que se queria: sair de qualquer sítio.
+          const Divider(color: COColors.brand700, height: 1),
+          ListTile(
+            leading: const Icon(Icons.logout, color: COColors.brand300),
+            title: Text(
+              'Terminar sessão',
+              style: _estiloItem.copyWith(color: COColors.brand300),
+            ),
+            onTap: () => _sair(context),
+          ),
         ],
       ),
+    );
+  }
+
+  /// Sai da conta e volta ao login, sem deixar nada atrás na pilha de ecrãs.
+  ///
+  /// O `Navigator` é guardado antes do `await` porque fechar o menu já tira
+  /// este widget da árvore — a seguir ao await o `context` não serve.
+  Future<void> _sair(BuildContext context) async {
+    final navegador = Navigator.of(context);
+    navegador.pop();
+    await ApiService.sair();
+    navegador.pushAndRemoveUntil(
+      PageRouteBuilder(
+        pageBuilder: (c, a1, a2) => const LoginScreen(),
+        transitionsBuilder: (c, anim, a2, child) =>
+            FadeTransition(opacity: anim, child: child),
+      ),
+      (route) => false,
     );
   }
 }
