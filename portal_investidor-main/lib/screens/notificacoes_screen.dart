@@ -119,6 +119,7 @@ class _NotificacoesScreenState extends State<NotificacoesScreen> {
       tipo: n.tipo,
       projectId: n.projectId,
       notificationId: n.id,
+      href: n.href,
     );
     if (destino == null) return;
 
@@ -287,7 +288,11 @@ class _Cartao extends StatelessWidget {
             ),
           ),
           // A seta so aparece quando tocar leva a algum lado.
-          if (destinoDaNotificacao(tipo: n.tipo, projectId: n.projectId) !=
+          if (destinoDaNotificacao(
+                tipo: n.tipo,
+                projectId: n.projectId,
+                href: n.href,
+              ) !=
               null)
             const Padding(
               padding: EdgeInsets.only(left: COTokens.space2, top: 2),

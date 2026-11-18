@@ -160,7 +160,7 @@ class NotificacoesPush {
     }
   }
 
-  static void _abrir(Map<String, dynamic> dados) {
+  static Future<void> _abrir(Map<String, dynamic> dados) async {
     // Sem sessão fica no login: depois de entrar, o sininho tem-na.
     if (ApiService.idLogado == null) return;
     final push = NotificacaoPush.deDados(dados);
@@ -170,12 +170,28 @@ class NotificacoesPush {
       ApiService().marcarNotificacaoLida(id).catchError((_) {});
     }
 
+    // O data do push não traz o href, e as notificações para uma pessoa ou
+    // para todos só dizem de que empreendimento são no href. Sem projectId,
+    // vai-se buscar a notificação ao GET /notification, que o tem.
+    String? href;
+    if (push.projectId == null && id != null) {
+      try {
+        final lista = await ApiService().buscarNotificacoes();
+        for (final n in lista.notificacoes) {
+          if (n.id == id) href = n.href;
+        }
+      } catch (_) {
+        // Sem rede abre-se a lista; não se perde nada.
+      }
+    }
+
     // O mesmo destino que no sininho; sem destino próprio, abre a lista,
     // para a pessoa ver de que era.
     final destino = destinoDaNotificacao(
           tipo: push.tipo,
           projectId: push.projectId,
           notificationId: id,
+          href: href,
         ) ??
         const NotificacoesScreen();
     _navegador?.currentState?.push(MaterialPageRoute(builder: (_) => destino));

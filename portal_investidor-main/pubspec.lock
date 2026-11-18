@@ -885,6 +885,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.3"
+  sqids:
+    dependency: "direct main"
+    description:
+      name: sqids
+      sha256: "663c6c78aeb42c6b9675ac1ddaed1cd51ff248ca5500e81fb9ba780f91e8bf4c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   stack_trace:
     dependency: transitive
     description:
