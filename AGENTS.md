@@ -4,6 +4,9 @@ Este ficheiro é lido a cada sessão. Só deve ter o que poupa tempo: factos que
 custaram a descobrir, decisões já tomadas, e armadilhas que já apanharam
 alguém. Se uma linha não evitar trabalho, apague-a.
 
+**Quem pega na app pela primeira vez: ler o `PASSAGEM.md`** (estado, o que
+falta, ficheiros que não estão no git, como pôr no site e nas lojas).
+
 ## O essencial em três linhas
 
 - **O projeto Flutter está em `portal_investidor-main/`, não na raiz.** A raiz
@@ -106,6 +109,20 @@ opcional em produção: sem ela o mapa cai no OpenStreetMap.
 - **A assinatura de release lê o `android/key.properties`** (modelo em
   `android/key.properties.exemplo`). Sem esse ficheiro, o release assina-se
   com as chaves de debug — serve para testar, e a Play Console recusa-o.
+- **Zona clara.** O painel e a página do empreendimento seguem o portal do
+  site: topo navy e o resto numa folha clara (`FolhaClara`) com cartões
+  brancos (`BlocoClaro`), em `lib/widgets/efeitos.dart`. As secções foram
+  escritas para o navy; pedem a cor com `context.cor(COColors.x)` e
+  `context.estilo(COText.x)` (`lib/theme/tinta.dart`), que dentro de uma
+  `Superficie` clara devolve a equivalente clara e fora dela a mesma. Numa
+  secção nova, usar isto em vez de `COColors.white` direto. O painel e os
+  seus cartões usam os estilos `Claro` de `painel_aquisicao.dart`.
+- **As contas do dinheiro são as do site** (`PortalDashboard.tsx`): estão em
+  `Carteira` e no `SaleOrder` (pago, faturado por pagar, por faturar,
+  percentagens), com testes. Mudar num lado é mudar no outro.
+- **A versão está em dois sítios**: `pubspec.yaml` e
+  `lib/config/versao_app.dart` (um teste falha se divergirem). O aviso de
+  versão nova compara-a com o `/api/app-versao` do site.
 
 ## Armadilhas que já custaram tempo
 
@@ -127,15 +144,16 @@ opcional em produção: sem ela o mapa cai no OpenStreetMap.
 
 ## Onde está o resto
 
+- Estado, o que falta e como publicar: `PASSAGEM.md`. Textos das lojas:
+  `portal_investidor-main/loja/FICHA_DA_LOJA.md`.
 - Contrato da API: `portal_investidor-main/API_CONTRACT.md`.
+- Os caminhos `C:\...` abaixo são do PC do Azulindo.
 - A API é `C:\site_teste\api-cleveroption` — **só leitura, nunca commitar lá**.
 - O site é `C:\site_teste\website-cleveroption-1`, ramo `Gui`. A app espelha-o,
   com um desenho mais despido. Quando houver dúvida sobre texto ou regra de
   negócio, veja como o site faz.
 - `C:\Cleveroption\cleveroption-website` é do tutor. **Nunca mexer**, nem para
   corrigir.
-- Estado atual e lista do que falta: o Project "Cleveroption" no claude.ai,
-  em `claude/estado-da-app.md` e `claude/publicar-nas-lojas.md`.
 
 ## Antes de dar trabalho por terminado
 
