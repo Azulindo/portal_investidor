@@ -183,7 +183,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         child: CabecalhoPainel(
                           nome: user.name,
-                          email: user.email,
                           obras: obras,
                           encomendas: encomendas,
                           aCarregar: aCarregar,

@@ -8,7 +8,7 @@ import '../utils/carteira.dart';
 import 'painel_esqueleto.dart';
 
 /// O topo do painel, a faixa navy do portal do site (PortalDashboard.tsx,
-/// dashboard-hero): quem está a ver, "Os Seus Imóveis" e o quadro com a
+/// dashboard-hero): o "Olá", "Os Seus Imóveis" e o quadro com a
 /// carteira, o valor total, o pago, o por pagar e o progresso.
 ///
 /// As contas são as do site, todas a partir das encomendas (ver [Carteira]),
@@ -17,7 +17,6 @@ class CabecalhoPainel extends StatelessWidget {
   const CabecalhoPainel({
     super.key,
     required this.nome,
-    required this.email,
     required this.obras,
     required this.encomendas,
     required this.aCarregar,
@@ -25,7 +24,6 @@ class CabecalhoPainel extends StatelessWidget {
   });
 
   final String nome;
-  final String email;
   final List<ConstructionItem> obras;
   final List<SaleOrder> encomendas;
   final bool aCarregar;
@@ -79,43 +77,21 @@ class CabecalhoPainel extends StatelessWidget {
   Widget _utilizador() {
     return Row(
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: const BoxDecoration(
-            color: COColors.brand700,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.person_outline,
-              color: COColors.white, size: 24),
-        ),
-        const SizedBox(width: 12),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                nome.trim().isEmpty ? 'Cliente' : nome.trim(),
-                style: COText.body.copyWith(
-                  fontWeight: COTokens.fwBold,
-                  fontSize: 16,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (email.isNotEmpty)
-                Text(
-                  email,
-                  style: COText.caption.copyWith(color: COColors.brand300),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-            ],
+          child: Text(
+            _primeiroNome.isEmpty ? 'Olá' : 'Olá, $_primeiroNome',
+            style: COText.h1.copyWith(fontSize: 20),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
     );
   }
+
+  /// Só o primeiro nome: "Olá, Guilherme Gonçalves" partia em duas linhas em
+  /// muitos telemóveis e não dizia mais do que "Olá, Guilherme".
+  String get _primeiroNome => nome.trim().split(RegExp(r'\s+')).first;
 
   Widget _etiqueta(String texto) => Text(
         texto.toUpperCase(),
