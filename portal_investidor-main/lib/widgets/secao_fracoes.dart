@@ -93,12 +93,29 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
         _piso = null;
       });
 
-  void _verTipologia(String tipologia) => _filtrar(() {
-        _estado = null;
-        _piso = null;
-        _tipologia = tipologia;
-        _aberta = true;
-      });
+  /// Onde começa a lista (os filtros), para descer até lá.
+  final _chaveLista = GlobalKey();
+
+  void _verTipologia(String tipologia) {
+    _filtrar(() {
+      _estado = null;
+      _piso = null;
+      _tipologia = tipologia;
+      _aberta = true;
+    });
+    // A lista fica por baixo do quadro das tipologias, fora do ecrã: sem
+    // descer até ela, o toque parecia não ter feito nada.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final contexto = _chaveLista.currentContext;
+      if (contexto == null || !contexto.mounted) return;
+      Scrollable.ensureVisible(
+        contexto,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+        alignment: 0.05,
+      );
+    });
+  }
 
   Future<void> _abrirPlanta(String url) async {
     bool ok;
@@ -150,7 +167,7 @@ class _SecaoFracoesState extends State<SecaoFracoes> {
         _botaoVerMais(),
 
         if (_aberta) ...[
-          const SizedBox(height: COTokens.space6),
+          SizedBox(key: _chaveLista, height: COTokens.space6),
           _filtros(resumo, estados, pisos),
           const SizedBox(height: COTokens.space4),
           _contador(visiveis.length),
