@@ -170,16 +170,25 @@ class _CoCampoState extends State<CoCampo> {
           focusedBorder: _borda(COColors.brand300, 1.5),
           errorBorder: _borda(const Color(0xFFFFB4A9)),
           focusedErrorBorder: _borda(const Color(0xFFFFB4A9), 1.5),
+          // ExcludeFocus: sem isto o olho entrava na ordem do foco, e o
+          // "Seguinte" do teclado ia parar a ele em vez de ao campo de baixo
+          // (o teclado fechava e era preciso tocar no campo à mão). Continua
+          // a funcionar ao toque.
           suffixIcon: widget.password
-              ? IconButton(
-                  icon: Icon(
-                    _escondida
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: COColors.brand300,
-                    size: 20,
+              ? ExcludeFocus(
+                  child: IconButton(
+                    tooltip: _escondida
+                        ? 'Mostrar palavra-passe'
+                        : 'Esconder palavra-passe',
+                    icon: Icon(
+                      _escondida
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: COColors.brand300,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(() => _escondida = !_escondida),
                   ),
-                  onPressed: () => setState(() => _escondida = !_escondida),
                 )
               : null,
         ),
