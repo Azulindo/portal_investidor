@@ -146,13 +146,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           onPressed: () => Scaffold.of(context).openDrawer(),
                         ),
                       ),
-                      // O logótipo no topo do painel, que é o primeiro ecrã
-                      // depois de entrar. Fica preso à barra, por isso vê-se
-                      // sempre, mesmo depois de descer.
+                      // O símbolo da Cleveroption no topo do painel, preso à
+                      // barra. Era o logótipo inteiro, mas com o nome escrito
+                      // (e a margem que a imagem tem à volta) cabia minúsculo
+                      // entre o menu e as Faturas. O símbolo sozinho lê-se a
+                      // este tamanho. É o mesmo dos pinos do mapa (branco,
+                      // sem fundo, gerado por loja/gerar.ps1).
                       centerTitle: true,
                       title: Image.asset(
-                        'assets/images/logo.png',
-                        height: 30,
+                        'assets/images/simbolo_mapa.png',
+                        height: 38,
                         fit: BoxFit.contain,
                         semanticLabel: 'Clever Option',
                       ),
