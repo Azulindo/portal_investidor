@@ -171,8 +171,7 @@ class ObraCardWidget extends StatelessWidget {
               style: Claro.etiqueta.copyWith(fontSize: 13),
             )
           else
-            for (final o in encomendas)
-              CartaoAquisicao(encomenda: o, empreendimento: obra.title),
+            ListaAquisicoes(encomendas: encomendas, empreendimento: obra.title),
         ],
       ),
     );

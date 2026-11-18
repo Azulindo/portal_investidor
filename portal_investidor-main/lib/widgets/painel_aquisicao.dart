@@ -500,3 +500,64 @@ class Claro {
     letterSpacing: 0.5,
   );
 }
+
+/// As aquisições de um empreendimento: as primeiras [visiveis] e, se houver
+/// mais, um botão para mostrar as outras. Quem tem nove frações em nove
+/// encomendas tinha o cartão a ocupar vários ecrãs só de barras.
+class ListaAquisicoes extends StatefulWidget {
+  const ListaAquisicoes({
+    super.key,
+    required this.encomendas,
+    required this.empreendimento,
+    this.visiveis = 2,
+  });
+
+  final List<SaleOrder> encomendas;
+  final String empreendimento;
+  final int visiveis;
+
+  @override
+  State<ListaAquisicoes> createState() => _ListaAquisicoesState();
+}
+
+class _ListaAquisicoesState extends State<ListaAquisicoes> {
+  bool _todas = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final todas = widget.encomendas;
+    final escondidas = todas.length - widget.visiveis;
+    final lista = _todas || escondidas <= 0
+        ? todas
+        : todas.take(widget.visiveis);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final o in lista)
+          CartaoAquisicao(encomenda: o, empreendimento: widget.empreendimento),
+        if (escondidas > 0)
+          OutlinedButton.icon(
+            onPressed: () => setState(() => _todas = !_todas),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: COColors.brand900,
+              side: const BorderSide(color: COColors.bordaClara),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            icon: Icon(_todas ? Icons.expand_less : Icons.expand_more, size: 20),
+            label: Text(
+              _todas
+                  ? 'Mostrar menos'
+                  : 'Mostrar todas as aquisições (+$escondidas)',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: COTokens.fwBold,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}

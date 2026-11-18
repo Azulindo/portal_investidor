@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:portal_investidor/models/sale_order.dart';
 import 'package:portal_investidor/widgets/painel_aquisicao.dart';
 
 void main() {
@@ -50,5 +51,32 @@ void main() {
       home: Scaffold(body: ChipsFracoes(['4.10(AH)'])),
     ));
     expect(find.textContaining('Mostrar'), findsNothing);
+  });
+
+  testWidgets('aquisições: mostra duas e um botão para as outras',
+      (tester) async {
+    final encomendas = [
+      for (var i = 1; i <= 5; i++)
+        SaleOrder(
+          id: i,
+          name: 'S$i',
+          projectName: 'Obra',
+          fractions: ['F$i'],
+          amountTotal: 1000,
+        ),
+    ];
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: ListaAquisicoes(encomendas: encomendas, empreendimento: 'Obra'),
+        ),
+      ),
+    ));
+
+    expect(find.byType(CartaoAquisicao), findsNWidgets(2));
+    await tester.tap(find.text('Mostrar todas as aquisições (+3)'));
+    await tester.pump();
+    expect(find.byType(CartaoAquisicao), findsNWidgets(5));
+    expect(find.text('Mostrar menos'), findsOneWidget);
   });
 }
