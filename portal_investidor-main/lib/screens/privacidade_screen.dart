@@ -40,6 +40,14 @@ class PrivacidadeScreen extends StatelessWidget {
             'tratamos também o seu nome, email, telefone e palavra-passe, e '
             'mostramos-lhe a informação das suas encomendas, frações e '
             'faturas, que provém do nosso sistema de gestão.',
+        'Se usar a aplicação móvel e autorizar as notificações, guardamos '
+            'também um identificador do seu telemóvel, gerado pelo serviço de '
+            'notificações da Google (Firebase Cloud Messaging) e associado à '
+            'sua sessão. Serve apenas para lhe enviarmos avisos sobre a sua '
+            'obra, os seus documentos e os nossos empreendimentos. É apagado '
+            'quando termina a sessão, deixa de ser usado se a sessão expirar, '
+            'e pode desativar as notificações a qualquer momento nas '
+            'definições do telemóvel.',
       ],
       alineas: [],
     ),
@@ -51,6 +59,10 @@ class PrivacidadeScreen extends StatelessWidget {
             'diligências pré-contratuais e consentimento.',
         'Envio de comunicações de marketing — apenas mediante consentimento '
             'explícito (opt-in), revogável a qualquer momento.',
+        'Notificações da aplicação móvel sobre a sua obra, documentos e '
+            'empreendimentos — base legal: execução do contrato e a sua '
+            'autorização no telemóvel, que pode retirar nas definições do '
+            'telemóvel.',
         'Cumprimento de obrigações legais aplicáveis.',
       ],
     ),
@@ -69,6 +81,11 @@ class PrivacidadeScreen extends StatelessWidget {
             'marketing sem o seu consentimento. Poderão ser tratados por '
             'subcontratantes (ex.: alojamento, CRM) sob obrigações de '
             'confidencialidade e conformidade com o RGPD.',
+        'As notificações da aplicação móvel são entregues através do Firebase '
+            'Cloud Messaging, da Google (e, nos iPhone, do serviço equivalente '
+            'da Apple), que recebe o identificador do telemóvel e o título e o '
+            'texto de cada notificação. Os textos das notificações não incluem '
+            'valores nem outros dados pessoais.',
       ],
       alineas: [],
     ),
