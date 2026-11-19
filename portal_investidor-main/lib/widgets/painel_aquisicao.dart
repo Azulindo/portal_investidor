@@ -31,6 +31,16 @@ class _CartaoAquisicaoState extends State<CartaoAquisicao> {
   bool _aberta = false;
 
   SaleOrder get _o => widget.encomenda;
+
+  /// O que está lá dentro, para o "Ver documentos – 2 faturas e CPCV".
+  String get _documentos {
+    final n = _o.invoices.length;
+    return [
+      if (n > 0) '$n ${n == 1 ? 'fatura' : 'faturas'}',
+      if (_o.cpcv.isNotEmpty) 'CPCV',
+    ].join(' e ');
+  }
+
   String get _nome =>
       _o.projectName.isNotEmpty ? _o.projectName : widget.empreendimento;
 
@@ -57,39 +67,56 @@ class _CartaoAquisicaoState extends State<CartaoAquisicao> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Como o site desde 19/11: o título é a fração (o
+                    // empreendimento já está no cartão de fora), e por
+                    // baixo da barra diz o que há para ver.
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: Text(_nome, style: Claro.titulo)),
+                        Expanded(
+                          child: Text(
+                            fracoes.isEmpty
+                                ? 'Sem frações indicadas'
+                                : '${fracoes.length == 1 ? 'Fração' : 'Frações'} '
+                                      '${fracoes.join(', ')}',
+                            style: Claro.titulo.copyWith(fontSize: 15),
+                          ),
+                        ),
                         const SizedBox(width: 8),
-                        Text(Carteira.euros(_o.amountTotal),
-                            style: Claro.valor),
-                        AnimatedRotation(
-                          turns: _aberta ? 0.5 : 0,
-                          duration: const Duration(milliseconds: 200),
-                          child: const Icon(Icons.expand_more,
-                              size: 20, color: COColors.brand500),
+                        Text(
+                          Carteira.euros(_o.amountTotal),
+                          style: Claro.valor,
                         ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    BarraAquisicao(encomenda: _o),
                     const SizedBox(height: 10),
-                    if (fracoes.isEmpty)
-                      Text('Sem frações indicadas', style: Claro.etiqueta)
-                    else
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6, right: 10),
-                            child: Text(
-                              fracoes.length == 1 ? 'Fração' : 'Frações',
-                              style: Claro.etiqueta,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _aberta
+                                ? 'Esconder documentos'
+                                : 'Ver documentos${_documentos.isEmpty ? '' : ' – $_documentos'}',
+                            style: const TextStyle(
+                              color: COColors.brand900,
+                              fontSize: 13,
+                              fontWeight: COTokens.fwBold,
                             ),
                           ),
-                          Expanded(child: ChipsFracoes(fracoes)),
-                        ],
-                      ),
-                    const SizedBox(height: 14),
-                    BarraAquisicao(encomenda: _o),
+                        ),
+                        AnimatedRotation(
+                          turns: _aberta ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 200),
+                          child: const Icon(
+                            Icons.expand_more,
+                            size: 18,
+                            color: COColors.brand900,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -127,8 +154,10 @@ class _CartaoAquisicaoState extends State<CartaoAquisicao> {
         if (_o.invoices.isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
-            child: Text('Sem faturas associadas a esta aquisição.',
-                style: Claro.etiqueta),
+            child: Text(
+              'Sem faturas associadas a esta aquisição.',
+              style: Claro.etiqueta,
+            ),
           )
         else
           for (final f in _o.invoices)
@@ -156,18 +185,22 @@ class _BotaoCpcvState extends State<_BotaoCpcv> {
     setState(() => _aObter = true);
     try {
       final url = await ApiService().getCpcvUrl(widget.cpcv.fractionId);
-      if (!await launchUrl(Uri.parse(url),
-          mode: LaunchMode.externalApplication)) {
+      if (!await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      )) {
         throw Exception('launchUrl');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(e is ApiException
-              ? e.message
-              : 'Não foi possível abrir o CPCV.'),
-          backgroundColor: COColors.brand700,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Não foi possível abrir o CPCV.',
+            ),
+            backgroundColor: COColors.brand700,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _aObter = false);
@@ -215,48 +248,53 @@ class BarraAquisicao extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        LayoutBuilder(builder: (context, c) {
-          final w = c.maxWidth;
-          return SizedBox(
-            height: 44,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // A barra, encostada ao fundo.
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 6,
-                  height: 16,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: Row(
-                      children: [
-                        if (pct > 0)
-                          Expanded(
+        LayoutBuilder(
+          builder: (context, c) {
+            final w = c.maxWidth;
+            return SizedBox(
+              height: 44,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // A barra, encostada ao fundo.
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 6,
+                    height: 16,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Row(
+                        children: [
+                          if (pct > 0)
+                            Expanded(
                               flex: pct,
-                              child: Container(color: COColors.brand900)),
-                        if (temFaturado && fim > pct)
-                          Expanded(
+                              child: Container(color: COColors.brand900),
+                            ),
+                          if (temFaturado && fim > pct)
+                            Expanded(
                               flex: fim - pct,
-                              child: Container(color: _faturado)),
-                        if (fim < 100)
-                          Expanded(
+                              child: Container(color: _faturado),
+                            ),
+                          if (fim < 100)
+                            Expanded(
                               flex: 100 - fim,
-                              child: Container(color: COColors.white)),
-                      ],
+                              child: Container(color: COColors.white),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                _marcador(w, pct, '$pct%'),
-                if (temFaturado)
-                  // Com as duas fatias muito juntas os números
-                  // sobrepunham-se; aí fica só o traço.
-                  _marcador(w, fim, fim - pct >= 8 ? '$fim%' : null),
-              ],
-            ),
-          );
-        }),
+                  _marcador(w, pct, '$pct%'),
+                  if (temFaturado)
+                    // Com as duas fatias muito juntas os números
+                    // sobrepunham-se; aí fica só o traço.
+                    _marcador(w, fim, fim - pct >= 8 ? '$fim%' : null),
+                ],
+              ),
+            );
+          },
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 14,
@@ -264,11 +302,15 @@ class BarraAquisicao extends StatelessWidget {
           children: [
             _legenda(COColors.brand900, '${Carteira.euros(o.pago)} liquidado'),
             if (temFaturado)
-              _legenda(_faturado,
-                  '${Carteira.euros(o.faturadoPorPagar)} faturado'),
-            _legenda(COColors.white,
-                '${Carteira.euros(o.porFaturar)} por faturar',
-                comBorda: true),
+              _legenda(
+                _faturado,
+                '${Carteira.euros(o.faturadoPorPagar)} faturado',
+              ),
+            _legenda(
+              COColors.white,
+              '${Carteira.euros(o.porFaturar)} por faturar',
+              comBorda: true,
+            ),
           ],
         ),
       ],
@@ -300,8 +342,8 @@ class BarraAquisicao extends StatelessWidget {
                 textAlign: x < larguraTexto / 2
                     ? TextAlign.left
                     : (x > largura - larguraTexto / 2
-                        ? TextAlign.right
-                        : TextAlign.center),
+                          ? TextAlign.right
+                          : TextAlign.center),
                 style: const TextStyle(
                   color: COColors.brand900,
                   fontSize: 11,
@@ -328,11 +370,14 @@ class BarraAquisicao extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Text(texto,
-            style: const TextStyle(
-                color: COColors.brand900,
-                fontSize: 12,
-                fontWeight: COTokens.fwBold)),
+        Text(
+          texto,
+          style: const TextStyle(
+            color: COColors.brand900,
+            fontSize: 12,
+            fontWeight: COTokens.fwBold,
+          ),
+        ),
       ],
     );
   }
@@ -348,18 +393,24 @@ class _LinhaFatura extends StatelessWidget {
     final anexo = fatura.attachments.first;
     try {
       final url = await ApiService().getAttachmentUrl(anexo.id ?? 0);
-      if (!await launchUrl(Uri.parse(url),
-          mode: LaunchMode.externalApplication)) {
+      if (!await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      )) {
         throw Exception('launchUrl');
       }
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e is ApiException
-            ? e.message
-            : 'Não foi possível abrir a fatura ${fatura.name}.'),
-        backgroundColor: COColors.brand700,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e is ApiException
+                ? e.message
+                : 'Não foi possível abrir a fatura ${fatura.name}.',
+          ),
+          backgroundColor: COColors.brand700,
+        ),
+      );
     }
   }
 
@@ -380,8 +431,10 @@ class _LinhaFatura extends StatelessWidget {
             children: [
               // Sem a etiqueta "FATURA" à frente: a secção já se chama assim.
               Expanded(
-                child: Text(f.name.isEmpty ? 'Fatura' : f.name,
-                    style: Claro.titulo.copyWith(fontSize: 14)),
+                child: Text(
+                  f.name.isEmpty ? 'Fatura' : f.name,
+                  style: Claro.titulo.copyWith(fontSize: 14),
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -401,8 +454,11 @@ class _LinhaFatura extends StatelessWidget {
                   onPressed: () => _descarregar(context),
                   tooltip: 'Descarregar fatura',
                   visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.download_outlined,
-                      size: 18, color: COColors.brand900),
+                  icon: const Icon(
+                    Icons.download_outlined,
+                    size: 18,
+                    color: COColors.brand900,
+                  ),
                 )
               else
                 PedirFatura(
@@ -417,8 +473,10 @@ class _LinhaFatura extends StatelessWidget {
           for (final linha in f.linhas)
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Text(linha,
-                  style: Claro.etiqueta.copyWith(color: COColors.brand900)),
+              child: Text(
+                linha,
+                style: Claro.etiqueta.copyWith(color: COColors.brand900),
+              ),
             ),
           const SizedBox(height: 10),
           Row(
@@ -469,8 +527,7 @@ class _ChipsFracoesState extends State<ChipsFracoes> {
   Widget build(BuildContext context) {
     final fracoes = widget.fracoes;
     final cortar = fracoes.length > widget.maximo;
-    final visiveis =
-        cortar && !_todas ? fracoes.take(widget.maximo) : fracoes;
+    final visiveis = cortar && !_todas ? fracoes.take(widget.maximo) : fracoes;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -522,11 +579,14 @@ class _ChipsFracoesState extends State<ChipsFracoes> {
               border: Border.all(color: COColors.bordaClara),
               borderRadius: BorderRadius.circular(3),
             ),
-            child: Text(f,
-                style: const TextStyle(
-                    color: COColors.brand900,
-                    fontSize: 11.5,
-                    fontWeight: COTokens.fwBold)),
+            child: Text(
+              f,
+              style: const TextStyle(
+                color: COColors.brand900,
+                fontSize: 11.5,
+                fontWeight: COTokens.fwBold,
+              ),
+            ),
           ),
       ],
     );
@@ -571,63 +631,157 @@ class Claro {
   );
 }
 
-/// As aquisições de um empreendimento: as primeiras [visiveis] e, se houver
-/// mais, um botão para mostrar as outras. Quem tem nove frações em nove
-/// encomendas tinha o cartão a ocupar vários ecrãs só de barras.
+/// As aquisições de um empreendimento, fechadas atrás de "Ver frações (N)",
+/// como no site desde 19/11: o cartão mostra primeiro o empreendimento e o
+/// total, e as frações abrem-se aqui.
 class ListaAquisicoes extends StatefulWidget {
   const ListaAquisicoes({
     super.key,
     required this.encomendas,
     required this.empreendimento,
-    this.visiveis = 2,
   });
 
   final List<SaleOrder> encomendas;
   final String empreendimento;
-  final int visiveis;
 
   @override
   State<ListaAquisicoes> createState() => _ListaAquisicoesState();
 }
 
 class _ListaAquisicoesState extends State<ListaAquisicoes> {
-  bool _todas = false;
+  bool _aberta = false;
 
   @override
   Widget build(BuildContext context) {
-    final todas = widget.encomendas;
-    final escondidas = todas.length - widget.visiveis;
-    final lista = _todas || escondidas <= 0
-        ? todas
-        : todas.take(widget.visiveis);
+    final n = widget.encomendas.length;
+    final rotulo = _aberta
+        ? 'Esconder ${n == 1 ? 'fração' : 'frações'}'
+        : (n == 1 ? 'Ver fração' : 'Ver frações ($n)');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final o in lista)
-          CartaoAquisicao(encomenda: o, empreendimento: widget.empreendimento),
-        if (escondidas > 0)
-          OutlinedButton.icon(
-            onPressed: () => setState(() => _todas = !_todas),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: COColors.brand900,
-              side: const BorderSide(color: COColors.bordaClara),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12),
+        OutlinedButton(
+          onPressed: () => setState(() => _aberta = !_aberta),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: COColors.brand900,
+            side: const BorderSide(color: COColors.bordaClara),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
             ),
-            icon: Icon(_todas ? Icons.expand_less : Icons.expand_more, size: 20),
-            label: Text(
-              _todas
-                  ? 'Mostrar menos'
-                  : 'Mostrar todas as aquisições (+$escondidas)',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: COTokens.fwBold,
-              ),
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
           ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                rotulo,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: COTokens.fwBold,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(_aberta ? Icons.expand_less : Icons.expand_more, size: 20),
+            ],
+          ),
+        ),
+        if (_aberta) ...[
+          const SizedBox(height: 10),
+          for (final o in widget.encomendas)
+            CartaoAquisicao(
+              encomenda: o,
+              empreendimento: widget.empreendimento,
+            ),
+        ],
       ],
     );
   }
+}
+
+/// O total de um empreendimento e a barra a duas cores — o liquidado e o que
+/// falta, "por liquidar" —, sem percentagens. É o card-valores do site,
+/// debaixo do estado da obra.
+class ValoresEmpreendimento extends StatelessWidget {
+  const ValoresEmpreendimento({super.key, required this.encomendas});
+
+  final List<SaleOrder> encomendas;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = Carteira.investimentoTotal(encomendas);
+    final liquidado = Carteira.totalPago(encomendas);
+    final porLiquidar = Carteira.totalPorPagar(encomendas);
+    final pct = Carteira.percentagemPaga(encomendas).clamp(0, 100);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(Carteira.euros(total), style: Claro.titulo.copyWith(fontSize: 20)),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            height: 14,
+            decoration: BoxDecoration(
+              border: Border.all(color: COColors.bordaClara),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              children: [
+                if (pct > 0)
+                  Expanded(
+                    flex: pct,
+                    child: Container(color: COColors.brand900),
+                  ),
+                if (pct < 100)
+                  Expanded(
+                    flex: 100 - pct,
+                    child: Container(color: COColors.white),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 14,
+          runSpacing: 4,
+          children: [
+            _legenda(
+              COColors.brand900,
+              '${Carteira.euros(liquidado)} liquidado',
+            ),
+            _legenda(
+              COColors.white,
+              '${Carteira.euros(porLiquidar)} por liquidar',
+              comBorda: true,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _legenda(Color cor, String texto, {bool comBorda = false}) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(
+          color: cor,
+          borderRadius: BorderRadius.circular(2),
+          border: comBorda ? Border.all(color: COColors.bordaClara) : null,
+        ),
+      ),
+      const SizedBox(width: 6),
+      Text(
+        texto,
+        style: const TextStyle(
+          color: COColors.brand900,
+          fontSize: 12,
+          fontWeight: COTokens.fwBold,
+        ),
+      ),
+    ],
+  );
 }

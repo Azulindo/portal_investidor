@@ -163,9 +163,15 @@ class ObraCardWidget extends StatelessWidget {
                   : null,
             ),
           ],
-          // Sem o título "AQUISIÇÕES" nem o traço por cima, a pedido do
-          // tutor: as barras dizem por si o que são.
-          const SizedBox(height: COTokens.space6),
+          // O total do empreendimento e a barra liquidado / por liquidar,
+          // como o card-valores do site (19/11).
+          if (encomendas.isNotEmpty) ...[
+            const SizedBox(height: COTokens.space6),
+            ValoresEmpreendimento(encomendas: encomendas),
+          ],
+          // Sem o título "AQUISIÇÕES", a pedido do tutor; as frações abrem-se
+          // no botão "Ver frações", como no site.
+          const SizedBox(height: COTokens.space4),
           if (encomendas.isEmpty)
             Text(
               aCarregarEncomendas

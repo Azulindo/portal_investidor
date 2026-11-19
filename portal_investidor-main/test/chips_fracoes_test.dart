@@ -53,7 +53,7 @@ void main() {
     expect(find.textContaining('Mostrar'), findsNothing);
   });
 
-  testWidgets('aquisições: mostra duas e um botão para as outras',
+  testWidgets('aquisições: fechadas atrás de "Ver frações", como no site',
       (tester) async {
     final encomendas = [
       for (var i = 1; i <= 5; i++)
@@ -73,10 +73,13 @@ void main() {
       ),
     ));
 
-    expect(find.byType(CartaoAquisicao), findsNWidgets(2));
-    await tester.tap(find.text('Mostrar todas as aquisições (+3)'));
+    expect(find.byType(CartaoAquisicao), findsNothing);
+    await tester.tap(find.text('Ver frações (5)'));
     await tester.pump();
     expect(find.byType(CartaoAquisicao), findsNWidgets(5));
-    expect(find.text('Mostrar menos'), findsOneWidget);
+    expect(find.text('Esconder frações'), findsOneWidget);
+    // Cada aquisição diz a fração no título e o que tem para ver.
+    expect(find.text('Fração F1'), findsOneWidget);
+    expect(find.text('Ver documentos'), findsNWidgets(5));
   });
 }
