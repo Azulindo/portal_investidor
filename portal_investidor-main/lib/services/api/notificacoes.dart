@@ -52,6 +52,36 @@ extension ApiNotificacoes on ApiService {
     }
   }
 
+  /// GET /api/notification/announcements
+  ///
+  /// Os anúncios em destaque: por ler e dentro do prazo. São um destaque, não
+  /// informação que falte noutro sítio (estão também no sininho), por isso
+  /// uma falha dá uma lista vazia em vez de um erro no painel.
+  Future<List<Notificacao>> buscarAnuncios() async {
+    if (ApiConfig.useMock) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      return DadosDeExemplo.anuncios();
+    }
+    try {
+      final response = await http
+          .get(
+            Uri.parse('${ApiConfig.baseUrl}${ApiConfig.announcementsEndpoint}'),
+            headers: await _authHeaders(),
+          )
+          .timeout(ApiConfig.connectionTimeout);
+      if (response.statusCode != 200) return const [];
+      final data = jsonDecode(response.body)['data'];
+      final lista = data is Map ? data['announcements'] : null;
+      if (lista is! List) return const [];
+      return lista
+          .whereType<Map>()
+          .map((e) => Notificacao.fromJson(e.cast<String, dynamic>()))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   /// PUT /api/notification/:id/read
   ///
   /// Idempotente: marcar duas vezes e o mesmo que marcar uma, por isso a app

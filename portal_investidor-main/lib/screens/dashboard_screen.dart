@@ -6,6 +6,7 @@ import '../services/aviso_versao.dart';
 import '../services/notificacoes_push.dart';
 import '../widgets/co_drawer.dart';
 import '../widgets/efeitos.dart';
+import '../widgets/painel_anuncios.dart';
 import '../models/investidor_model.dart';
 import '../models/sale_order.dart';
 import '../models/user_model.dart';
@@ -191,42 +192,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: FolhaClara(
-                        child: obras.isEmpty
-                            ? const Padding(
-                                padding: EdgeInsets.symmetric(
-                                  vertical: COTokens.space8,
-                                ),
-                                child: Text(
-                                  'Ainda não tem empreendimentos associados à '
-                                  'sua conta. Assim que tiver, aparecerão aqui.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: COColors.brand500,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              )
-                            : Column(
-                                children: [
-                                  for (var i = 0; i < obras.length; i++)
-                                    Revelar(
-                                      child: ObraCardWidget(
-                                        marcador: SizedBox(
-                                          key: _chaveDe(obras[i]),
-                                          height: 1,
-                                        ),
-                                        obra: obras[i],
-                                        heroTag:
-                                            'hero-dashboard-${obras[i].id}-$i',
-                                        encomendas: Carteira.doEmpreendimento(
-                                          obras[i].title,
-                                          encomendas,
-                                        ),
-                                        aCarregarEncomendas: aCarregar,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Os anúncios em destaque, antes dos
+                            // empreendimentos, como no topo da Área Reservada.
+                            const PainelAnuncios(),
+                            obras.isEmpty
+                                ? const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: COTokens.space8,
+                                    ),
+                                    child: Text(
+                                      'Ainda não tem empreendimentos associados à '
+                                      'sua conta. Assim que tiver, aparecerão aqui.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: COColors.brand500,
+                                        fontSize: 14,
                                       ),
                                     ),
-                                ],
-                              ),
+                                  )
+                                : Column(
+                                    children: [
+                                      for (var i = 0; i < obras.length; i++)
+                                        Revelar(
+                                          child: ObraCardWidget(
+                                            marcador: SizedBox(
+                                              key: _chaveDe(obras[i]),
+                                              height: 1,
+                                            ),
+                                            obra: obras[i],
+                                            heroTag:
+                                                'hero-dashboard-${obras[i].id}-$i',
+                                            encomendas:
+                                                Carteira.doEmpreendimento(
+                                                  obras[i].title,
+                                                  encomendas,
+                                                ),
+                                            aCarregarEncomendas: aCarregar,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

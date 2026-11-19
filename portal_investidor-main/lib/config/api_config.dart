@@ -105,6 +105,8 @@ class ApiConfig {
   /// PUT e nao PATCH como o resto da API. Nao e engano: foi o site que fixou
   /// estes caminhos primeiro e a API seguiu-os.
   static const String notificationsEndpoint = '/notification';
+  // Os anúncios ativos e por ler, para o topo do painel.
+  static const String announcementsEndpoint = '/notification/announcements';
   static String markNotificationReadEndpoint(int id) => '/notification/$id/read';
   /// POST regista o telemovel para push, DELETE deixa de receber. Ver a
   /// seccao 7 do API_CONTRACT.md.
