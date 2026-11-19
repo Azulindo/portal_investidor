@@ -58,7 +58,7 @@ opcional em produção: sem ela o mapa cai no OpenStreetMap.
 ## Decisões fechadas — não voltar a discutir
 
 - **Linguagem de construtora.** Nada de "investimento", "investidor" ou
-  "valorização" em texto visível. O painel diz "Pago / Por pagar".
+  "valorização" em texto visível, com uma exceção copiada do site: o "Valor total do investimento" do topo do painel. O dinheiro diz-se como no site: "Liquidado" e "Por liquidar" (desde 19/11/2026; antes "Pago / Por pagar").
 - **O `block` das frações é texto**, não número: há blocos com nome.
 - **A contagem do sininho vem do `unreadCount`**, nunca de contar a lista — a
   API manda 30 no máximo mas conta todas.

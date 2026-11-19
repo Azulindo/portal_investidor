@@ -130,7 +130,7 @@ class _SecaoEncomendasState extends State<SecaoEncomendas> {
                       if (!temFaturas)
                         'sem faturas'
                       else
-                        '${Carteira.euros(o.pago)} pagos',
+                        '${Carteira.euros(o.pago)} liquidados',
                     ].join('  ·  '),
                     style: context.estilo(COText.caption),
                   ),
@@ -334,7 +334,7 @@ class _BarraDeProgresso extends StatelessWidget {
         if (faturado > 0) ...[
           const SizedBox(height: 4),
           Text(
-            '${Carteira.euros(faturado)} faturado, por pagar',
+            '${Carteira.euros(faturado)} faturado, por liquidar',
             style: context.estilo(COText.caption).copyWith(color: context.cor(COColors.brand300)),
           ),
         ],

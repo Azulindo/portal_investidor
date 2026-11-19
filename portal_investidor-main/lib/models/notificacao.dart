@@ -7,6 +7,8 @@
 //
 // O contrato ao pormenor esta em website-cleveroption-1/docs/notificacoes-api.md.
 
+import '../config/api_config.dart';
+
 /// O tipo decide a etiqueta e o icone.
 enum TipoNotificacao {
   obra('obra', 'Obra'),
@@ -63,6 +65,18 @@ class Notificacao {
   /// nao se perder o que a API manda.
   final String? href;
 
+  /// É um anúncio: além do sininho, aparece em destaque no topo do painel
+  /// (GET /notification/announcements), como no topo da Área Reservada do
+  /// site.
+  final bool anuncio;
+
+  /// Até quando o anúncio aparece em destaque. null é sem prazo.
+  final DateTime? terminaEm;
+
+  /// A imagem do anúncio, já com o domínio. Só vem nos anúncios, e é
+  /// decorativa: o título e o corpo têm a informação toda.
+  final String? imagemUrl;
+
   const Notificacao({
     required this.id,
     required this.tipo,
@@ -72,6 +86,9 @@ class Notificacao {
     this.criadaEm,
     this.projectId,
     this.href,
+    this.anuncio = false,
+    this.terminaEm,
+    this.imagemUrl,
   });
 
   /// A mesma notificacao, marcada como lida. O modelo e imutavel, por isso
@@ -85,6 +102,9 @@ class Notificacao {
         criadaEm: criadaEm,
         projectId: projectId,
         href: href,
+        anuncio: anuncio,
+        terminaEm: terminaEm,
+        imagemUrl: imagemUrl,
       );
 
   factory Notificacao.fromJson(Map<String, dynamic> json) {
@@ -97,6 +117,11 @@ class Notificacao {
       criadaEm: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
       projectId: int.tryParse(json['projectId']?.toString() ?? ''),
       href: json['href']?.toString(),
+      anuncio: json['announcement'] == true,
+      terminaEm: DateTime.tryParse(json['endsAt']?.toString() ?? ''),
+      // Um caminho do site (/media/anuncios/x.webp) ou um https:// completo;
+      // monta-se como as outras imagens.
+      imagemUrl: ApiConfig.urlDeFicheiro(json['imageUrl']?.toString()),
     );
   }
 }

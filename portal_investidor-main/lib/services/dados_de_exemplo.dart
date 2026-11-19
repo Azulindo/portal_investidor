@@ -568,6 +568,21 @@ class DadosDeExemplo {
         },
       ];
 
+  /// GET /notification/announcements — um anúncio com imagem, para se ver o
+  /// destaque do painel sem servidor.
+  static List<Notificacao> anuncios() => [
+        Notificacao(
+          id: 90,
+          tipo: TipoNotificacao.comercial,
+          titulo: 'Pré-venda: The Luxor',
+          corpo: 'Veja as frações antes da abertura ao público.',
+          criadaEm: DateTime.now().toUtc(),
+          projectId: 1,
+          anuncio: true,
+          imagemUrl: _foto1,
+        ),
+      ];
+
   /// GET /notification — o que o sininho mostra sem servidor.
   ///
   /// As datas sao relativas a agora, e nao fixas, para a lista mostrar sempre

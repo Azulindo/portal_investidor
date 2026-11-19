@@ -105,6 +105,8 @@ class ApiConfig {
   /// PUT e nao PATCH como o resto da API. Nao e engano: foi o site que fixou
   /// estes caminhos primeiro e a API seguiu-os.
   static const String notificationsEndpoint = '/notification';
+  // Os anúncios ativos e por ler, para o topo do painel.
+  static const String announcementsEndpoint = '/notification/announcements';
   static String markNotificationReadEndpoint(int id) => '/notification/$id/read';
   /// POST regista o telemovel para push, DELETE deixa de receber. Ver a
   /// seccao 7 do API_CONTRACT.md.
@@ -127,4 +129,11 @@ class ApiConfig {
       '/document/attachment/$attachmentId/token';
   static String attachmentDownloadUrl(int attachmentId, String token) =>
       '$baseUrl/document/attachment/$attachmentId?token=$token';
+
+  /// O CPCV (contrato-promessa) de uma fração: o mesmo esquema dos anexos,
+  /// um token de 5 minutos e depois o PDF com ele.
+  static String cpcvTokenEndpoint(int fractionId) =>
+      '/document/cpcv/$fractionId/token';
+  static String cpcvDownloadUrl(int fractionId, String token) =>
+      '$baseUrl/document/cpcv/$fractionId?token=$token';
 }

@@ -219,7 +219,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'TOTAL PAGO',
+                                'TOTAL LIQUIDADO',
                                 style: TextStyle(
                                   color: COColors.neutral500,
                                   fontSize: 11,
@@ -244,7 +244,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                               // pareciam contradizer-se. Aqui é só o que já
                               // tem fatura e espera pagamento.
                               const Text(
-                                'FATURADO, POR PAGAR',
+                                'FATURADO, POR LIQUIDAR',
                                 style: TextStyle(
                                   color: COColors.neutral500,
                                   fontSize: 11,

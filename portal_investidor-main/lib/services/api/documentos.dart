@@ -133,4 +133,24 @@ extension ApiDocumentos on ApiService {
     return ApiConfig.attachmentDownloadUrl(attachmentId, token);
   }
 
+  /// O endereço do PDF do CPCV de uma fração, como o das faturas: pede-se um
+  /// token de curta duração e abre-se o ficheiro com ele na query string.
+  Future<String> getCpcvUrl(int fractionId) async {
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.cpcvTokenEndpoint(fractionId)}',
+    );
+    final response = await http
+        .get(url, headers: await _authHeaders())
+        .timeout(ApiConfig.connectionTimeout);
+    if (response.statusCode != 200) {
+      throw ApiException(_mensagemPara(response),
+          statusCode: response.statusCode);
+    }
+    final token = jsonDecode(response.body)['data']?['token'] as String?;
+    if (token == null) {
+      throw ApiException('Não foi possível obter o CPCV.');
+    }
+    return ApiConfig.cpcvDownloadUrl(fractionId, token);
+  }
+
 }

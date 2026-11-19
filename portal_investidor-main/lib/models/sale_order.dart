@@ -150,6 +150,10 @@ class SaleOrder {
   final String date;
   final List<Invoice> invoices;
 
+  /// Os CPCV (contrato-promessa) carregados no backoffice para as frações
+  /// desta encomenda. Uma API anterior a este campo não o manda: fica vazio.
+  final List<CpcvFracao> cpcv;
+
   SaleOrder({
     required this.id,
     required this.name,
@@ -158,6 +162,7 @@ class SaleOrder {
     this.amountTotal = 0,
     this.date = '',
     this.invoices = const [],
+    this.cpcv = const [],
   });
 
   /// Quanto já foi liquidado nesta encomenda.
@@ -231,6 +236,26 @@ class SaleOrder {
           .whereType<Map>()
           .map((e) => Invoice.fromJson(e.cast<String, dynamic>()))
           .toList(),
+      cpcv: (json['cpcv'] as List? ?? [])
+          .whereType<Map>()
+          .map((e) => CpcvFracao.fromJson(e.cast<String, dynamic>()))
+          .where((c) => c.fractionId > 0)
+          .toList(),
     );
   }
+}
+
+/// O CPCV de uma fração. O PDF obtém-se com ApiService.getCpcvUrl.
+class CpcvFracao {
+  final int fractionId;
+
+  /// O nome da fração, como nas frações da encomenda ("4.10(AH)").
+  final String fracao;
+
+  const CpcvFracao({required this.fractionId, required this.fracao});
+
+  factory CpcvFracao.fromJson(Map<String, dynamic> json) => CpcvFracao(
+        fractionId: int.tryParse(json['fractionId']?.toString() ?? '') ?? 0,
+        fracao: json['fraction']?.toString() ?? '',
+      );
 }
