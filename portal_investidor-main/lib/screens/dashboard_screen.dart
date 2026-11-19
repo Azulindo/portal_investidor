@@ -11,7 +11,6 @@ import '../models/sale_order.dart';
 import '../models/user_model.dart';
 import '../utils/carteira.dart';
 import '../utils/ui_helpers.dart';
-import 'documents_screen.dart';
 import '../widgets/sino_notificacoes.dart';
 import '../widgets/painel_cabecalho.dart';
 import '../widgets/painel_cartao_obra.dart';
@@ -159,32 +158,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         fit: BoxFit.contain,
                         semanticLabel: 'Clever Option',
                       ),
-                      actions: [
-                        const SinoNotificacoes(),
-                        // As faturas estavam a dois toques, dentro do menu
-                        // lateral. Para quem abre a app por causa do que
-                        // deve, são o destino mais provável.
-                        TextButton.icon(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const DocumentsScreen(),
-                            ),
-                          ),
-                          icon: const Icon(
-                            Icons.receipt_long_outlined,
-                            size: 18,
-                            color: COColors.brand300,
-                          ),
-                          label: const Text(
-                            'Faturas',
-                            style: TextStyle(
-                              color: COColors.brand300,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: COTokens.space2),
+                      // Havia aqui também um botão "Faturas". Saiu: as faturas
+                      // abrem-se no próprio painel (tocar numa aquisição) e
+                      // continuam no menu lateral, e sem ele o símbolo fica
+                      // centrado e com espaço.
+                      actions: const [
+                        SinoNotificacoes(),
+                        SizedBox(width: COTokens.space2),
                       ],
                     ),
                     SliverToBoxAdapter(
