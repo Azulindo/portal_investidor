@@ -91,7 +91,7 @@ para avisar quem tem uma versão antiga. Falta:
 Quando a app estiver na Play Store, define-se `APP_PLAY_STORE_URL` e o botão
 passa a apontar para a loja (que atualiza sozinha).
 
-No iPhone não há como distribuir pelo site: só pela App Store.
+No iPhone não há como instalar a app pelo site, só pela App Store. Até lá, a Área Reservada do site pode ir para o ecrã principal (Safari → Partilhar → Adicionar ao ecrã principal) e, a partir do iOS 16.4, recebe as mesmas notificações push: está no site (`app/manifest.ts`, `public/sw.js`, `components/AtivarNotificacoes.tsx`), com as variáveis `NEXT_PUBLIC_FIREBASE_*` definidas antes do build. Precisa de a API aceitar `"web"` no `DEVICE_PLATFORMS`.
 
 ---
 
@@ -148,6 +148,7 @@ teste fechado com 12 testers antes de poder publicar.
 | Juntar o ramo `Gui` do site ao `main` e pôr no ar | Azulindo/Miguel |
 | Conta de demonstração com dados | Miguel |
 | `invoice_date_due` nas faturas (data de vencimento) | Miguel |
+| Aceitar `"web"` no `DEVICE_PLATFORMS` (notificações no atalho do iPhone) | Miguel |
 | Opcional: mandar o `href` no `data` dos push (hoje a app vai buscá-lo) | Miguel |
 | Mac ou Codemagic pago, para o iOS | Orçamento |
 
