@@ -163,11 +163,9 @@ class ObraCardWidget extends StatelessWidget {
                   : null,
             ),
           ],
+          // Sem o título "AQUISIÇÕES" nem o traço por cima, a pedido do
+          // tutor: as barras dizem por si o que são.
           const SizedBox(height: COTokens.space6),
-          const Divider(height: 1, color: COColors.bordaClara),
-          const SizedBox(height: COTokens.space4),
-          Text('AQUISIÇÕES', style: Claro.seccao),
-          const SizedBox(height: COTokens.space4),
           if (encomendas.isEmpty)
             Text(
               aCarregarEncomendas
