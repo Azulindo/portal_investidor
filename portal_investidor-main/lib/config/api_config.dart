@@ -129,4 +129,11 @@ class ApiConfig {
       '/document/attachment/$attachmentId/token';
   static String attachmentDownloadUrl(int attachmentId, String token) =>
       '$baseUrl/document/attachment/$attachmentId?token=$token';
+
+  /// O CPCV (contrato-promessa) de uma fração: o mesmo esquema dos anexos,
+  /// um token de 5 minutos e depois o PDF com ele.
+  static String cpcvTokenEndpoint(int fractionId) =>
+      '/document/cpcv/$fractionId/token';
+  static String cpcvDownloadUrl(int fractionId, String token) =>
+      '$baseUrl/document/cpcv/$fractionId?token=$token';
 }

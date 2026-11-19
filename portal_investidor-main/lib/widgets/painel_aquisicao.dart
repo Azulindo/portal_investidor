@@ -101,18 +101,96 @@ class _CartaoAquisicaoState extends State<CartaoAquisicao> {
     );
   }
 
+  /// Os documentos da aquisição em duas secções, como no site: primeiro o
+  /// CPCV das frações, num fundo azul claro, e por baixo as faturas.
   Widget _faturas() {
-    if (_o.invoices.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(14),
-        child: Text('Sem faturas associadas a esta aquisição.',
-            style: Claro.etiqueta),
-      );
-    }
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final f in _o.invoices) _LinhaFatura(fatura: f, empreendimento: _nome),
+        if (_o.cpcv.isNotEmpty)
+          Container(
+            color: const Color(0xFFEAF2F8),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('CPCV', style: Claro.seccao),
+                const SizedBox(height: 4),
+                for (final c in _o.cpcv) _BotaoCpcv(cpcv: c),
+              ],
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+          child: Text('FATURAS', style: Claro.seccao),
+        ),
+        if (_o.invoices.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
+            child: Text('Sem faturas associadas a esta aquisição.',
+                style: Claro.etiqueta),
+          )
+        else
+          for (final f in _o.invoices)
+            _LinhaFatura(fatura: f, empreendimento: _nome),
       ],
+    );
+  }
+}
+
+/// "Descarregar CPCV" de uma fração. Diz que está a obter enquanto pede o
+/// token, e se correr mal diz porquê (o site faz o mesmo).
+class _BotaoCpcv extends StatefulWidget {
+  const _BotaoCpcv({required this.cpcv});
+
+  final CpcvFracao cpcv;
+
+  @override
+  State<_BotaoCpcv> createState() => _BotaoCpcvState();
+}
+
+class _BotaoCpcvState extends State<_BotaoCpcv> {
+  bool _aObter = false;
+
+  Future<void> _descarregar() async {
+    setState(() => _aObter = true);
+    try {
+      final url = await ApiService().getCpcvUrl(widget.cpcv.fractionId);
+      if (!await launchUrl(Uri.parse(url),
+          mode: LaunchMode.externalApplication)) {
+        throw Exception('launchUrl');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e is ApiException
+              ? e.message
+              : 'Não foi possível abrir o CPCV.'),
+          backgroundColor: COColors.brand700,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _aObter = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fracao = widget.cpcv.fracao;
+    return TextButton.icon(
+      onPressed: _aObter ? null : _descarregar,
+      style: TextButton.styleFrom(
+        foregroundColor: COColors.brand900,
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+      ),
+      icon: const Icon(Icons.download_outlined, size: 18),
+      label: Text(
+        _aObter
+            ? 'A obter…'
+            : 'Descarregar CPCV${fracao.isEmpty ? '' : ' · $fracao'}',
+        style: const TextStyle(fontWeight: COTokens.fwBold, fontSize: 13),
+      ),
     );
   }
 }
@@ -184,7 +262,7 @@ class BarraAquisicao extends StatelessWidget {
           spacing: 14,
           runSpacing: 4,
           children: [
-            _legenda(COColors.brand900, '${Carteira.euros(o.pago)} pago'),
+            _legenda(COColors.brand900, '${Carteira.euros(o.pago)} liquidado'),
             if (temFaturado)
               _legenda(_faturado,
                   '${Carteira.euros(o.faturadoPorPagar)} faturado'),
@@ -300,15 +378,7 @@ class _LinhaFatura extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  border: Border.all(color: COColors.bordaClara),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                child: Text('FATURA', style: Claro.miniatura),
-              ),
-              const SizedBox(width: 8),
+              // Sem a etiqueta "FATURA" à frente: a secção já se chama assim.
               Expanded(
                 child: Text(f.name.isEmpty ? 'Fatura' : f.name,
                     style: Claro.titulo.copyWith(fontSize: 14)),
@@ -354,8 +424,8 @@ class _LinhaFatura extends StatelessWidget {
           Row(
             children: [
               _valor('Valor total', f.amountTotal),
-              _valor('Pago', f.pago),
-              _valor('Em falta', f.amountTotal - f.pago),
+              _valor('Liquidado', f.pago),
+              _valor('Por liquidar', f.amountTotal - f.pago),
             ],
           ),
         ],

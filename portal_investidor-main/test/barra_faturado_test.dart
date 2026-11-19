@@ -78,18 +78,18 @@ void main() {
     expect((pago.width - porFaturar.width).abs(), lessThan(1));
   });
 
-  testWidgets('faturado e por pagar mostra a fatia do meio e a legenda',
+  testWidgets('faturado e por liquidar mostra a fatia do meio e a legenda',
       (tester) async {
     await mostrar(tester, encomenda(1000, [fatura('not_paid', 400)]));
 
     expect(fatias(tester, COColors.brand300).single.width, greaterThan(0));
     expect(fatias(tester, COColors.accent), isEmpty);
-    expect(find.textContaining('faturado, por pagar'), findsOneWidget);
+    expect(find.textContaining('faturado, por liquidar'), findsOneWidget);
   });
 
   testWidgets('sem a fatia do meio nao ha legenda a explicá-la',
       (tester) async {
     await mostrar(tester, encomenda(1000, [fatura('paid', 1000)]));
-    expect(find.textContaining('faturado, por pagar'), findsNothing);
+    expect(find.textContaining('faturado, por liquidar'), findsNothing);
   });
 }

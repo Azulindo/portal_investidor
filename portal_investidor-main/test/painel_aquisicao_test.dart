@@ -48,6 +48,22 @@ void main() {
     );
   });
 
+  test('lê o CPCV das frações, e uma API sem o campo dá lista vazia', () {
+    final com = SaleOrder.fromJson({
+      'id': 1,
+      'name': 'S1',
+      'cpcv': [
+        {'fractionId': 77, 'fraction': '4.10(AH)'},
+        {'fractionId': null, 'fraction': 'sem id'},
+      ],
+    });
+    expect(com.cpcv, hasLength(1));
+    expect(com.cpcv.first.fractionId, 77);
+    expect(com.cpcv.first.fracao, '4.10(AH)');
+
+    expect(SaleOrder.fromJson({'id': 2, 'name': 'S2'}).cpcv, isEmpty);
+  });
+
   test('as linhas da fatura perdem o código de conta do Odoo', () {
     final f = Invoice(
       id: 1,

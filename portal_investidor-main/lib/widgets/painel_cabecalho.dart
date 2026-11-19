@@ -179,68 +179,42 @@ class CabecalhoPainel extends StatelessWidget {
     fontWeight: COTokens.fwBold,
   );
 
+  /// O dinheiro, como o topo do portal do site desde 19/11/2026: o valor total
+  /// e a barra a duas cores — o liquidado de todas as encomendas e o que
+  /// falta, "por liquidar" — sem percentagens (a BarraPagamento "escura" do
+  /// PortalDashboard.tsx). Antes eram o pago, o por pagar e o progresso.
   Widget _valores() {
     final total = Carteira.investimentoTotal(encomendas);
-    final pago = Carteira.totalPago(encomendas);
-    final porPagar = Carteira.totalPorPagar(encomendas);
+    final liquidado = Carteira.totalPago(encomendas);
+    final porLiquidar = Carteira.totalPorPagar(encomendas);
     final pct = Carteira.percentagemPaga(encomendas).clamp(0, 100);
-
-    Widget valor(String etiqueta, double v, {double tamanho = 22}) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _etiqueta(etiqueta),
-            const SizedBox(height: 4),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                Carteira.euros(v),
-                style: TextStyle(
-                  color: COColors.white,
-                  fontSize: tamanho,
-                  fontWeight: COTokens.fwBold,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-          ],
-        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        valor('Valor total', total, tamanho: 28),
-        const SizedBox(height: COTokens.space4),
-        Row(
-          children: [
-            Expanded(child: valor('Pago', pago)),
-            const SizedBox(width: COTokens.space4),
-            Expanded(child: valor('Por pagar', porPagar)),
-          ],
-        ),
-        const SizedBox(height: COTokens.space4),
-        const Divider(height: 1, color: COColors.brand700),
-        const SizedBox(height: COTokens.space4),
-        Row(
-          children: [
-            Expanded(child: _etiqueta('Progresso')),
-            Text(
-              '$pct%',
-              style: const TextStyle(
-                color: COColors.white,
-                fontSize: 15,
-                fontWeight: COTokens.fwBold,
-              ),
+        _etiqueta('Valor total do investimento'),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            Carteira.euros(total),
+            style: const TextStyle(
+              color: COColors.white,
+              fontSize: 28,
+              fontWeight: COTokens.fwBold,
+              letterSpacing: -0.5,
             ),
-          ],
+          ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: COTokens.space4),
         Semantics(
-          label: '$pct por cento pago',
+          label: '${Carteira.euros(liquidado)} liquidado, '
+              '${Carteira.euros(porLiquidar)} por liquidar',
           child: ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: SizedBox(
-              height: 8,
+              height: 12,
               child: Row(
                 children: [
                   if (pct > 0)
@@ -256,7 +230,41 @@ class CabecalhoPainel extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 16,
+          runSpacing: 4,
+          children: [
+            _legenda(COColors.white, '${Carteira.euros(liquidado)} liquidado'),
+            _legenda(
+                COColors.brand700, '${Carteira.euros(porLiquidar)} por liquidar'),
+          ],
+        ),
       ],
     );
   }
+
+  Widget _legenda(Color cor, String texto) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: cor,
+              borderRadius: BorderRadius.circular(2),
+              border: Border.all(color: COColors.brand500),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            texto,
+            style: const TextStyle(
+              color: COColors.white,
+              fontSize: 13,
+              fontWeight: COTokens.fwBold,
+            ),
+          ),
+        ],
+      );
 }

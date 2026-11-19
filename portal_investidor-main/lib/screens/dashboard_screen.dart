@@ -189,8 +189,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ),
-                    SliverFillRemaining(
-                      hasScrollBody: false,
+                    // Um SliverToBoxAdapter, e não o SliverFillRemaining que
+                    // estava: esse mede o filho pelas medidas intrínsecas, que
+                    // a régua da obra (lista horizontal) e a barra das
+                    // aquisições (LayoutBuilder) não sabem dar — a altura saía
+                    // curta e o último cartão ficava cortado em baixo.
+                    SliverToBoxAdapter(
                       child: FolhaClara(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -238,6 +242,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ],
                         ),
                       ),
+                    ),
+                    // Quando há pouco conteúdo, o resto do ecrã fica claro e
+                    // não com o navy do fundo a aparecer por baixo da folha.
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: ColoredBox(color: COColors.fundoClaro),
                     ),
                   ],
                 );
